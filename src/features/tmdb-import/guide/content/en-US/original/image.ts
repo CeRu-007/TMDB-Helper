@@ -176,4 +176,4 @@ No text, watermarks or logos.
 **Versions:** Feel free to upload both old and new logos. The main logo should ideally be the current/most recent logo.
 
 **Errors:** SVG files can be a little finicky at times. Sometimes they will need to be opened and re-saved in a modern SVG editor. Two common issues that can be fixed by re-saving the logos in a SVG editor are: A "Width/Height of 0 pixels" error and logos that are not right (colors that are off, misplaced objects, or logos that are completely unrecognizable).
-`
+`;

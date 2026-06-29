@@ -1,50 +1,56 @@
-import React, { useState } from "react"
+import React, { useState } from 'react';
+import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import {
-  Download,
-  Loader2,
-  CheckCircle,
-  XCircle
-} from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/shared/components/ui/dialog"
-import { Button } from "@/shared/components/ui/button"
-import { Checkbox } from "@/shared/components/ui/checkbox"
-import { Label } from "@/shared/components/ui/label"
-import { ExportConfigDialogProps } from './types'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Label } from '@/shared/components/ui/label';
+import { ExportConfigDialogProps } from './types';
 
 export function ExportConfigDialog({
   open,
   onOpenChange,
   config,
   onConfigChange,
-  onExport
+  onExport,
 }: ExportConfigDialogProps) {
-  const [isExporting, setIsExporting] = useState(false)
-  const [exportResult, setExportResult] = useState<{ success: boolean; message?: string } | null>(null)
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<{ success: boolean; message?: string } | null>(
+    null
+  );
 
   const handleExport = async () => {
-    setIsExporting(true)
-    setExportResult(null)
+    setIsExporting(true);
+    setExportResult(null);
 
     try {
-      const result = await onExport()
+      const result = await onExport();
       setExportResult({
         success: result.success,
-        message: result.success ? 'import.csv文件已成功覆盖！现在可以在对应词条详情页面使用集成工具上传到TMDB对应词条了。' : '导出失败'
-      })
+        message: result.success
+          ? 'import.csv文件已成功覆盖！现在可以在对应词条详情页面使用集成工具上传到TMDB对应词条了。'
+          : '导出失败',
+      });
     } catch (error) {
       setExportResult({
         success: false,
-        message: `导出失败：${error instanceof Error ? error.message : '未知错误'}`
-      })
+        message: `导出失败：${error instanceof Error ? error.message : '未知错误'}`,
+      });
     } finally {
-      setIsExporting(false)
+      setIsExporting(false);
     }
-  }
+  };
 
   const handleClose = () => {
-    setExportResult(null)
-    onOpenChange(false)
-  }
+    setExportResult(null);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -66,7 +72,7 @@ export function ExportConfigDialog({
                     checked={config.includeTitle}
                     onCheckedChange={(checked) => {
                       if (typeof onConfigChange === 'function') {
-                        onConfigChange({ ...config, includeTitle: !!checked })
+                        onConfigChange({ ...config, includeTitle: !!checked });
                       }
                     }}
                   />
@@ -81,7 +87,7 @@ export function ExportConfigDialog({
                     checked={config.includeOverview}
                     onCheckedChange={(checked) => {
                       if (typeof onConfigChange === 'function') {
-                        onConfigChange({ ...config, includeOverview: !!checked })
+                        onConfigChange({ ...config, includeOverview: !!checked });
                       }
                     }}
                   />
@@ -96,7 +102,7 @@ export function ExportConfigDialog({
                     checked={config.includeRuntime}
                     onCheckedChange={(checked) => {
                       if (typeof onConfigChange === 'function') {
-                        onConfigChange({ ...config, includeRuntime: !!checked })
+                        onConfigChange({ ...config, includeRuntime: !!checked });
                       }
                     }}
                   />
@@ -115,19 +121,25 @@ export function ExportConfigDialog({
           )}
 
           {exportResult && (
-            <div className={`p-4 rounded-lg ${exportResult.success ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+            <div
+              className={`p-4 rounded-lg ${exportResult.success ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}
+            >
               <div className="flex items-center space-x-2">
                 {exportResult.success ? (
                   <CheckCircle className="h-5 w-5 text-green-600" />
                 ) : (
                   <XCircle className="h-5 w-5 text-red-600" />
                 )}
-                <p className={`text-sm font-medium ${exportResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                <p
+                  className={`text-sm font-medium ${exportResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}
+                >
                   {exportResult.success ? '导出成功！' : '导出失败'}
                 </p>
               </div>
               {exportResult.message && (
-                <p className={`text-sm mt-2 ${exportResult.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                <p
+                  className={`text-sm mt-2 ${exportResult.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}
+                >
                   {exportResult.message}
                 </p>
               )}
@@ -144,7 +156,10 @@ export function ExportConfigDialog({
               <Button
                 className="min-h-[44px]"
                 onClick={handleExport}
-                disabled={isExporting || (!config.includeTitle && !config.includeOverview && !config.includeRuntime)}
+                disabled={
+                  isExporting ||
+                  (!config.includeTitle && !config.includeOverview && !config.includeRuntime)
+                }
               >
                 {isExporting ? (
                   <>
@@ -167,5 +182,5 @@ export function ExportConfigDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

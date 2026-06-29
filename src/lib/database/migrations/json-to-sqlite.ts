@@ -29,14 +29,14 @@ const OLD_DATA_PATHS = {
 /**
  * 检查是否需要迁移
  */
-export function needsMigration(): boolean {
+export async function needsMigration(): Promise<boolean> {
   // 数据库未初始化
   if (!isDatabaseInitialized()) {
     return hasOldDataFiles();
   }
 
   // 数据库已初始化但无数据
-  const stats = getDatabaseStats();
+  const stats = await getDatabaseStats();
   if (stats.items === 0 && hasOldDataFiles()) {
     return true;
   }
@@ -78,7 +78,7 @@ export async function migrateFromJson(): Promise<MigrationStatus> {
 
   try {
     // 初始化 Schema
-    initializeSchema();
+    await initializeSchema();
 
     // 迁移项目数据
     const itemsResult = await migrateItems(dataDir);
@@ -117,7 +117,9 @@ export async function migrateFromJson(): Promise<MigrationStatus> {
 /**
  * 迁移项目数据
  */
-async function migrateItems(dataDir: string): Promise<DatabaseResult<{ imported: number; skipped: number }>> {
+async function migrateItems(
+  dataDir: string
+): Promise<DatabaseResult<{ imported: number; skipped: number }>> {
   for (const filePath of OLD_DATA_PATHS.items) {
     const fullPath = path.join(dataDir, filePath);
 
@@ -220,8 +222,11 @@ async function migrateAuth(dataDir: string): Promise<void> {
             username: admin.username,
             passwordHash: admin.passwordHash,
             createdAt: admin.createdAt,
+            updatedAt: admin.updatedAt ?? new Date().toISOString(),
             lastLoginAt: admin.lastLoginAt,
             sessionExpiryDays: admin.sessionExpiryDays ?? 7,
+            loginCount: admin.loginCount ?? 1,
+            totalUsageTime: admin.totalUsageTime ?? 0,
           });
         }
       } catch (error) {
@@ -290,10 +295,10 @@ function backupOldFiles(dataDir: string): void {
  * 检查并执行迁移（应用启动时调用）
  */
 export async function checkAndMigrate(): Promise<MigrationStatus> {
-  if (!needsMigration()) {
+  if (!(await needsMigration())) {
     return {
       migrated: false,
-      itemCount: getDatabaseStats().items,
+      itemCount: (await getDatabaseStats()).items,
     };
   }
 

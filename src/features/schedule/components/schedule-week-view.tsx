@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
-import { ScheduleDayColumn } from './schedule-day-column'
-import type { CategoryType } from './schedule-view'
+import React from 'react';
+import { ScheduleDay, ScheduleEpisode } from '../types/schedule';
+import { ScheduleDayColumn } from './schedule-day-column';
+import type { CategoryType } from './schedule-view';
 
 interface ScheduleWeekViewProps {
-  weekData: ScheduleDay[]
-  selectedDay: number
-  selectedCategory: CategoryType
-  onSelectDay: (day: number) => void
-  onSelectEpisode: (episode: ScheduleEpisode) => void
-  followingIds: Set<string>
-  onToggleFollowing: (id: string) => void
-  hoveredDay: number | null
-  onHoverDay: (day: number | null) => void
+  weekData: ScheduleDay[];
+  selectedDay: number;
+  selectedCategory: CategoryType;
+  onSelectDay: (day: number) => void;
+  onSelectEpisode: (episode: ScheduleEpisode) => void;
+  followingIds: Set<string>;
+  onToggleFollowing: (id: string) => void;
+  hoveredDay: number | null;
+  onHoverDay: (day: number | null) => void;
 }
 
 export function ScheduleWeekView({
@@ -26,7 +26,7 @@ export function ScheduleWeekView({
   followingIds,
   onToggleFollowing,
   hoveredDay,
-  onHoverDay
+  onHoverDay,
 }: ScheduleWeekViewProps) {
   return (
     <div className="flex-1 overflow-hidden">
@@ -49,5 +49,5 @@ export function ScheduleWeekView({
         ))}
       </div>
     </div>
-  )
+  );
 }

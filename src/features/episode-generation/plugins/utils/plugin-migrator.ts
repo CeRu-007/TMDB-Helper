@@ -1,23 +1,23 @@
 /**
  * 插件迁移工具
  * 用于从现有的常量定义生成插件
- * 
+ *
  * 这个工具可以帮助快速将现有的风格常量转换为插件格式
  * 实际使用时，建议手动调整每个插件的具体实现
  */
 
-import { StyleOption } from '../../types'
-import { PluginType } from '../core/types'
+import { StyleOption } from '../../components/subtitle-episode-generator/types';
+import { PluginType } from '../core/types';
 
 /**
  * 从 StyleOption 生成插件模板
  */
 export function generatePluginTemplate(styleOption: StyleOption, pluginType: PluginType): string {
-  const isTitleStyle = pluginType === PluginType.TitleStyle
-  const interfaceName = isTitleStyle ? 'ITitleStylePlugin' : 'ISummaryStylePlugin'
-  const resultType = isTitleStyle ? 'ParsedTitle' : 'ParsedSummary'
-  const configType = isTitleStyle ? 'TitleStyleConfig' : 'SummaryStyleConfig'
-  
+  const isTitleStyle = pluginType === PluginType.TitleStyle;
+  const interfaceName = isTitleStyle ? 'ITitleStylePlugin' : 'ISummaryStylePlugin';
+  const resultType = isTitleStyle ? 'ParsedTitle' : 'ParsedSummary';
+  const configType = isTitleStyle ? 'TitleStyleConfig' : 'SummaryStyleConfig';
+
   return `/**
  * ${styleOption.name}风格插件
  * ${styleOption.description}
@@ -47,15 +47,19 @@ export const ${styleOption.id}Plugin: ${interfaceName} = new (class extends Base
   ${isTitleStyle ? '' : `isExclusive = ${styleOption.isExclusive || false}\n\n`}
 
   defaultConfig: ${configType} = {
-    ${isTitleStyle ? `maxLength: 20,
+    ${
+      isTitleStyle
+        ? `maxLength: 20,
     minLength: 5,
-    punctuationHandling: 'simplify'` : `minWordCount: 50,
+    punctuationHandling: 'simplify'`
+        : `minWordCount: 50,
     maxWordCount: 150,
     temperature: 0.7,
     maxTokens: 300,
     format: 'plain',
     allowQuestions: false,
-    requireDeclarative: true`}
+    requireDeclarative: true`
+    }
   }
 
   buildPrompt(content: EpisodeContent, options?: Record<string, any>): string {
@@ -82,7 +86,9 @@ ${styleOption.description}
   parseResult(generated: string, options?: Record<string, any>): ${resultType} {
     const config = { ...this.defaultConfig, ...options }
     
-    ${isTitleStyle ? `// 清理内容
+    ${
+      isTitleStyle
+        ? `// 清理内容
     let title = generated.trim()
     
     // 移除前缀
@@ -119,7 +125,8 @@ ${styleOption.description}
         pluginVersion: this.version,
         originalLength: generated.length
       }
-    }` : `// 清理多余空白
+    }`
+        : `// 清理多余空白
     let summary = generated.trim()
     
     // 移除可能的前缀
@@ -144,10 +151,13 @@ ${styleOption.description}
         pluginId: this.id,
         pluginVersion: this.version
       }
-    }`}
+    }`
+    }
   }
 
-  ${isTitleStyle ? `validate(title: string) {
+  ${
+    isTitleStyle
+      ? `validate(title: string) {
     const errors: string[] = []
     const warnings: string[] = []
     const config = this.defaultConfig!
@@ -165,7 +175,8 @@ ${styleOption.description}
       errors: errors.length > 0 ? errors : undefined,
       warnings: warnings.length > 0 ? warnings : undefined
     }
-  }` : `validate(summary: string, constraints?: SummaryConstraints) {
+  }`
+      : `validate(summary: string, constraints?: SummaryConstraints) {
     const errors: string[] = []
     const warnings: string[] = []
     const config = { ...this.defaultConfig, ...constraints }
@@ -203,9 +214,10 @@ ${styleOption.description}
       .replace(/？/g, '？')
     
     return processed.trim()
-  }`}
+  }`
+  }
 })()
-`
+`;
 }
 
 /**
@@ -214,15 +226,18 @@ ${styleOption.description}
 export function generateAllPluginTemplates(
   titleStyles: StyleOption[],
   summaryStyles: StyleOption[]
-): { titleStyles: string[], summaryStyles: string[] } {
+): {
+  titleStyles: { id: string; content: string }[];
+  summaryStyles: { id: string; content: string }[];
+} {
   return {
-    titleStyles: titleStyles.map(style => ({
+    titleStyles: titleStyles.map((style) => ({
       id: style.id,
-      content: generatePluginTemplate(style, PluginType.TitleStyle)
+      content: generatePluginTemplate(style, PluginType.TitleStyle),
     })),
-    summaryStyles: summaryStyles.map(style => ({
+    summaryStyles: summaryStyles.map((style) => ({
       id: style.id,
-      content: generatePluginTemplate(style, PluginType.SummaryStyle)
-    }))
-  }
+      content: generatePluginTemplate(style, PluginType.SummaryStyle),
+    })),
+  };
 }

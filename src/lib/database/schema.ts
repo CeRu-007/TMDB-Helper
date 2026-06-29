@@ -3,7 +3,7 @@
  * 所有字段使用 camelCase 命名，与 TypeScript 代码保持一致
  */
 
-import { getDatabaseAsync } from './connection';
+import { getDatabaseAsync, getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
@@ -37,9 +37,9 @@ export async function initializeSchema(): Promise<void> {
   // 修复：确保 users 表包含 loginCount 和 totalUsageTime 列
   // 这个修复对已损坏的数据库（由旧版 docker-startup.js 创建，缺少 V14 列）至关重要
   // 必须在早期 return 之前执行，确保即使 version 已匹配也运行修复
-  const usersTableExists = db.prepare(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
-  ).get();
+  const usersTableExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+    .get();
   if (usersTableExists) {
     let needsUserRepair = false;
     try {
@@ -407,7 +407,11 @@ function setUserVersion(db: any, version: number): void {
 /**
  * 安全地获取表的记录数
  */
-function safeCount(db: ReturnType<typeof getDatabase>, tableName: string, whereClause: string = ''): number {
+function safeCount(
+  db: ReturnType<typeof getDatabase>,
+  tableName: string,
+  whereClause: string = ''
+): number {
   try {
     const sql = whereClause
       ? `SELECT COUNT(*) as count FROM ${tableName} WHERE ${whereClause}`

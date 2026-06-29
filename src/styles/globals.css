@@ -25,7 +25,7 @@ body {
   }
 
   .vscode-csv-editor .toolbar {
-    background-color: hsl(var(--muted)/0.8);
+    background-color: hsl(var(--muted) / 0.8);
     border-bottom: 1px solid hsl(var(--border));
     padding: 2px 4px;
   }
@@ -42,7 +42,7 @@ body {
     border-collapse: collapse;
     table-layout: fixed;
   }
-  
+
   .new-tmdb-table.grid-lines table {
     border: 1px solid hsl(var(--border));
   }
@@ -58,7 +58,7 @@ body {
     position: relative;
     padding: 4px 8px;
   }
-  
+
   /* 表头样式 */
   .new-tmdb-table th {
     background-color: hsl(var(--muted));
@@ -71,7 +71,7 @@ body {
     padding: 8px;
     height: 40px;
   }
-  
+
   /* 行号列样式 */
   .new-tmdb-table td:first-child,
   .new-tmdb-table th:first-child {
@@ -85,30 +85,30 @@ body {
     min-width: 48px;
     width: 48px;
   }
-  
+
   /* 行号列与表头交叉处样式 */
   .new-tmdb-table th:first-child {
     z-index: 15;
   }
-  
+
   /* 交替行颜色样式 */
   .new-tmdb-table.alternate-rows tr:nth-child(even) td {
     background-color: hsl(var(--background));
   }
-  
+
   .new-tmdb-table.alternate-rows tr:nth-child(odd) td {
-    background-color: hsl(var(--muted)/0.3);
+    background-color: hsl(var(--muted) / 0.3);
   }
-  
+
   /* 行号列背景始终保持不变 */
   .new-tmdb-table.alternate-rows tr:nth-child(odd) td:first-child,
   .new-tmdb-table.alternate-rows tr:nth-child(even) td:first-child {
     background-color: hsl(var(--muted));
   }
-  
+
   /* 单元格悬停样式替代行悬停 */
   .new-tmdb-table td:not(:first-child):hover {
-    background-color: hsl(var(--accent)/0.7);
+    background-color: hsl(var(--accent) / 0.7);
   }
 
   /* 选择单元格样式 */
@@ -144,7 +144,7 @@ body {
     z-index: 100;
     transition: all 0.1s ease;
   }
-  
+
   /* 选择区域信息提示 */
   .tmdb-selection-info {
     position: absolute;
@@ -181,7 +181,7 @@ body {
     z-index: 1;
     transition: background-color 0.1s ease;
   }
-  
+
   .tmdb-table td.bg-primary\/20::after {
     content: '';
     position: absolute;
@@ -193,7 +193,7 @@ body {
     pointer-events: none;
     z-index: 2;
   }
-  
+
   /* 动画效果 */
   @keyframes fadeIn {
     from {
@@ -219,17 +219,17 @@ body {
     display: flex;
     align-items: center;
   }
-  
+
   /* 列拖拽样式 */
-  .new-tmdb-table th[data-dragging="true"] {
+  .new-tmdb-table th[data-dragging='true'] {
     opacity: 0.5;
     cursor: grabbing;
   }
-  
-  .new-tmdb-table th[data-drag-over="true"] {
+
+  .new-tmdb-table th[data-drag-over='true'] {
     border-left: 2px solid hsl(var(--primary));
   }
-  
+
   /* 确保表格单元格内容不会溢出 */
   .new-tmdb-table td {
     overflow: hidden;
@@ -237,12 +237,12 @@ body {
     white-space: nowrap;
     padding: 0;
   }
-  
+
   /* 防止表格文本选择，优化拖拽框选体验 */
   .tmdb-table {
     user-select: none;
   }
-  
+
   /* 只有在编辑模式下允许选择文本 */
   .tmdb-table input {
     user-select: text;
@@ -386,11 +386,9 @@ body {
 }
 
 /* 滚动时显示顶部指示器 */
-.custom-scrollbar:not([data-scroll-top="0"]) .scroll-indicator-top {
+.custom-scrollbar:not([data-scroll-top='0']) .scroll-indicator-top {
   opacity: 1 !important;
 }
-
-
 
 /* 暗色模式下的滚动条样式 */
 .dark .custom-scrollbar::-webkit-scrollbar-track {

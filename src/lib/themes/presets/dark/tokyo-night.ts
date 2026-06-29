@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const tokyoNightTheme: ThemeConfig = {
   id: 'tokyo-night',
@@ -39,4 +39,4 @@ export const tokyoNightTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

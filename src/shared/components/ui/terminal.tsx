@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from "react"
-import { Input } from "@/shared/components/ui/input"
-import { Button } from "@/shared/components/ui/button"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import {
   ChevronRight,
   Copy,
@@ -15,30 +15,30 @@ import {
   Type,
   AlignLeft,
   Loader2,
-} from "lucide-react"
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/shared/components/ui/dropdown-menu"
+} from '@/shared/components/ui/dropdown-menu';
 
 interface TerminalProps {
-  processId: number | null
-  disabled?: boolean
-  onSend?: (input: string) => void
-  onClear?: () => void
-  className?: string
-  title?: string
-  output: string
-  placeholder?: string
-  showToolbar?: boolean
-  onMinimize?: () => void
-  onMaximize?: () => void
-  onClose?: () => void
-  fontSize?: "sm" | "base" | "lg"
-  theme?: "dark" | "light" | "system"
+  processId: number | null;
+  disabled?: boolean;
+  onSend?: (input: string) => void;
+  onClear?: () => void;
+  className?: string;
+  title?: string;
+  output: string;
+  placeholder?: string;
+  showToolbar?: boolean;
+  onMinimize?: () => void;
+  onMaximize?: () => void;
+  onClose?: () => void;
+  fontSize?: 'sm' | 'base' | 'lg';
+  theme?: 'dark' | 'light' | 'system';
 }
 
 export function Terminal({
@@ -47,110 +47,110 @@ export function Terminal({
   onSend,
   onClear,
   className,
-  title = "Terminal",
+  title = 'Terminal',
   output,
-  placeholder = "输入命令...",
+  placeholder = '输入命令...',
   showToolbar = true,
   onMinimize,
   onMaximize,
   onClose,
-  fontSize = "sm",
-  theme = "dark",
+  fontSize = 'sm',
+  theme = 'dark',
 }: TerminalProps) {
-  const [input, setInput] = useState("")
-  const [history, setHistory] = useState<string[]>([])
-  const [historyIndex, setHistoryIndex] = useState(-1)
-  const [isSending, setIsSending] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const outputRef = useRef<HTMLDivElement>(null)
+  const [input, setInput] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isSending, setIsSending] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
   const [fontSizeClass, setFontSizeClass] = useState(
-    fontSize === "sm" ? "text-sm" : fontSize === "lg" ? "text-lg" : "text-base"
-  )
+    fontSize === 'sm' ? 'text-sm' : fontSize === 'lg' ? 'text-lg' : 'text-base'
+  );
 
   // 自动滚动到底部
   useEffect(() => {
     if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, [output])
+  }, [output]);
 
   // 处理命令历史
   const addToHistory = (cmd: string) => {
     if (cmd.trim()) {
-      setHistory(prev => [...prev, cmd])
-      setHistoryIndex(-1)
+      setHistory((prev) => [...prev, cmd]);
+      setHistoryIndex(-1);
     }
-  }
+  };
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      if (!input.trim() && input !== "") return
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!input.trim() && input !== '') {
+        return;
+      }
 
-      setIsSending(true)
-      onSend?.(input)
-      addToHistory(input)
-      setInput("")
-      setTimeout(() => setIsSending(false), 300)
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
+      setIsSending(true);
+      onSend?.(input);
+      addToHistory(input);
+      setInput('');
+      setTimeout(() => setIsSending(false), 300);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
       if (history.length > 0) {
-        const newIndex = historyIndex + 1
+        const newIndex = historyIndex + 1;
         if (newIndex < history.length) {
-          setHistoryIndex(newIndex)
-          setInput(history[history.length - 1 - newIndex])
+          setHistoryIndex(newIndex);
+          setInput(history[history.length - 1 - newIndex]);
         }
       }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
       if (historyIndex > 0) {
-        const newIndex = historyIndex - 1
-        setHistoryIndex(newIndex)
-        setInput(history[history.length - 1 - newIndex])
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(history[history.length - 1 - newIndex]);
       } else if (historyIndex === 0) {
-        setHistoryIndex(-1)
-        setInput("")
+        setHistoryIndex(-1);
+        setInput('');
       }
-    } else if (e.key === "l" && e.ctrlKey) {
-      e.preventDefault()
-      onClear?.()
+    } else if (e.key === 'l' && e.ctrlKey) {
+      e.preventDefault();
+      onClear?.();
     }
-  }
+  };
 
   // 处理输入变化
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value)
-  }
+    setInput(e.target.value);
+  };
 
   // 复制到剪贴板
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(output)
-    } catch (err) {
-      
-    }
-  }
+      await navigator.clipboard.writeText(output);
+    } catch (err) {}
+  };
 
   // 切换全屏
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen)
-    onMaximize?.()
-  }
+    setIsFullscreen(!isFullscreen);
+    onMaximize?.();
+  };
 
   // 聚焦输入框
   useEffect(() => {
     if (inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [])
+  }, []);
 
   return (
     <div
       className={cn(
-        "flex flex-col rounded-lg border bg-background shadow-sm",
-        isFullscreen ? "fixed inset-0 z-50 rounded-none" : "relative",
+        'flex flex-col rounded-lg border bg-background shadow-sm',
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'relative',
         className
       )}
       onClick={() => inputRef.current?.focus()} // 点击终端区域时聚焦输入框
@@ -169,15 +169,15 @@ export function Terminal({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setFontSizeClass("text-sm")}>
+                <DropdownMenuItem onClick={() => setFontSizeClass('text-sm')}>
                   <Type className="mr-2 h-4 w-4" />
                   小号字体
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFontSizeClass("text-base")}>
+                <DropdownMenuItem onClick={() => setFontSizeClass('text-base')}>
                   <Type className="mr-2 h-4 w-4" />
                   中号字体
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFontSizeClass("text-lg")}>
+                <DropdownMenuItem onClick={() => setFontSizeClass('text-lg')}>
                   <Type className="mr-2 h-4 w-4" />
                   大号字体
                 </DropdownMenuItem>
@@ -192,32 +192,13 @@ export function Terminal({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onMinimize}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMinimize}>
               <Minimize2 className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFullscreen}>
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onClose}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -225,24 +206,24 @@ export function Terminal({
       )}
       <ScrollArea
         className={cn(
-          "flex-1 p-4 font-mono",
+          'flex-1 p-4 font-mono',
           fontSizeClass,
-          theme === "dark" ? "bg-zinc-900 text-zinc-50" : "bg-white text-zinc-900"
+          theme === 'dark' ? 'bg-zinc-900 text-zinc-50' : 'bg-white text-zinc-900'
         )}
       >
         <div ref={outputRef} className="whitespace-pre-wrap break-all">
           {output}
         </div>
       </ScrollArea>
-      <div className={cn("p-4", theme === "dark" ? "bg-zinc-900" : "bg-white")}>
+      <div className={cn('p-4', theme === 'dark' ? 'bg-zinc-900' : 'bg-white')}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                onSend?.("y")
-                setInput("")
+                onSend?.('y');
+                setInput('');
               }}
             >
               Yes (Y)
@@ -251,8 +232,8 @@ export function Terminal({
               variant="outline"
               size="sm"
               onClick={() => {
-                onSend?.("n")
-                setInput("")
+                onSend?.('n');
+                setInput('');
               }}
             >
               No (N)
@@ -261,20 +242,20 @@ export function Terminal({
               variant="outline"
               size="sm"
               onClick={() => {
-                onSend?.("w")
-                setInput("")
+                onSend?.('w');
+                setInput('');
               }}
             >
               Overwrite (W)
             </Button>
           </div>
-          <form 
+          <form
             className="flex items-center gap-2"
             onSubmit={(e) => {
-              e.preventDefault()
+              e.preventDefault();
               if (input.trim()) {
-                onSend?.(input)
-                setInput("")
+                onSend?.(input);
+                setInput('');
               }
             }}
           >
@@ -289,12 +270,12 @@ export function Terminal({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               className={cn(
-                "w-full bg-transparent border-0 outline-none p-0",
-                "focus:outline-none focus:ring-0",
+                'w-full bg-transparent border-0 outline-none p-0',
+                'focus:outline-none focus:ring-0',
                 fontSizeClass,
-                theme === "dark" ? "text-zinc-50" : "text-zinc-900",
-                "font-mono",
-                "placeholder:text-muted-foreground"
+                theme === 'dark' ? 'text-zinc-50' : 'text-zinc-900',
+                'font-mono',
+                'placeholder:text-muted-foreground'
               )}
               autoComplete="off"
               spellCheck="false"
@@ -302,12 +283,10 @@ export function Terminal({
               autoCorrect="off"
               aria-label="终端输入"
             />
-            {isSending && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
+            {isSending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           </form>
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

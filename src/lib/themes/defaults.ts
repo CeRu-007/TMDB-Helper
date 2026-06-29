@@ -1,22 +1,22 @@
-import type { ThemeConfig } from './types'
-import { defaultDarkTheme } from './presets/dark/default'
-import { nordTheme } from './presets/dark/nord'
-import { draculaTheme } from './presets/dark/dracula'
-import { catppuccinMochaTheme } from './presets/dark/catppuccin-mocha'
-import { tokyoNightTheme } from './presets/dark/tokyo-night'
-import { monokaiProTheme } from './presets/dark/monokai-pro'
-import { githubDarkTheme } from './presets/dark/github-dark'
-import { materialOceanTheme } from './presets/dark/material-ocean'
-import { rosePineTheme } from './presets/dark/rose-pine'
-import { gruvboxDarkTheme } from './presets/dark/gruvbox-dark'
-import { sunsetTheme } from './presets/dark/sunset'
-import { oceanTheme } from './presets/dark/ocean'
-import { forestTheme } from './presets/dark/forest'
-import { defaultLightTheme } from './presets/light/default'
-import { catppuccinLatteTheme } from './presets/light/catppuccin-latte'
-import { githubLightTheme } from './presets/light/github-light'
+import type { ThemeConfig } from './types';
+import { defaultDarkTheme } from './presets/dark/default';
+import { nordTheme } from './presets/dark/nord';
+import { draculaTheme } from './presets/dark/dracula';
+import { catppuccinMochaTheme } from './presets/dark/catppuccin-mocha';
+import { tokyoNightTheme } from './presets/dark/tokyo-night';
+import { monokaiProTheme } from './presets/dark/monokai-pro';
+import { githubDarkTheme } from './presets/dark/github-dark';
+import { materialOceanTheme } from './presets/dark/material-ocean';
+import { rosePineTheme } from './presets/dark/rose-pine';
+import { gruvboxDarkTheme } from './presets/dark/gruvbox-dark';
+import { sunsetTheme } from './presets/dark/sunset';
+import { oceanTheme } from './presets/dark/ocean';
+import { forestTheme } from './presets/dark/forest';
+import { defaultLightTheme } from './presets/light/default';
+import { catppuccinLatteTheme } from './presets/light/catppuccin-latte';
+import { githubLightTheme } from './presets/light/github-light';
 
-export const DEFAULT_THEME_ID = 'default-dark'
+export const DEFAULT_THEME_ID = 'default-dark';
 
 export const presetThemes: ThemeConfig[] = [
   // Dark themes
@@ -37,12 +37,12 @@ export const presetThemes: ThemeConfig[] = [
   defaultLightTheme,
   catppuccinLatteTheme,
   githubLightTheme,
-]
+];
 
 export function getThemeById(id: string): ThemeConfig | undefined {
-  return presetThemes.find(t => t.id === id)
+  return presetThemes.find((t) => t.id === id);
 }
 
 export function getThemesByAppearance(appearance: 'light' | 'dark'): ThemeConfig[] {
-  return presetThemes.filter(t => t.appearance === appearance)
+  return presetThemes.filter((t) => t.appearance === appearance);
 }

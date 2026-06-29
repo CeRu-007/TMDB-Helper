@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const githubDarkTheme: ThemeConfig = {
   id: 'github-dark',
@@ -40,4 +40,4 @@ export const githubDarkTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

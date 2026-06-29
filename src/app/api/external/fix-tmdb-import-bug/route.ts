@@ -6,54 +6,62 @@ import path from 'path';
  * 修复 TMDB-Import 中文字符解析错误
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  
   try {
     const { action, fixType } = await request.json();
-    
+
     if (action !== 'apply_fix' || fixType !== 'chinese_character_parsing') {
-      return NextResponse.json({ 
-        success: false, 
-        error: '无效的修复参数' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '无效的修复参数',
+        },
+        { status: 400 }
+      );
     }
-    
+
     // 查找 TMDB-Import 目录
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import')) ? 'tmdb_import' : 'tmdb-import';
+    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import'))
+      ? 'tmdb_import'
+      : 'tmdb-import';
     const episodeFilePath = path.join(tmdbImportDir, moduleDir, 'importors', 'episode.py');
-    
+
     if (!fs.existsSync(episodeFilePath)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: '找不到 episode.py 文件，请确保 TMDB-Import-master 目录存在' 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '找不到 episode.py 文件，请确保 TMDB-Import-master 目录存在',
+        },
+        { status: 404 }
+      );
     }
-    
+
     // 读取原文件
     const originalContent = fs.readFileSync(episodeFilePath, 'utf-8');
-    
+
     // 创建备份
     const backupPath = episodeFilePath + '.backup.' + Date.now();
     fs.writeFileSync(backupPath, originalContent);
-    
+
     // 修复代码
     const fixedContent = applyChineseCharacterFix(originalContent);
-    
+
     // 写入修复后的文件
     fs.writeFileSync(episodeFilePath, fixedContent, 'utf-8');
 
     return NextResponse.json({
       success: true,
       message: '修复成功，已应用中文字符解析错误修复补丁',
-      backupPath: backupPath
+      backupPath: backupPath,
     });
-    
   } catch (error: unknown) {
-
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '修复失败'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '修复失败',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -65,7 +73,7 @@ function applyChineseCharacterFix(content: string): string {
   const imports = `import re
 import logging
 `;
-  
+
   // 安全转换函数
   const safeConversionFunction = `
 def safe_int_conversion(value, default=0):
@@ -139,25 +147,27 @@ def extract_episode_number_from_text(text):
     
     return None
 `;
-  
+
   let fixedContent = content;
-  
+
   // 1. 添加导入语句（如果不存在）
   if (!content.includes('import re')) {
     fixedContent = imports + fixedContent;
   }
-  
+
   // 2. 添加安全转换函数
   const functionInsertPoint = fixedContent.indexOf('def import_spisode(');
   if (functionInsertPoint !== -1) {
-    fixedContent = fixedContent.slice(0, functionInsertPoint) + 
-                   safeConversionFunction + 
-                   fixedContent.slice(functionInsertPoint);
+    fixedContent =
+      fixedContent.slice(0, functionInsertPoint) +
+      safeConversionFunction +
+      fixedContent.slice(functionInsertPoint);
   }
-  
+
   // 3. 替换问题代码行
   // 查找并替换 int(episoideID) != int(episoideNumber) 的比较
-  const problemPattern = /if\s*\(\s*int\s*\(\s*episoideID\s*\)\s*!=\s*int\s*\(\s*episoideNumber\s*\)\s*\)\s*:/g;
+  const problemPattern =
+    /if\s*\(\s*int\s*\(\s*episoideID\s*\)\s*!=\s*int\s*\(\s*episoideNumber\s*\)\s*\)\s*:/g;
   const fixedComparison = `        # 使用安全转换函数修复中文字符解析错误
         id_num = safe_int_conversion(episoideID)
         number_num = safe_int_conversion(episoideNumber)
@@ -174,11 +184,12 @@ def extract_episode_number_from_text(text):
                 number_num = extracted
         
         if (id_num != number_num):`;
-  
+
   fixedContent = fixedContent.replace(problemPattern, fixedComparison);
-  
+
   // 4. 添加错误处理包装
-  const tryWrapPattern = /(\s+)(if\s*\(\s*int\s*\(\s*episoideID\s*\)\s*!=\s*int\s*\(\s*episoideNumber\s*\)\s*\)\s*:)/g;
+  const tryWrapPattern =
+    /(\s+)(if\s*\(\s*int\s*\(\s*episoideID\s*\)\s*!=\s*int\s*\(\s*episoideNumber\s*\)\s*\)\s*:)/g;
   fixedContent = fixedContent.replace(tryWrapPattern, (match, indent, code) => {
     return `${indent}try:
 ${indent}    ${fixedComparison}
@@ -186,14 +197,17 @@ ${indent}except Exception as e:
 ${indent}    logging.error(f"集数比较时发生错误: {e}")
 ${indent}    continue  # 跳过有问题的集数`;
   });
-  
+
   // 5. 如果上述替换没有成功，尝试更宽泛的模式
   if (fixedContent.includes('int(episoideID)') && fixedContent.includes('int(episoideNumber)')) {
     // 直接替换所有的 int(episoideID) 和 int(episoideNumber)
     fixedContent = fixedContent.replace(/int\(episoideID\)/g, 'safe_int_conversion(episoideID)');
-    fixedContent = fixedContent.replace(/int\(episoideNumber\)/g, 'safe_int_conversion(episoideNumber)');
+    fixedContent = fixedContent.replace(
+      /int\(episoideNumber\)/g,
+      'safe_int_conversion(episoideNumber)'
+    );
   }
-  
+
   return fixedContent;
 }
 
@@ -203,32 +217,37 @@ ${indent}    continue  # 跳过有问题的集数`;
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const tmdbImportDir = path.resolve(process.cwd(), 'TMDB-Import-master');
-    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import')) ? 'tmdb_import' : 'tmdb-import';
+    const moduleDir = fs.existsSync(path.join(tmdbImportDir, 'tmdb_import'))
+      ? 'tmdb_import'
+      : 'tmdb-import';
     const episodeFilePath = path.join(tmdbImportDir, moduleDir, 'importors', 'episode.py');
-    
+
     if (!fs.existsSync(episodeFilePath)) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         exists: false,
         fixed: false,
-        message: '找不到 episode.py 文件'
+        message: '找不到 episode.py 文件',
       });
     }
-    
+
     const content = fs.readFileSync(episodeFilePath, 'utf-8');
-    const isFixed = content.includes('safe_int_conversion') && content.includes('extract_episode_number_from_text');
-    
+    const isFixed =
+      content.includes('safe_int_conversion') &&
+      content.includes('extract_episode_number_from_text');
+
     return NextResponse.json({
       exists: true,
       fixed: isFixed,
-      message: isFixed ? '已应用修复补丁' : '尚未修复'
+      message: isFixed ? '已应用修复补丁' : '尚未修复',
     });
-    
   } catch (error: unknown) {
-
-    return NextResponse.json({
-      exists: false,
-      fixed: false,
-      error: error instanceof Error ? error.message : '未知错误'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        exists: false,
+        fixed: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      },
+      { status: 500 }
+    );
   }
 }

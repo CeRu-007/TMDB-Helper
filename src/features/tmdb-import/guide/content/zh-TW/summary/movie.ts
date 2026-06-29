@@ -94,4 +94,4 @@ export const content = `# 原始電影語言
 # 口語語言
 
 僅原始版本中使用的主要語言。無對話電影使用「No Language」。
-`
+`;

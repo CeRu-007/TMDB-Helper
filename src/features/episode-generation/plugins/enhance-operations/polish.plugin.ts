@@ -3,8 +3,8 @@
  * 优化表达，提升内容的吸引力和可读性
  */
 
-import { BaseEnhanceOperationPlugin } from './base-enhance-operation'
-import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types'
+import { BaseEnhanceOperationPlugin } from './base-enhance-operation';
+import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types';
 
 export class PolishPlugin extends BaseEnhanceOperationPlugin {
   constructor() {
@@ -17,16 +17,16 @@ export class PolishPlugin extends BaseEnhanceOperationPlugin {
       version: '1.0.0',
       author: 'TMDB-Helper',
       isBuiltin: true,
-      tags: ['enhance', 'polish']
-    })
+      tags: ['enhance', 'polish'],
+    });
   }
 
-  operationType: EnhanceOperationType = 'polish'
+  operationType: EnhanceOperationType = 'polish';
 
   defaultConfig: EnhanceConfig = {
     temperature: 0.6,
-    maxTokens: 1000
-  }
+    maxTokens: 1000,
+  };
 
   buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string {
     return `请对以下影视剧集标题和简介进行专业润色，提升内容的吸引力和表达质量：
@@ -49,8 +49,8 @@ export class PolishPlugin extends BaseEnhanceOperationPlugin {
 
 请严格按照以下格式输出：
 标题：[润色后的标题]
-简介：[润色后的简介]`
+简介：[润色后的简介]`;
   }
 }
 
-export const polishPlugin = new PolishPlugin()
+export const polishPlugin = new PolishPlugin();

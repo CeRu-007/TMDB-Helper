@@ -43,7 +43,7 @@ export class CacheManager {
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    
+
     if (!entry) {
       this.stats.misses++;
       return null;
@@ -90,14 +90,16 @@ export class CacheManager {
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
-    if (!entry) return false;
-    
+    if (!entry) {
+      return false;
+    }
+
     // 检查是否过期
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
 

@@ -38,7 +38,7 @@ export class DistributedLock {
    * 获取锁
    */
   static async acquireLock(
-    lockKey: string, 
+    lockKey: string,
     lockType: LockInfo['lockType'] = 'task_execution',
     timeout: number = this.DEFAULT_TIMEOUT
   ): Promise<{ success: boolean; lockId?: string; error?: string }> {
@@ -50,7 +50,7 @@ export class DistributedLock {
     try {
       // 检查是否已存在锁
       const existingLock = await this.getLockInfo(fullLockKey);
-      
+
       if (existingLock) {
         // 检查锁是否过期
         if (new Date(existingLock.expiresAt) > now) {
@@ -59,11 +59,13 @@ export class DistributedLock {
             logger.info(`[DistributedLock] 同一进程重复获取锁: ${lockKey}`);
             return { success: true, lockId: existingLock.id };
           }
-          
-          logger.info(`[DistributedLock] 锁已被占用: ${lockKey}, 占用者: ${existingLock.processId}`);
-          return { 
-            success: false, 
-            error: `锁已被占用，预计释放时间: ${new Date(existingLock.expiresAt).toLocaleString()}` 
+
+          logger.info(
+            `[DistributedLock] 锁已被占用: ${lockKey}, 占用者: ${existingLock.processId}`
+          );
+          return {
+            success: false,
+            error: `锁已被占用，预计释放时间: ${new Date(existingLock.expiresAt).toLocaleString()}`,
           };
         } else {
           // 锁已过期，清理它
@@ -79,12 +81,12 @@ export class DistributedLock {
         acquiredAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
         processId: this.PROCESS_ID,
-        lockType
+        lockType,
       };
 
       // 尝试原子性地设置锁
       const success = await this.setLockAtomic(fullLockKey, lockInfo);
-      
+
       if (success) {
         this.activeLocks.set(fullLockKey, lockInfo);
         logger.info(`[DistributedLock] 成功获取锁: ${lockKey}, 锁ID: ${lockId}`);
@@ -93,12 +95,11 @@ export class DistributedLock {
         logger.info(`[DistributedLock] 获取锁失败: ${lockKey} (原子操作失败)`);
         return { success: false, error: '获取锁失败，可能存在并发冲突' };
       }
-
     } catch (error) {
       logger.error(`[DistributedLock] 获取锁时出错: ${lockKey}`, error);
-      return { 
-        success: false, 
-        error: `获取锁时出错: ${error instanceof Error ? error.message : String(error)}` 
+      return {
+        success: false,
+        error: `获取锁时出错: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -107,11 +108,13 @@ export class DistributedLock {
    * 释放锁
    */
   static async releaseLock(lockKey: string): Promise<boolean> {
-    const fullLockKey = lockKey.startsWith(this.LOCK_PREFIX) ? lockKey : `${this.LOCK_PREFIX}${lockKey}`;
-    
+    const fullLockKey = lockKey.startsWith(this.LOCK_PREFIX)
+      ? lockKey
+      : `${this.LOCK_PREFIX}${lockKey}`;
+
     try {
       const lockInfo = await this.getLockInfo(fullLockKey);
-      
+
       if (lockInfo && lockInfo.processId === this.PROCESS_ID) {
         // 只能释放自己进程的锁
         await this.removeLockFromStorage(fullLockKey);
@@ -119,7 +122,9 @@ export class DistributedLock {
         logger.info(`[DistributedLock] 成功释放锁: ${lockKey}`);
         return true;
       } else if (lockInfo) {
-        logger.warn(`[DistributedLock] 尝试释放其他进程的锁: ${lockKey}, 锁拥有者: ${lockInfo.processId}`);
+        logger.warn(
+          `[DistributedLock] 尝试释放其他进程的锁: ${lockKey}, 锁拥有者: ${lockInfo.processId}`
+        );
         return false;
       } else {
         logger.info(`[DistributedLock] 锁不存在或已释放: ${lockKey}`);
@@ -136,10 +141,10 @@ export class DistributedLock {
    */
   static async isLocked(lockKey: string): Promise<boolean> {
     const fullLockKey = `${this.LOCK_PREFIX}${lockKey}`;
-    
+
     try {
       const lockInfo = await this.getLockInfo(fullLockKey);
-      
+
       if (!lockInfo) {
         return false;
       }
@@ -161,12 +166,15 @@ export class DistributedLock {
   /**
    * 延长锁的有效期
    */
-  static async extendLock(lockKey: string, additionalTime: number = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  static async extendLock(
+    lockKey: string,
+    additionalTime: number = this.DEFAULT_TIMEOUT
+  ): Promise<boolean> {
     const fullLockKey = `${this.LOCK_PREFIX}${lockKey}`;
-    
+
     try {
       const lockInfo = await this.getLockInfo(fullLockKey);
-      
+
       if (!lockInfo || lockInfo.processId !== this.PROCESS_ID) {
         logger.warn(`[DistributedLock] 无法延长锁，锁不存在或不属于当前进程: ${lockKey}`);
         return false;
@@ -175,14 +183,16 @@ export class DistributedLock {
       const newExpiresAt = new Date(Date.now() + additionalTime);
       const updatedLockInfo = {
         ...lockInfo,
-        expiresAt: newExpiresAt.toISOString()
+        expiresAt: newExpiresAt.toISOString(),
       };
 
       const success = await this.setLockAtomic(fullLockKey, updatedLockInfo);
-      
+
       if (success) {
         this.activeLocks.set(fullLockKey, updatedLockInfo);
-        logger.info(`[DistributedLock] 成功延长锁: ${lockKey}, 新过期时间: ${newExpiresAt.toLocaleString()}`);
+        logger.info(
+          `[DistributedLock] 成功延长锁: ${lockKey}, 新过期时间: ${newExpiresAt.toLocaleString()}`
+        );
         return true;
       }
 
@@ -232,7 +242,7 @@ export class DistributedLock {
       if (typeof window !== 'undefined' && window.localStorage) {
         // 使用localStorage的原子性操作
         const existingData = localStorage.getItem(fullLockKey);
-        
+
         if (existingData) {
           const existingLock = JSON.parse(existingData);
           // 检查现有锁是否过期
@@ -322,7 +332,7 @@ export class DistributedLock {
     logger.info(`[DistributedLock] 释放所有锁，进程ID: ${this.PROCESS_ID}`);
 
     const locksToRelease = Array.from(this.activeLocks.keys());
-    
+
     for (const lockKey of locksToRelease) {
       await this.releaseLock(lockKey);
     }
@@ -366,14 +376,14 @@ export class DistributedLock {
       return {
         activeLocks,
         expiredLocks,
-        totalLocks: activeLocks.length + expiredLocks.length
+        totalLocks: activeLocks.length + expiredLocks.length,
       };
     } catch (error) {
       logger.error(`[DistributedLock] 获取锁状态时出错:`, error);
       return {
         activeLocks: [],
         expiredLocks: [],
-        totalLocks: 0
+        totalLocks: 0,
       };
     }
   }
@@ -387,7 +397,7 @@ export class DistributedLock {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const keysToRemove: string[] = [];
-        
+
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
           if (key && key.startsWith(this.LOCK_PREFIX)) {
@@ -403,7 +413,7 @@ export class DistributedLock {
 
       this.activeLocks.clear();
       logger.info(`[DistributedLock] 强制清理了 ${cleanedCount} 个锁`);
-      
+
       return cleanedCount;
     } catch (error) {
       logger.error(`[DistributedLock] 强制清理锁时出错:`, error);

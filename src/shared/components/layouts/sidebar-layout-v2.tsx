@@ -1,38 +1,34 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet"
-import { VisuallyHidden } from "@/shared/components/ui/visually-hidden"
-import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
-import { useMobile } from "@/shared/hooks/use-mobile"
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/shared/components/ui/sheet';
+import { VisuallyHidden } from '@/shared/components/ui/visually-hidden';
+import { LayoutPreferencesManager } from '@/lib/utils/layout-preferences';
+import { useMobile } from '@/shared/hooks/use-mobile';
 import {
   AppHeader,
   SidebarContainer,
   MainContentArea,
-  ContentRenderers
-} from "./sidebar/components"
+  ContentRenderers,
+} from './sidebar/components';
 
 // 从 stores 获取状态
-import {
-  useUIStore,
-  useMediaStore,
-  useMediaNewsStore,
-} from "@/stores"
+import { useUIStore, useMediaStore, useMediaNewsStore } from '@/stores';
 
 // 类型导入
-import type { TMDBItem } from "@/types/tmdb-item"
+import type { TMDBItem } from '@/types/tmdb-item';
 
 // 工具导入
-import { ItemManager } from "@/lib/data/storage/item-manager"
-import { toast } from "@/lib/hooks/use-toast"
-import i18n from "@/lib/i18n"
-import { mapLanguageToRegion } from "@/lib/constants/regions"
+import { ItemManager } from '@/lib/data/storage/item-manager';
+import { toast } from '@/lib/hooks/use-toast';
+import i18n from '@/lib/i18n';
+import { mapLanguageToRegion } from '@/lib/constants/regions';
 
 /**
  * SidebarLayout - 简化版
- * 
+ *
  * 使用 Zustand stores 管理状态，不再需要大量 props
- * 
+ *
  * 主要变化：
  * 1. 移除对话框相关的 props → 使用 UI Store
  * 2. 移除选中项相关的 props → 使用 UI Store
@@ -41,13 +37,13 @@ import { mapLanguageToRegion } from "@/lib/constants/regions"
  * 5. 移除组件引用 → 内部导入
  */
 export interface SidebarLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
   // 保留必要的回调函数（操作类）
-  onUpdateItem: (item: TMDBItem) => void
-  onDeleteItem: (id: string) => void
+  onUpdateItem: (item: TMDBItem) => void;
+  onDeleteItem: (id: string) => void;
   // 影视资讯获取函数（需要 API 调用）
-  fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void
-  fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void
+  fetchUpcomingItems: (silent?: boolean, retryCount?: number, region?: string) => void;
+  fetchRecentItems: (silent?: boolean, retryCount?: number, region?: string) => void;
 }
 
 export function SidebarLayout({
@@ -58,245 +54,295 @@ export function SidebarLayout({
   fetchRecentItems,
 }: SidebarLayoutProps) {
   // 从 UI Store 获取状态
-  const selectedItem = useUIStore((s) => s.selectedItem)
-  const setSelectedItem = useUIStore((s) => s.setSelectedItem)
-  const openAddDialog = useUIStore((s) => s.openAddDialog)
-  const openSettingsDialog = useUIStore((s) => s.openSettingsDialog)
-  const openImportDialog = useUIStore((s) => s.openImportDialog)
-  const openExportDialog = useUIStore((s) => s.openExportDialog)
-  const openJournalDialog = useUIStore((s) => s.openJournalDialog)
-  const showJournalDialog = useUIStore((s) => s.showJournalDialog)
-  const closeJournalDialog = useUIStore((s) => s.closeJournalDialog)
+  const selectedItem = useUIStore((s) => s.selectedItem);
+  const setSelectedItem = useUIStore((s) => s.setSelectedItem);
+  const openAddDialog = useUIStore((s) => s.openAddDialog);
+  const openSettingsDialog = useUIStore((s) => s.openSettingsDialog);
+  const openImportDialog = useUIStore((s) => s.openImportDialog);
+  const openExportDialog = useUIStore((s) => s.openExportDialog);
+  const openJournalDialog = useUIStore((s) => s.openJournalDialog);
+  const showJournalDialog = useUIStore((s) => s.showJournalDialog);
+  const closeJournalDialog = useUIStore((s) => s.closeJournalDialog);
 
   // 从 Media Store 获取状态
-  const items = useMediaStore((s) => s.items)
+  const items = useMediaStore((s) => s.items);
 
   // 从 MediaNews Store 获取状态
-  const selectedRegion = useMediaNewsStore((s) => s.selectedRegion)
-  const mediaNewsType = useMediaNewsStore((s) => s.mediaNewsType)
-  const isMissingApiKey = useMediaNewsStore((s) => s.isMissingApiKey)
-  const loadingUpcoming = useMediaNewsStore((s) => s.loadingUpcoming)
-  const loadingRecent = useMediaNewsStore((s) => s.loadingRecent)
-  const upcomingError = useMediaNewsStore((s) => s.upcomingError)
-  const recentError = useMediaNewsStore((s) => s.recentError)
-  const upcomingItemsByRegion = useMediaNewsStore((s) => s.upcomingItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
-  const recentItemsByRegion = useMediaNewsStore((s) => s.recentItemsByRegion) as unknown as Record<string, { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }[]>
-  const upcomingLastUpdatedByRegion = useMediaNewsStore((s) => s.upcomingLastUpdated)
-  const recentLastUpdatedByRegion = useMediaNewsStore((s) => s.recentLastUpdated)
-  const setSelectedRegion = useMediaNewsStore((s) => s.setSelectedRegion)
-  const setMediaNewsType = useMediaNewsStore((s) => s.setMediaNewsType)
+  const selectedRegion = useMediaNewsStore((s) => s.selectedRegion);
+  const mediaNewsType = useMediaNewsStore((s) => s.mediaNewsType);
+  const isMissingApiKey = useMediaNewsStore((s) => s.isMissingApiKey);
+  const loadingUpcoming = useMediaNewsStore((s) => s.loadingUpcoming);
+  const loadingRecent = useMediaNewsStore((s) => s.loadingRecent);
+  const upcomingError = useMediaNewsStore((s) => s.upcomingError);
+  const recentError = useMediaNewsStore((s) => s.recentError);
+  const upcomingItemsByRegion = useMediaNewsStore(
+    (s) => s.upcomingItemsByRegion
+  ) as unknown as Record<
+    string,
+    {
+      id: number;
+      title: string;
+      mediaType: 'movie' | 'tv';
+      posterPath?: string | null;
+      releaseDate: string;
+      overview?: string;
+      voteAverage?: number;
+    }[]
+  >;
+  const recentItemsByRegion = useMediaNewsStore((s) => s.recentItemsByRegion) as unknown as Record<
+    string,
+    {
+      id: number;
+      title: string;
+      mediaType: 'movie' | 'tv';
+      posterPath?: string | null;
+      releaseDate: string;
+      overview?: string;
+      voteAverage?: number;
+    }[]
+  >;
+  const upcomingLastUpdatedByRegion = useMediaNewsStore((s) => s.upcomingLastUpdated);
+  const recentLastUpdatedByRegion = useMediaNewsStore((s) => s.recentLastUpdated);
+  const setSelectedRegion = useMediaNewsStore((s) => s.setSelectedRegion);
+  const setMediaNewsType = useMediaNewsStore((s) => s.setMediaNewsType);
 
   // 计算当前区域的数据
-  const upcomingItems = upcomingItemsByRegion[selectedRegion] || []
-  const recentItems = recentItemsByRegion[selectedRegion] || []
-  const upcomingLastUpdated = upcomingLastUpdatedByRegion[selectedRegion] || null
-  const recentLastUpdated = recentLastUpdatedByRegion[selectedRegion] || null
+  const upcomingItems = upcomingItemsByRegion[selectedRegion] || [];
+  const recentItems = recentItemsByRegion[selectedRegion] || [];
+  const upcomingLastUpdated = upcomingLastUpdatedByRegion[selectedRegion] || null;
+  const recentLastUpdated = recentLastUpdatedByRegion[selectedRegion] || null;
 
   // 处理区域选择 - 设置区域并加载数据
-  const handleRegionSelect = useCallback((region: string) => {
-    setSelectedRegion(region)
-    // 根据当前媒体类型加载对应数据
-    if (mediaNewsType === 'upcoming') {
-      fetchUpcomingItems(false, 0, region)
-    } else {
-      fetchRecentItems(false, 0, region)
-    }
-  }, [setSelectedRegion, mediaNewsType, fetchUpcomingItems, fetchRecentItems])
+  const handleRegionSelect = useCallback(
+    (region: string) => {
+      setSelectedRegion(region);
+      // 根据当前媒体类型加载对应数据
+      if (mediaNewsType === 'upcoming') {
+        fetchUpcomingItems(false, 0, region);
+      } else {
+        fetchRecentItems(false, 0, region);
+      }
+    },
+    [setSelectedRegion, mediaNewsType, fetchUpcomingItems, fetchRecentItems]
+  );
 
   // 响应式跟随全局语言变化同步区域
-  const selectedRegionRef = useRef(selectedRegion)
-  selectedRegionRef.current = selectedRegion
-  const mediaNewsTypeRef = useRef(mediaNewsType)
-  mediaNewsTypeRef.current = mediaNewsType
-  const fetchUpcomingRef = useRef(fetchUpcomingItems)
-  const fetchRecentRef = useRef(fetchRecentItems)
+  const selectedRegionRef = useRef(selectedRegion);
+  selectedRegionRef.current = selectedRegion;
+  const mediaNewsTypeRef = useRef(mediaNewsType);
+  mediaNewsTypeRef.current = mediaNewsType;
+  const fetchUpcomingRef = useRef(fetchUpcomingItems);
+  const fetchRecentRef = useRef(fetchRecentItems);
   useEffect(() => {
-    fetchUpcomingRef.current = fetchUpcomingItems
-    fetchRecentRef.current = fetchRecentItems
-  }, [fetchUpcomingItems, fetchRecentItems])
+    fetchUpcomingRef.current = fetchUpcomingItems;
+    fetchRecentRef.current = fetchRecentItems;
+  }, [fetchUpcomingItems, fetchRecentItems]);
   useEffect(() => {
     const handler = (lng: string) => {
-      const region = mapLanguageToRegion(lng)
+      const region = mapLanguageToRegion(lng);
       if (region !== selectedRegionRef.current) {
         requestAnimationFrame(() => {
-          setSelectedRegion(region)
+          setSelectedRegion(region);
           if (mediaNewsTypeRef.current === 'upcoming') {
-            fetchUpcomingRef.current(false, 0, region)
+            fetchUpcomingRef.current(false, 0, region);
           } else {
-            fetchRecentRef.current(false, 0, region)
+            fetchRecentRef.current(false, 0, region);
           }
-        })
+        });
       }
-    }
-    i18n.on("languageChanged", handler)
+    };
+    i18n.on('languageChanged', handler);
     return () => {
-      i18n.off("languageChanged", handler)
-    }
-  }, [setSelectedRegion])
+      i18n.off('languageChanged', handler);
+    };
+  }, [setSelectedRegion]);
 
   // 移动端检测
-  const isMobile = useMobile()
+  const isMobile = useMobile();
 
   // 移动端侧边栏打开状态
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // 本地 UI 状态
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem('tmdb_helper_layout_preferences')
+        const cached = localStorage.getItem('tmdb_helper_layout_preferences');
         if (cached) {
-          const pref = JSON.parse(cached)
+          const pref = JSON.parse(cached);
           if (pref?.lastUpdated && pref?.sidebarCollapsed !== undefined) {
-            return pref.sidebarCollapsed
+            return pref.sidebarCollapsed;
           }
         }
       } catch {}
     }
-    return false
-  })
-  const [activeMenu, setActiveMenu] = useState<string>('maintenance')
-  const [activeSubmenu, setActiveSubmenu] = useState<string>('list')
-  const [contentKey, setContentKey] = useState<string>('maintenance-list')
+    return false;
+  });
+  const [activeMenu, setActiveMenu] = useState<string>('maintenance');
+  const [activeSubmenu, setActiveSubmenu] = useState<string>('list');
+  const [contentKey, setContentKey] = useState<string>('maintenance-list');
 
   // 加载侧边栏折叠状态
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const preferences = await LayoutPreferencesManager.getPreferences()
-        setSidebarCollapsed(preferences.sidebarCollapsed || false)
+        const preferences = await LayoutPreferencesManager.getPreferences();
+        setSidebarCollapsed(preferences.sidebarCollapsed || false);
       } catch (error) {
-        setSidebarCollapsed(false)
+        setSidebarCollapsed(false);
       }
-    }
-    loadPreferences()
-  }, [])
+    };
+    loadPreferences();
+  }, []);
 
   // 处理侧边栏折叠切换（桌面端）或打开/关闭移动端抽屉
   const handleSidebarToggle = async () => {
     if (isMobile) {
-      setMobileSidebarOpen((prev) => !prev)
-      return
+      setMobileSidebarOpen((prev) => !prev);
+      return;
     }
 
-    const newCollapsed = !sidebarCollapsed
-    setSidebarCollapsed(newCollapsed)
+    const newCollapsed = !sidebarCollapsed;
+    setSidebarCollapsed(newCollapsed);
 
     try {
-      await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed)
+      await LayoutPreferencesManager.setSidebarCollapsed(newCollapsed);
     } catch (error) {
-      setSidebarCollapsed(sidebarCollapsed)
+      setSidebarCollapsed(sidebarCollapsed);
     }
-  }
+  };
 
   // 处理菜单选择
-  const handleMenuSelect = useCallback((menuId: string, submenuId?: string) => {
-    if (menuId === 'maintenance') {
-      setSelectedItem(null)
-    }
+  const handleMenuSelect = useCallback(
+    (menuId: string, submenuId?: string) => {
+      if (menuId === 'maintenance') {
+        setSelectedItem(null);
+      }
 
-    setActiveMenu(menuId)
-    setActiveSubmenu(submenuId || '')
+      setActiveMenu(menuId);
+      setActiveSubmenu(submenuId || '');
 
-    const key = submenuId ? `${menuId}-${submenuId}` : menuId
-    setContentKey(key)
+      const key = submenuId ? `${menuId}-${submenuId}` : menuId;
+      setContentKey(key);
 
-    if (menuId === 'news' && (submenuId === 'upcoming' || submenuId === 'recent')) {
-      setMediaNewsType(submenuId)
-    }
-  }, [setSelectedItem, setMediaNewsType])
+      if (menuId === 'news' && (submenuId === 'upcoming' || submenuId === 'recent')) {
+        setMediaNewsType(submenuId);
+      }
+    },
+    [setSelectedItem, setMediaNewsType]
+  );
 
   // 移动端菜单选择 - 选择后关闭抽屉
-  const handleMenuSelectMobile = useCallback((menuId: string, submenuId?: string) => {
-    handleMenuSelect(menuId, submenuId)
-    setMobileSidebarOpen(false)
-  }, [handleMenuSelect])
+  const handleMenuSelectMobile = useCallback(
+    (menuId: string, submenuId?: string) => {
+      handleMenuSelect(menuId, submenuId);
+      setMobileSidebarOpen(false);
+    },
+    [handleMenuSelect]
+  );
 
   // 处理返回列表
   const handleBackToList = useCallback(() => {
-    setSelectedItem(null)
-    const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu
-    setContentKey(previousKey || 'maintenance-list')
-  }, [setSelectedItem, activeMenu, activeSubmenu])
+    setSelectedItem(null);
+    const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu;
+    setContentKey(previousKey || 'maintenance-list');
+  }, [setSelectedItem, activeMenu, activeSubmenu]);
 
   // 动态控制 body 的 overflow 属性
   useEffect(() => {
-    const isThumbnailPage = ['image-extract', 'image-crop', 'item-detail'].includes(contentKey)
-    document.body.style.overflow = isThumbnailPage ? 'hidden' : ''
+    const isThumbnailPage = ['image-extract', 'image-crop', 'item-detail'].includes(contentKey);
+    document.body.style.overflow = isThumbnailPage ? 'hidden' : '';
     return () => {
-      document.body.style.overflow = ''
-    }
-  }, [contentKey])
+      document.body.style.overflow = '';
+    };
+  }, [contentKey]);
 
   // 分类筛选现在由页面内的下拉菜单独立控制，不再与侧边栏子菜单同步
 
   // 监听从硬字幕提取页面跳转到 AI 生成页面的事件
   useEffect(() => {
     const handleNavigateToEpisodeGenerator = () => {
-      setActiveMenu('content')
-      setActiveSubmenu('episode-generator')
-      setContentKey('content-episode-generator')
-    }
+      setActiveMenu('content');
+      setActiveSubmenu('episode-generator');
+      setContentKey('content-episode-generator');
+    };
 
-    window.addEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
+    window.addEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator);
     return () => {
-      window.removeEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator)
-    }
-  }, [])
+      window.removeEventListener('navigate-to-episode-generator', handleNavigateToEpisodeGenerator);
+    };
+  }, []);
 
   // 监听从用户头像下拉菜单跳转到日志管理页面
   useEffect(() => {
     const handleNavigateToLogs = () => {
-      setActiveMenu('tools')
-      setActiveSubmenu('logs')
-      setContentKey('tools-logs')
-    }
+      setActiveMenu('tools');
+      setActiveSubmenu('logs');
+      setContentKey('tools-logs');
+    };
 
-    window.addEventListener('navigate-to-logs', handleNavigateToLogs)
+    window.addEventListener('navigate-to-logs', handleNavigateToLogs);
     return () => {
-      window.removeEventListener('navigate-to-logs', handleNavigateToLogs)
-    }
-  }, [])
+      window.removeEventListener('navigate-to-logs', handleNavigateToLogs);
+    };
+  }, []);
 
   // 监听 selectedItem 变化，自动设置 contentKey
   useEffect(() => {
     if (selectedItem) {
-      setContentKey('item-detail')
+      setContentKey('item-detail');
     } else if (contentKey === 'item-detail') {
-      const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu
-      setContentKey(previousKey || 'maintenance-list')
+      const previousKey = activeSubmenu ? `${activeMenu}-${activeSubmenu}` : activeMenu;
+      setContentKey(previousKey || 'maintenance-list');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItem, activeMenu, activeSubmenu])
+  }, [selectedItem, activeMenu, activeSubmenu]);
 
   // 向后兼容的回调包装
-  const handleShowAddDialog = useCallback(() => openAddDialog(), [openAddDialog])
-  const handleShowSettingsDialog = useCallback((section?: string) => openSettingsDialog(section), [openSettingsDialog])
-  const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog])
-  const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog])
-  const handleShowJournalDialog = useCallback(() => openJournalDialog(), [openJournalDialog])
+  const handleShowAddDialog = useCallback(() => openAddDialog(), [openAddDialog]);
+  const handleShowSettingsDialog = useCallback(
+    (section?: string) => openSettingsDialog(section),
+    [openSettingsDialog]
+  );
+  const handleShowImportDialog = useCallback(() => openImportDialog(), [openImportDialog]);
+  const handleShowExportDialog = useCallback(() => openExportDialog(), [openExportDialog]);
+  const handleShowJournalDialog = useCallback(() => openJournalDialog(), [openJournalDialog]);
   const handleShowDashboard = useCallback(() => {
-    setActiveMenu('dashboard')
-    setActiveSubmenu('')
-    setContentKey('dashboard')
-  }, [])
+    setActiveMenu('dashboard');
+    setActiveSubmenu('');
+    setContentKey('dashboard');
+  }, []);
 
   // 处理快速添加词条（从即将上线/近期开播页面）
   // 打开添加对话框并预填数据
-  const handleQuickAddItem = useCallback((item: { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null; releaseDate: string; overview?: string; voteAverage?: number }) => {
-    openAddDialog({
-      id: item.id,
-      title: item.title,
-      mediaType: item.mediaType,
-      posterPath: item.posterPath,
-      releaseDate: item.releaseDate,
-      overview: item.overview,
-      voteAverage: item.voteAverage
-    })
-  }, [openAddDialog])
+  const handleQuickAddItem = useCallback(
+    (item: {
+      id: number;
+      title: string;
+      mediaType: 'movie' | 'tv';
+      posterPath?: string | null;
+      releaseDate: string;
+      overview?: string;
+      voteAverage?: number;
+    }) => {
+      openAddDialog({
+        id: item.id,
+        title: item.title,
+        mediaType: item.mediaType,
+        posterPath: item.posterPath,
+        releaseDate: item.releaseDate,
+        overview: item.overview,
+        voteAverage: item.voteAverage,
+      });
+    },
+    [openAddDialog]
+  );
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-card dark:to-card" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div
+      className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-card dark:to-card"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {/* Header */}
       <AppHeader
         sidebarCollapsed={sidebarCollapsed}
@@ -350,7 +396,6 @@ export function SidebarLayout({
             onBackToList={handleBackToList}
             onOpenGlobalSettings={handleShowSettingsDialog}
             onQuickAddItem={handleQuickAddItem}
-            children={children}
 
             // Media news props（从 store 获取）
             upcomingItems={upcomingItems}
@@ -375,22 +420,28 @@ export function SidebarLayout({
             ApiKeySetupGuide={TMDBGuide as React.ComponentType}
             VideoScreenshot={VideoScreenshot as React.ComponentType}
             ImageCropper={ImageCropper as React.ComponentType}
-          />
+          >
+            {children}
+          </ContentRenderers>
         </MainContentArea>
       </div>
 
       <TaskJournalDialog
         open={showJournalDialog}
-        onOpenChange={(open) => { if (!open) closeJournalDialog() }}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeJournalDialog();
+          }
+        }}
       />
       <UploadWindow />
     </div>
-  )
+  );
 }
 
 // 内部导入组件
-import { TMDBGuide } from "@/features/tmdb-import/guide"
-import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
-import { ImageCropper } from "@/features/image-processing/components/image-cropper"
-import { TaskJournalDialog } from "@/features/system/components/task-journal-dialog"
-import { UploadWindow } from "@/features/upload-window/upload-window"
+import { TMDBGuide } from '@/features/tmdb-import/guide';
+import VideoScreenshot from '@/features/image-processing/components/video-screenshot';
+import { ImageCropper } from '@/features/image-processing/components/image-cropper';
+import { TaskJournalDialog } from '@/features/system/components/task-journal-dialog';
+import { UploadWindow } from '@/features/upload-window/upload-window';

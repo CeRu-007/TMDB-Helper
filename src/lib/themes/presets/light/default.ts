@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const defaultLightTheme: ThemeConfig = {
   id: 'default-light',
@@ -39,4 +39,4 @@ export const defaultLightTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

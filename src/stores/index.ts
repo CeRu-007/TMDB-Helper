@@ -11,7 +11,7 @@ export {
   useMediaError,
   useMediaInitialized,
   useMediaStats,
-} from './media-store'
+} from './media-store';
 
 // MediaNews Store
 export {
@@ -21,20 +21,13 @@ export {
   useMediaNewsLoading,
   useMediaNewsErrors,
   useMediaNewsRegion,
-} from './media-news-store'
+} from './media-news-store';
 
 // UI Store
-export {
-  useUIStore,
-  useDialogState,
-  useFilterState,
-  useSelectionState,
-} from './ui-store'
+export { useUIStore, useDialogState, useFilterState, useSelectionState } from './ui-store';
 
 // Upload Store
-export {
-  useUploadStore,
-} from './upload-store'
+export { useUploadStore } from './upload-store';
 
 // 向后兼容的 hooks
-export * from './hooks'
+export * from './hooks';

@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
-import { useTranslation } from "react-i18next"
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Film,
   Calendar,
@@ -22,193 +22,277 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/shared/components/ui/button"
-import { LayoutPreferencesManager } from "@/lib/utils/layout-preferences"
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/shared/components/ui/button';
+import { LayoutPreferencesManager } from '@/lib/utils/layout-preferences';
 
 export interface SidebarNavigationProps {
-  onMenuSelect: (menuId: string, submenuId?: string) => void
-  activeMenu?: string
-  activeSubmenu?: string
-  collapsed?: boolean
+  onMenuSelect: (menuId: string, submenuId?: string) => void;
+  activeMenu?: string;
+  activeSubmenu?: string;
+  collapsed?: boolean;
 }
 
 interface MenuItem {
-  id: string
-  labelKey: string
-  ns: string
-  icon: React.ReactNode
-  groupId: string
+  id: string;
+  labelKey: string;
+  ns: string;
+  icon: React.ReactNode;
+  groupId: string;
 }
 
 interface MenuGroup {
-  id: string
-  titleKey: string
-  ns: string
-  icon: React.ReactNode
-  items: MenuItem[]
+  id: string;
+  titleKey: string;
+  ns: string;
+  icon: React.ReactNode;
+  items: MenuItem[];
 }
 
 export function SidebarNavigation({
   onMenuSelect,
   activeMenu,
   activeSubmenu,
-  collapsed = false
+  collapsed = false,
 }: SidebarNavigationProps) {
-  const { t } = useTranslation()
-  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null)
-  const [submenuHovered, setSubmenuHovered] = useState<boolean>(false)
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['news', 'content', 'image', 'tools']))
+  const { t } = useTranslation();
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const [submenuHovered, setSubmenuHovered] = useState<boolean>(false);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(['news', 'content', 'image', 'tools'])
+  );
 
   useEffect(() => {
     LayoutPreferencesManager.getPreferences().then((prefs) => {
       if (prefs.collapsedGroups) {
-        setCollapsedGroups(new Set(prefs.collapsedGroups))
+        setCollapsedGroups(new Set(prefs.collapsedGroups));
       }
-    })
-  }, [])
+    });
+  }, []);
 
   const toggleGroup = useCallback((groupId: string) => {
     setCollapsedGroups((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(groupId)) {
-        next.delete(groupId)
+        next.delete(groupId);
       } else {
-        next.add(groupId)
+        next.add(groupId);
       }
-      LayoutPreferencesManager.setCollapsedGroups(Array.from(next))
-      return next
-    })
-  }, [])
+      LayoutPreferencesManager.setCollapsedGroups(Array.from(next));
+      return next;
+    });
+  }, []);
 
   const menuGroups: MenuGroup[] = [
     {
-      id: "maintenance",
-      titleKey: "title",
-      ns: "nav.maintenance",
+      id: 'maintenance',
+      titleKey: 'title',
+      ns: 'nav.maintenance',
       icon: <LayoutGrid className="h-4 w-4" />,
       items: [
-        { id: "list", labelKey: "list", ns: "nav.maintenance", icon: <LayoutGrid className="h-4 w-4" />, groupId: "maintenance" },
-        { id: "independent", labelKey: "independent", ns: "nav.maintenance", icon: <Wand2 className="h-4 w-4" />, groupId: "maintenance" },
-      ]
+        {
+          id: 'list',
+          labelKey: 'list',
+          ns: 'nav.maintenance',
+          icon: <LayoutGrid className="h-4 w-4" />,
+          groupId: 'maintenance',
+        },
+        {
+          id: 'independent',
+          labelKey: 'independent',
+          ns: 'nav.maintenance',
+          icon: <Wand2 className="h-4 w-4" />,
+          groupId: 'maintenance',
+        },
+      ],
     },
     {
-      id: "news",
-      titleKey: "title",
-      ns: "nav.news",
+      id: 'news',
+      titleKey: 'title',
+      ns: 'nav.news',
       icon: <Calendar className="h-4 w-4" />,
       items: [
-        { id: "upcoming", labelKey: "upcoming", ns: "nav.news", icon: <Clock className="h-4 w-4" />, groupId: "news" },
-        { id: "recent", labelKey: "recent", ns: "nav.news", icon: <Play className="h-4 w-4" />, groupId: "news" },
-        { id: "streaming-nav", labelKey: "streamingNav", ns: "nav.news", icon: <Film className="h-4 w-4" />, groupId: "news" },
-        { id: "schedule", labelKey: "schedule", ns: "nav.news", icon: <CalendarDays className="h-4 w-4" />, groupId: "news" },
-      ]
+        {
+          id: 'upcoming',
+          labelKey: 'upcoming',
+          ns: 'nav.news',
+          icon: <Clock className="h-4 w-4" />,
+          groupId: 'news',
+        },
+        {
+          id: 'recent',
+          labelKey: 'recent',
+          ns: 'nav.news',
+          icon: <Play className="h-4 w-4" />,
+          groupId: 'news',
+        },
+        {
+          id: 'streaming-nav',
+          labelKey: 'streamingNav',
+          ns: 'nav.news',
+          icon: <Film className="h-4 w-4" />,
+          groupId: 'news',
+        },
+        {
+          id: 'schedule',
+          labelKey: 'schedule',
+          ns: 'nav.news',
+          icon: <CalendarDays className="h-4 w-4" />,
+          groupId: 'news',
+        },
+      ],
     },
     {
-      id: "content",
-      titleKey: "title",
-      ns: "nav.content",
+      id: 'content',
+      titleKey: 'title',
+      ns: 'nav.content',
       icon: <FileText className="h-4 w-4" />,
       items: [
-        { id: "episode-generator", labelKey: "episodeGenerator", ns: "nav.content", icon: <Wand2 className="h-4 w-4" />, groupId: "content" },
-        { id: "ai-chat", labelKey: "aiChat", ns: "nav.content", icon: <Sparkles className="h-4 w-4" />, groupId: "content" },
-        { id: "hard-subtitle-extract", labelKey: "hardSubtitleExtract", ns: "nav.content", icon: <Type className="h-4 w-4" />, groupId: "content" },
-      ]
+        {
+          id: 'episode-generator',
+          labelKey: 'episodeGenerator',
+          ns: 'nav.content',
+          icon: <Wand2 className="h-4 w-4" />,
+          groupId: 'content',
+        },
+        {
+          id: 'ai-chat',
+          labelKey: 'aiChat',
+          ns: 'nav.content',
+          icon: <Sparkles className="h-4 w-4" />,
+          groupId: 'content',
+        },
+        {
+          id: 'hard-subtitle-extract',
+          labelKey: 'hardSubtitleExtract',
+          ns: 'nav.content',
+          icon: <Type className="h-4 w-4" />,
+          groupId: 'content',
+        },
+      ],
     },
     {
-      id: "image",
-      titleKey: "title",
-      ns: "nav.image",
+      id: 'image',
+      titleKey: 'title',
+      ns: 'nav.image',
+      // eslint-disable-next-line jsx-a11y/alt-text
       icon: <Image className="h-4 w-4" />,
       items: [
-        { id: "extract", labelKey: "extract", ns: "nav.image", icon: <Download className="h-4 w-4" />, groupId: "image" },
-        { id: "crop", labelKey: "crop", ns: "nav.image", icon: <Scissors className="h-4 w-4" />, groupId: "image" },
-      ]
+        {
+          id: 'extract',
+          labelKey: 'extract',
+          ns: 'nav.image',
+          icon: <Download className="h-4 w-4" />,
+          groupId: 'image',
+        },
+        {
+          id: 'crop',
+          labelKey: 'crop',
+          ns: 'nav.image',
+          icon: <Scissors className="h-4 w-4" />,
+          groupId: 'image',
+        },
+      ],
     },
     {
-      id: "tools",
-      titleKey: "title",
-      ns: "nav.tools",
+      id: 'tools',
+      titleKey: 'title',
+      ns: 'nav.tools',
       icon: <Package className="h-4 w-4" />,
       items: [
-        { id: "tmdb-guide", labelKey: "tmdbGuide", ns: "nav.tools", icon: <BookOpen className="h-4 w-4" />, groupId: "tools" },
-        { id: "image-recognition", labelKey: "imageRecognition", ns: "nav.tools", icon: <Search className="h-4 w-4" />, groupId: "tools" },
-      ]
+        {
+          id: 'tmdb-guide',
+          labelKey: 'tmdbGuide',
+          ns: 'nav.tools',
+          icon: <BookOpen className="h-4 w-4" />,
+          groupId: 'tools',
+        },
+        {
+          id: 'image-recognition',
+          labelKey: 'imageRecognition',
+          ns: 'nav.tools',
+          icon: <Search className="h-4 w-4" />,
+          groupId: 'tools',
+        },
+      ],
     },
-  ]
+  ];
 
   useEffect(() => {
     return () => {
       if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
+        clearTimeout(hideTimeoutRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current)
-      hideTimeoutRef.current = null
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
     }
-  }, [])
+  }, []);
 
-  const handleGroupMouseEnter = useCallback((groupId: string) => {
-    if (collapsed) {
-      clearHideTimeout()
-      setHoveredGroup(groupId)
-    }
-  }, [collapsed, clearHideTimeout])
+  const handleGroupMouseEnter = useCallback(
+    (groupId: string) => {
+      if (collapsed) {
+        clearHideTimeout();
+        setHoveredGroup(groupId);
+      }
+    },
+    [collapsed, clearHideTimeout]
+  );
 
   const handleGroupMouseLeave = useCallback(() => {
     if (collapsed) {
       hideTimeoutRef.current = setTimeout(() => {
         if (!submenuHovered) {
-          setHoveredGroup(null)
+          setHoveredGroup(null);
         }
-      }, 150)
+      }, 150);
     }
-  }, [collapsed, submenuHovered])
+  }, [collapsed, submenuHovered]);
 
   const handleSubmenuMouseEnter = useCallback(() => {
-    clearHideTimeout()
-    setSubmenuHovered(true)
-  }, [clearHideTimeout])
+    clearHideTimeout();
+    setSubmenuHovered(true);
+  }, [clearHideTimeout]);
 
   const handleSubmenuMouseLeave = useCallback(() => {
-    setSubmenuHovered(false)
-    setHoveredGroup(null)
-  }, [])
+    setSubmenuHovered(false);
+    setHoveredGroup(null);
+  }, []);
 
   const handleMenuClick = (groupId: string, itemId: string) => {
-    onMenuSelect(groupId, itemId)
+    onMenuSelect(groupId, itemId);
     if (collapsed) {
-      setHoveredGroup(null)
+      setHoveredGroup(null);
     }
-  }
+  };
 
   const getSubmenuPosition = useCallback((groupIndex: number) => {
-    const buttonHeight = 56
-    const sidebarWidth = 64
-    const headerHeight = 64
+    const buttonHeight = 56;
+    const sidebarWidth = 64;
+    const headerHeight = 64;
 
-    const topPosition = headerHeight + (groupIndex * buttonHeight) + 8
+    const topPosition = headerHeight + groupIndex * buttonHeight + 8;
 
     return {
       top: `${topPosition}px`,
-      left: `${sidebarWidth}px`
-    }
-  }, [])
+      left: `${sidebarWidth}px`,
+    };
+  }, []);
 
   return (
     <div
       className={cn(
-        "h-full transition-all duration-300 ease-in-out relative overflow-hidden",
-        collapsed ? "w-16" : "w-64"
+        'h-full transition-all duration-300 ease-in-out relative overflow-hidden',
+        collapsed ? 'w-16' : 'w-64'
       )}
     >
-      <div className={collapsed ? "p-2" : "p-4"}>
+      <div className={collapsed ? 'p-2' : 'p-4'}>
         <nav className="space-y-4">
           {menuGroups.map((group, groupIndex) => (
             <div key={group.id} className="relative">
@@ -231,9 +315,9 @@ export function SidebarNavigation({
                       <div
                         className="fixed w-1 bg-blue-500 z-[99]"
                         style={{
-                          top: `${64 + (groupIndex * 56) + 8}px`,
+                          top: `${64 + groupIndex * 56 + 8}px`,
                           left: '63px',
-                          height: `${group.items.length * 36}px`
+                          height: `${group.items.length * 36}px`,
                         }}
                       />
                       <div
@@ -253,17 +337,18 @@ export function SidebarNavigation({
                             <div
                               key={item.id}
                               className={cn(
-                                "relative cursor-pointer transition-all duration-200 px-3 py-2",
+                                'relative cursor-pointer transition-all duration-200 px-3 py-2',
                                 activeMenu === group.id && activeSubmenu === item.id
-                                  ? "bg-blue-500 text-white"
-                                  : "hover:bg-accent text-foreground"
+                                  ? 'bg-blue-500 text-white'
+                                  : 'hover:bg-accent text-foreground'
                               )}
                               onClick={() => handleMenuClick(group.id, item.id)}
                             >
                               <div className="flex items-center space-x-2">
-                                {item.icon && React.cloneElement(item.icon as React.ReactElement, {
-                                  className: "h-4 w-4"
-                                })}
+                                {item.icon &&
+                                  React.cloneElement(item.icon as React.ReactElement, {
+                                    className: 'h-4 w-4',
+                                  })}
                                 <span className="text-sm font-medium truncate">
                                   {t(item.labelKey, { ns: item.ns })}
                                 </span>
@@ -298,21 +383,23 @@ export function SidebarNavigation({
                           key={item.id}
                           variant={
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? "secondary"
-                              : "ghost"
+                              ? 'secondary'
+                              : 'ghost'
                           }
                           size="sm"
                           className={cn(
-                            "w-full justify-start h-9",
+                            'w-full justify-start h-9',
                             activeMenu === group.id && activeSubmenu === item.id
-                              ? "bg-primary/15 text-primary border-r-2 border-r-blue-500"
-                              : "text-foreground hover:bg-accent"
+                              ? 'bg-primary/15 text-primary border-r-2 border-r-blue-500'
+                              : 'text-foreground hover:bg-accent'
                           )}
                           onClick={() => handleMenuClick(group.id, item.id)}
                         >
                           <div className="flex items-center space-x-2">
                             {item.icon}
-                            <span className="text-sm truncate">{t(item.labelKey, { ns: item.ns })}</span>
+                            <span className="text-sm truncate">
+                              {t(item.labelKey, { ns: item.ns })}
+                            </span>
                           </div>
                         </Button>
                       ))}
@@ -325,5 +412,5 @@ export function SidebarNavigation({
         </nav>
       </div>
     </div>
-  )
+  );
 }

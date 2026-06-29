@@ -31,10 +31,14 @@ export class PerformanceOptimizer {
    * 记录页面加载性能
    */
   static recordPageLoad(): void {
-    if (typeof window === 'undefined' || !window.performance) return;
+    if (typeof window === 'undefined' || !window.performance) {
+      return;
+    }
 
     try {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const navigation = performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
       const pageLoadTime = navigation.loadEventEnd - navigation.fetchStart;
 
       this.recordMetric({
@@ -43,7 +47,7 @@ export class PerformanceOptimizer {
         imageLoadTime: 0,
         chunkLoadTime: 0,
         memoryUsage: this.getMemoryUsage(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       // 静默处理性能记录错误
@@ -55,14 +59,14 @@ export class PerformanceOptimizer {
    */
   static recordApiResponse(startTime: number, endTime: number): void {
     const responseTime = endTime - startTime;
-    
+
     this.recordMetric({
       pageLoadTime: 0,
       apiResponseTime: responseTime,
       imageLoadTime: 0,
       chunkLoadTime: 0,
       memoryUsage: this.getMemoryUsage(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -71,14 +75,14 @@ export class PerformanceOptimizer {
    */
   static recordImageLoad(startTime: number, endTime: number): void {
     const loadTime = endTime - startTime;
-    
+
     this.recordMetric({
       pageLoadTime: 0,
       apiResponseTime: 0,
       imageLoadTime: loadTime,
       chunkLoadTime: 0,
       memoryUsage: this.getMemoryUsage(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -139,30 +143,37 @@ export class PerformanceOptimizer {
     totalMetrics: number;
   } {
     const metrics = this.getMetrics();
-    
+
     if (metrics.length === 0) {
       return {
         avgPageLoadTime: 0,
         avgApiResponseTime: 0,
         avgImageLoadTime: 0,
         avgMemoryUsage: 0,
-        totalMetrics: 0
+        totalMetrics: 0,
       };
     }
 
-    const validPageLoads = metrics.filter(m => m.pageLoadTime > 0);
-    const validApiResponses = metrics.filter(m => m.apiResponseTime > 0);
-    const validImageLoads = metrics.filter(m => m.imageLoadTime > 0);
+    const validPageLoads = metrics.filter((m) => m.pageLoadTime > 0);
+    const validApiResponses = metrics.filter((m) => m.apiResponseTime > 0);
+    const validImageLoads = metrics.filter((m) => m.imageLoadTime > 0);
 
     return {
-      avgPageLoadTime: validPageLoads.length > 0 ? 
-        validPageLoads.reduce((sum, m) => sum + m.pageLoadTime, 0) / validPageLoads.length : 0,
-      avgApiResponseTime: validApiResponses.length > 0 ? 
-        validApiResponses.reduce((sum, m) => sum + m.apiResponseTime, 0) / validApiResponses.length : 0,
-      avgImageLoadTime: validImageLoads.length > 0 ? 
-        validImageLoads.reduce((sum, m) => sum + m.imageLoadTime, 0) / validImageLoads.length : 0,
+      avgPageLoadTime:
+        validPageLoads.length > 0
+          ? validPageLoads.reduce((sum, m) => sum + m.pageLoadTime, 0) / validPageLoads.length
+          : 0,
+      avgApiResponseTime:
+        validApiResponses.length > 0
+          ? validApiResponses.reduce((sum, m) => sum + m.apiResponseTime, 0) /
+            validApiResponses.length
+          : 0,
+      avgImageLoadTime:
+        validImageLoads.length > 0
+          ? validImageLoads.reduce((sum, m) => sum + m.imageLoadTime, 0) / validImageLoads.length
+          : 0,
       avgMemoryUsage: metrics.reduce((sum, m) => sum + m.memoryUsage, 0) / metrics.length,
-      totalMetrics: metrics.length
+      totalMetrics: metrics.length,
     };
   }
 
@@ -172,7 +183,7 @@ export class PerformanceOptimizer {
   static updateCacheStats(isHit: boolean): void {
     try {
       const stats = this.getCacheStats();
-      
+
       if (isHit) {
         stats.hits++;
       } else {
@@ -191,18 +202,20 @@ export class PerformanceOptimizer {
   static getCacheStats(): CacheStats {
     try {
       const stored = localStorage.getItem(this.CACHE_STATS_KEY);
-      return stored ? JSON.parse(stored) : {
-        hits: 0,
-        misses: 0,
-        size: 0,
-        lastCleanup: Date.now()
-      };
+      return stored
+        ? JSON.parse(stored)
+        : {
+            hits: 0,
+            misses: 0,
+            size: 0,
+            lastCleanup: Date.now(),
+          };
     } catch (error) {
       return {
         hits: 0,
         misses: 0,
         size: 0,
-        lastCleanup: Date.now()
+        lastCleanup: Date.now(),
       };
     }
   }
@@ -254,7 +267,9 @@ export class PerformanceOptimizer {
    * 初始化性能监控
    */
   static initialize(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // 注意：已移除 chunk 加载错误监控，避免干扰正常错误恢复
 

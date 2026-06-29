@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         error: '获取同步数据失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '无效的数据格式',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const validItems = items.filter(
-      (item: SyncItem) => item && typeof item === 'object' && item.id && item.title,
+      (item: SyncItem) => item && typeof item === 'object' && item.id && item.title
     );
 
     const invalidItemCount = items.length - validItems.length;
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         error: '处理同步数据失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

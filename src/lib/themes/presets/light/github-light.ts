@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const githubLightTheme: ThemeConfig = {
   id: 'github-light',
@@ -40,4 +40,4 @@ export const githubLightTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

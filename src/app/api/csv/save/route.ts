@@ -19,20 +19,30 @@ export async function POST(request: NextRequest) {
   try {
     const { filePath, data } = await request.json();
 
-    logger.info('[API] CSV保存请求:', { filePath, dataType: typeof data, dataKeys: data ? Object.keys(data) : null });
+    logger.info('[API] CSV保存请求:', {
+      filePath,
+      dataType: typeof data,
+      dataKeys: data ? Object.keys(data) : null,
+    });
 
     if (!filePath) {
-      return NextResponse.json({
-        success: false,
-        error: '缺少文件路径参数'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '缺少文件路径参数',
+        },
+        { status: 400 }
+      );
     }
 
     if (!data) {
-      return NextResponse.json({
-        success: false,
-        error: '缺少数据参数'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '缺少数据参数',
+        },
+        { status: 400 }
+      );
     }
 
     // 确保目录存在
@@ -53,19 +63,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'CSV文件保存成功',
-      filePath
+      filePath,
     });
-
   } catch (error) {
     logger.error('[API] CSV保存错误:', error);
 
-    return NextResponse.json({
-      success: false,
-      error: '保存CSV文件失败',
-      details: {
-        error: error instanceof Error ? error.message : String(error)
-      }
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: '保存CSV文件失败',
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -81,7 +93,7 @@ function serializeCsvData(data: CsvData): string {
     // 如果是数组格式，假设第一行是表头
     if (data.length > 0) {
       headers = data[0] || [];
-      rows = data.slice(1).map(row => Array.isArray(row) ? row : [row]);
+      rows = data.slice(1).map((row) => (Array.isArray(row) ? row : [row]));
     }
   } else if (data.headers && data.rows) {
     // 如果是对象格式 { headers: [], rows: [] }
@@ -93,15 +105,15 @@ function serializeCsvData(data: CsvData): string {
 
   // 生成CSV内容
   const lines: string[] = [];
-  
+
   // 添加表头
   if (headers.length > 0) {
     lines.push(headers.map(formatCsvField).join(','));
   }
-  
+
   // 添加数据行
-  rows.forEach(row => {
-    const formattedRow = row.map(field => formatCsvField(field));
+  rows.forEach((row) => {
+    const formattedRow = row.map((field) => formatCsvField(field));
     lines.push(formattedRow.join(','));
   });
 
@@ -115,15 +127,15 @@ function formatCsvField(field: string | number | boolean | null | undefined): st
   if (field === null || field === undefined) {
     return '';
   }
-  
+
   const str = String(field);
-  
+
   // 如果字段包含逗号、引号或换行符，需要用引号包围
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     // 转义引号
     const escaped = str.replace(/"/g, '""');
     return `"${escaped}"`;
   }
-  
+
   return str;
 }

@@ -42,13 +42,25 @@
     "peakWeekday": "活跃日",
     "firstItem": "一切始于「{{title}}」({{date}})",
     "types": {
-      "anime_guardian": { "name": "动漫守护者", "desc": "你的维护列表被动漫占领了，二次元的世界由你守护" },
-      "drama_hunter": { "name": "追剧达人", "desc": "电视剧是你的主战场，每一部好剧都逃不过你的眼睛" },
-      "kids_protector": { "name": "童心守护者", "desc": "为孩子们维护着纯真的世界，每一部都用心对待" },
+      "anime_guardian": {
+        "name": "动漫守护者",
+        "desc": "你的维护列表被动漫占领了，二次元的世界由你守护"
+      },
+      "drama_hunter": {
+        "name": "追剧达人",
+        "desc": "电视剧是你的主战场，每一部好剧都逃不过你的眼睛"
+      },
+      "kids_protector": {
+        "name": "童心守护者",
+        "desc": "为孩子们维护着纯真的世界，每一部都用心对待"
+      },
       "variety_master": { "name": "综艺达人", "desc": "综艺的世界你如数家珍，快乐由你传递" },
       "short_runner": { "name": "短跑选手", "desc": "短剧虽短，你的维护从不打折" },
       "specialist": { "name": "专精大师", "desc": "你专注于一个领域，做到了极致" },
-      "perfectionist": { "name": "完美主义", "desc": "所有词条都已完结，你的字典里没有「半途而废」" },
+      "perfectionist": {
+        "name": "完美主义",
+        "desc": "所有词条都已完结，你的字典里没有「半途而废」"
+      },
       "automator": { "name": "自动化达人", "desc": "你善于利用定时任务，让维护工作自动运转" },
       "night_owl": { "name": "夜猫维护者", "desc": "深夜是你的主场，万籁俱寂时你还在默默维护" },
       "veteran": { "name": "资深维护者", "desc": "你已经坚持维护超过90天，时间见证了你的执着" },

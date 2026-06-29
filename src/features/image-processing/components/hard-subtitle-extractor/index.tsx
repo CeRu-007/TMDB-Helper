@@ -1,23 +1,23 @@
-"use client"
+'use client';
 
-import React, { useState, useCallback, useRef } from "react"
-import { VideoPreview } from "./VideoPreview"
-import { ConfigPanel } from "./ConfigPanel"
-import { SubtitlePanel } from "./SubtitlePanel"
-import { Button } from "@/shared/components/ui/button"
-import { Slider } from "@/shared/components/ui/slider"
-import { Play, Pause, Plus, Trash2, Download, Settings, Type, X } from "lucide-react"
-import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
-import { useHardSubtitle } from "./useHardSubtitle"
-import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
+import React, { useState, useCallback, useRef } from 'react';
+import { VideoPreview } from './VideoPreview';
+import { ConfigPanel } from './ConfigPanel';
+import { SubtitlePanel } from './SubtitlePanel';
+import { Button } from '@/shared/components/ui/button';
+import { Slider } from '@/shared/components/ui/slider';
+import { Play, Pause, Plus, Trash2, Download, Settings, Type, X } from 'lucide-react';
+import { HelpInfoButton } from '@/shared/components/ui/help-info-button';
+import { useHardSubtitle } from './useHardSubtitle';
+import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface HardSubtitleExtractorProps {
-  onOpenGlobalSettings?: (section: string) => void
+  onOpenGlobalSettings?: (section: string) => void;
 }
 
 export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtractorProps) {
-  const { t } = useTranslation("image-processing")
+  const { t } = useTranslation('image-processing');
   const {
     // 状态
     videoFile,
@@ -49,17 +49,20 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
     clearResults,
     deleteSubtitle,
     exportSRT,
-    setVideoElementRef
-  } = useHardSubtitle()
+    setVideoElementRef,
+  } = useHardSubtitle();
 
-  const [activeTab, setActiveTab] = useState<"config" | "subtitles">("config")
-  const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const [activeTab, setActiveTab] = useState<'config' | 'subtitles'>('config');
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
   // 回调视频元素引用
-  const handleVideoRef = useCallback((video: HTMLVideoElement | null) => {
-    videoElementRef.current = video
-    setVideoElementRef(video)
-  }, [setVideoElementRef])
+  const handleVideoRef = useCallback(
+    (video: HTMLVideoElement | null) => {
+      videoElementRef.current = video;
+      setVideoElementRef(video);
+    },
+    [setVideoElementRef]
+  );
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -71,15 +74,10 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           </div>
           <div>
             <h1 className="text-lg font-semibold text-foreground">
-              {t("hardSubtitle.title")}
-              <HelpInfoButton
-                content={t("hardSubtitle.helpDescription")}
-                side="right"
-              />
+              {t('hardSubtitle.title')}
+              <HelpInfoButton content={t('hardSubtitle.helpDescription')} side="right" />
             </h1>
-            <p className="text-xs text-muted-foreground">
-              {t("hardSubtitle.subtitle")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('hardSubtitle.subtitle')}</p>
           </div>
         </div>
 
@@ -89,8 +87,13 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
               <span className="text-sm text-muted-foreground">
                 {Math.floor(progress)}% {statusMessage}
               </span>
-              <Button variant="outline" size="sm" onClick={cancelExtraction} className="min-h-[44px] md:min-h-0">
-                {t("hardSubtitle.cancel")}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelExtraction}
+                className="min-h-[44px] md:min-h-0"
+              >
+                {t('hardSubtitle.cancel')}
               </Button>
             </>
           ) : (
@@ -102,16 +105,16 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                 disabled={!videoFile && !videoUrl}
                 className="min-h-[44px] md:min-h-0"
               >
-                {t("hardSubtitle.clear")}
+                {t('hardSubtitle.clear')}
               </Button>
               <Button
                 size="sm"
                 onClick={startExtraction}
-                disabled={!videoFile && !videoUrl || subtitleRegions.length === 0}
+                disabled={(!videoFile && !videoUrl) || subtitleRegions.length === 0}
                 className="min-h-[44px] md:min-h-0"
               >
                 <Play className="h-4 w-4 mr-1" />
-                {t("hardSubtitle.startExtracting")}
+                {t('hardSubtitle.startExtracting')}
               </Button>
             </>
           )}
@@ -153,25 +156,25 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                   className="min-h-[44px] md:min-h-0"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {t("hardSubtitle.add")}
+                  {t('hardSubtitle.add')}
                 </Button>
 
                 {subtitleRegions.length > 0 && (
                   <>
                     <span className="text-sm text-muted-foreground whitespace-nowrap">
-                      {t("hardSubtitle.subtitleRegionsCount", { count: subtitleRegions.length })}
+                      {t('hardSubtitle.subtitleRegionsCount', { count: subtitleRegions.length })}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        subtitleRegions.forEach(r => removeSubtitleRegion(r.id))
+                        subtitleRegions.forEach((r) => removeSubtitleRegion(r.id));
                       }}
                       disabled={!videoFile && !videoUrl}
                       className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] md:min-h-0"
                     >
                       <X className="h-4 w-4 mr-1" />
-                      {t("hardSubtitle.clear")}
+                      {t('hardSubtitle.clear')}
                     </Button>
                   </>
                 )}
@@ -201,11 +204,7 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
                   disabled={!videoFile && !videoUrl}
                   className="min-h-[44px] min-w-[44px]"
                 >
-                  {isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -218,40 +217,40 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
           <div className="flex border-b border-border">
             <button
               className={cn(
-                "flex-1 px-4 py-2 text-sm font-medium transition-colors",
-                activeTab === "config"
-                  ? "text-primary border-b-2 border-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground"
+                'flex-1 px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === 'config'
+                  ? 'text-primary border-b-2 border-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
-              onClick={() => setActiveTab("config")}
+              onClick={() => setActiveTab('config')}
             >
               <Settings className="h-4 w-4 inline mr-1" />
-              {t("hardSubtitle.config")}
+              {t('hardSubtitle.config')}
             </button>
             <button
               className={cn(
-                "flex-1 px-4 py-2 text-sm font-medium transition-colors",
-                activeTab === "subtitles"
-                  ? "text-primary border-b-2 border-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground"
+                'flex-1 px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === 'subtitles'
+                  ? 'text-primary border-b-2 border-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
-              onClick={() => setActiveTab("subtitles")}
+              onClick={() => setActiveTab('subtitles')}
             >
               <Type className="h-4 w-4 inline mr-1" />
-              {t("hardSubtitle.subtitleTab")} ({subtitles.length})
+              {t('hardSubtitle.subtitleTab')} ({subtitles.length})
             </button>
           </div>
 
           {/* 面板内容 */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === "config" ? (
+            {activeTab === 'config' ? (
               <ConfigPanel
                 videoUrl={videoUrl}
                 onVideoUrlChange={handleVideoUrlChange}
                 onVideoUpload={handleVideoUpload}
                 config={config}
                 onConfigChange={(key, value) => {
-                  setConfig((prev) => ({ ...prev, [key]: value }))
+                  setConfig((prev: any) => ({ ...prev, [key]: value }));
                 }}
                 subtitleRegions={subtitleRegions}
                 progress={progress}
@@ -273,14 +272,16 @@ export function HardSubtitleExtractor({ onOpenGlobalSettings }: HardSubtitleExtr
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // 格式化时间
 function formatTime(seconds: number): string {
-  if (isNaN(seconds) || !isFinite(seconds)) return "00:00:00"
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = Math.floor(seconds % 60)
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+  if (isNaN(seconds) || !isFinite(seconds)) {
+    return '00:00:00';
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }

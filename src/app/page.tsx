@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react"
-import { useTranslation } from "react-i18next"
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Clock,
   CheckCircle2,
@@ -10,74 +10,99 @@ import {
   Plus,
   PlayCircle,
   RefreshCw,
-  Search
-} from "lucide-react"
+  Search,
+} from 'lucide-react';
 
 // 导入 hooks - 使用 Zustand 版本
-import { useHomeState } from '@/stores/hooks'
-import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter'
-import { useWeekdayFilter } from '@/lib/hooks/use-weekday-filter'
-import { useCurrentDay } from '@/lib/hooks/use-current-day'
-import { useMediaNews } from '@/lib/hooks/use-media-news'
-import { useData } from "@/shared/components/client-data-provider"
-import { useToast } from "@/lib/hooks/use-toast"
-import { useUIStore } from '@/stores/ui-store'
-import { getPlatformInfo } from '@/lib/utils'
+import { useHomeState } from '@/stores/hooks';
+import { useCategoryFilter } from '@/features/media-maintenance/lib/hooks/use-category-filter';
+import { useWeekdayFilter } from '@/lib/hooks/use-weekday-filter';
+import { useCurrentDay } from '@/lib/hooks/use-current-day';
+import { useMediaNews, type UseMediaNewsReturn } from '@/lib/hooks/use-media-news';
+import { useData } from '@/shared/components/client-data-provider';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useUIStore } from '@/stores/ui-store';
+import { getPlatformInfo } from '@/lib/utils';
 
-import { categories, type Category } from '@/lib/constants/categories'
-import { mapLanguageToRegion } from '@/lib/constants/regions'
-import i18n, { getInitialLanguage } from '@/lib/i18n'
-import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton'
-import type { MediaItem } from '@/types/media'
-import type { UseMediaNewsReturn } from '@/lib/hooks/use-media-news'
-import type { TFunction } from 'i18next'
+import { categories, type Category } from '@/lib/constants/categories';
+import { mapLanguageToRegion } from '@/lib/constants/regions';
+import i18n, { getInitialLanguage } from '@/lib/i18n';
+import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton';
+import type { TMDBItem } from '@/lib/data/storage';
+import type { TFunction } from 'i18next';
 
-type MediaNewsData = UseMediaNewsReturn
+type MediaNewsData = UseMediaNewsReturn;
 
 // 导入组件
-import { SidebarLayout } from "@/shared/components/layouts/sidebar-layout-v2"
-import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation'
-import { RegionNavigation } from '@/features/media-news/components/region-navigation'
-import { Button } from "@/shared/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
-import { Badge } from "@/shared/components/ui/badge"
-import MediaCard from "@/features/media-maintenance/components/media-card"
+import { SidebarLayout } from '@/shared/components/layouts/sidebar-layout-v2';
+import { WeekdayNavigation } from '@/features/media-maintenance/components/weekday-navigation';
+import { RegionNavigation } from '@/features/media-news/components/region-navigation';
+import { Button } from '@/shared/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { Badge } from '@/shared/components/ui/badge';
+import MediaCard from '@/features/media-maintenance/components/media-card';
 
-import AddItemDialog from "@/features/media-maintenance/components/add-item-dialog"
-import SettingsDialog from "@/features/system/components/settings-dialog/SettingsDialog"
-import ImportDataDialog from "@/features/data-management/components/import-data-dialog"
-import ExportDataDialog from "@/features/data-management/components/export-data-dialog"
-import { SubtitleEpisodeGenerator } from "@/features/episode-generation/components/subtitle-episode-generator"
-import VideoScreenshot from "@/features/image-processing/components/video-screenshot"
-import { ImageCropper } from "@/features/image-processing/components/image-cropper"
-import { ErrorState } from "@/features/media-maintenance/components/error-state"
+import AddItemDialog from '@/features/media-maintenance/components/add-item-dialog';
+import SettingsDialog from '@/features/system/components/settings-dialog/SettingsDialog';
+import ImportDataDialog from '@/features/data-management/components/import-data-dialog';
+import ExportDataDialog from '@/features/data-management/components/export-data-dialog';
+import { SubtitleEpisodeGenerator } from '@/features/episode-generation/components/subtitle-episode-generator';
+import VideoScreenshot from '@/features/image-processing/components/video-screenshot';
+import { ImageCropper } from '@/features/image-processing/components/image-cropper';
+import { ErrorState } from '@/features/media-maintenance/components/error-state';
 
-
-const getEmptyStateMessage = (selectedCategory: string, selectedDayFilter: number, t: (key: string, options?: Record<string, unknown>) => string, isCompleted: boolean = false) => {
-  if (selectedCategory !== "all") {
-    const categoryName = t(`categoryNames.${selectedCategory}`, { ns: "media" })
-    const suffix = isCompleted ? t("noCompletedItemsSuffix", { ns: "media" }) : t("noItemsSuffix", { ns: "media" })
-    return `${categoryName}${t("category", { ns: "common" })}${suffix}`
+const getEmptyStateMessage = (
+  selectedCategory: string,
+  selectedDayFilter: number | 'recent',
+  t: (key: string, options?: Record<string, unknown>) => string,
+  isCompleted: boolean = false
+) => {
+  if (selectedCategory !== 'all') {
+    const categoryName = t(`categoryNames.${selectedCategory}`, { ns: 'media' });
+    const suffix = isCompleted
+      ? t('noCompletedItemsSuffix', { ns: 'media' })
+      : t('noItemsSuffix', { ns: 'media' });
+    return `${categoryName}${t('category', { ns: 'common' })}${suffix}`;
   }
 
-  if (selectedDayFilter === "recent") {
-    return isCompleted ? t("noRecentCompletedItems", { ns: "media" }) : t("noRecentUpdatedItems", { ns: "media" })
+  if (selectedDayFilter === 'recent') {
+    return isCompleted
+      ? t('noRecentCompletedItems', { ns: 'media' })
+      : t('noRecentUpdatedItems', { ns: 'media' });
   }
 
-  const weekdaysKey = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
-  const weekdayIndex = selectedDayFilter === 0 ? 6 : selectedDayFilter - 1
-  const weekdayName = t(`weekdaysList.${weekdaysKey[weekdayIndex]}`, { ns: "weekdays" })
-  return isCompleted ? `${weekdayName}${t("noCompletedItemsSuffix", { ns: "media" })}` : `${weekdayName}${t("noItemsSuffix", { ns: "media" })}`
-}
+  const weekdaysKey = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ] as const;
+  const weekdayIndex = selectedDayFilter === 0 ? 6 : selectedDayFilter - 1;
+  const weekdayName = t(`weekdaysList.${weekdaysKey[weekdayIndex]}`, { ns: 'weekdays' });
+  return isCompleted
+    ? `${weekdayName}${t('noCompletedItemsSuffix', { ns: 'media' })}`
+    : `${weekdayName}${t('noItemsSuffix', { ns: 'media' })}`;
+};
 
-const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaNewsData, items: MediaItem[], selectedRegion: string, t: TFunction, i18n: { language: string }) => {
-  const isUpcoming = mediaNewsType === 'upcoming'
-  const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems
-  const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent
-  const error = isUpcoming ? mediaNews.upcomingError : mediaNews.recentError
-  const fetchFunction = () => isUpcoming
-    ? mediaNews.fetchUpcomingItems(selectedRegion, false)
-    : mediaNews.fetchRecentItems(selectedRegion, false)
+const renderMediaNews = (
+  mediaNewsType: 'upcoming' | 'recent',
+  mediaNews: MediaNewsData,
+  items: TMDBItem[],
+  selectedRegion: string,
+  t: TFunction,
+  i18n: { language: string }
+) => {
+  const isUpcoming = mediaNewsType === 'upcoming';
+  const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems;
+  const loading = isUpcoming ? mediaNews.loadingUpcoming : mediaNews.loadingRecent;
+  const error = isUpcoming ? mediaNews.upcomingError : mediaNews.recentError;
+  const fetchFunction = () =>
+    isUpcoming
+      ? mediaNews.fetchUpcomingItems(selectedRegion, false)
+      : mediaNews.fetchRecentItems(selectedRegion, false);
 
   const localeMap: Record<string, string> = {
     'zh-CN': 'zh-CN',
@@ -85,22 +110,22 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
     'zh-HK': 'zh-HK',
     'en-US': 'en-US',
     'ja-JP': 'ja-JP',
-    'ko-KR': 'ko-KR'
-  }
-  const currentLocale = localeMap[i18n.language] || 'zh-CN'
+    'ko-KR': 'ko-KR',
+  };
+  const currentLocale = localeMap[i18n.language] || 'zh-CN';
 
   if (loading) {
     return (
       <div className="overflow-y-auto max-h-[calc(100vh-350px)]">
         <MediaCardGridSkeleton count={12} />
       </div>
-    )
+    );
   }
 
   if (error) {
     const errorMessage = mediaNews.isMissingApiKey
-      ? t("tmdbApiKeyMissing", { ns: "media" })
-      : t("tmdbConnectionFailed", { ns: "media" })
+      ? t('tmdbApiKeyMissing', { ns: 'media' })
+      : t('tmdbConnectionFailed', { ns: 'media' });
 
     return (
       <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
@@ -114,60 +139,62 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
             className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            {t("retry", { ns: "common" })}
+            {t('retry', { ns: 'common' })}
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (newsData.length === 0) {
     const noDataMessage = isUpcoming
-      ? { title: t("noUpcomingTitle", { ns: "media" }), desc: t("noUpcomingDesc", { ns: "media" }) }
-      : { title: t("noRecentTitle", { ns: "media" }), desc: t("noRecentDesc", { ns: "media" }) }
+      ? { title: t('noUpcomingTitle', { ns: 'media' }), desc: t('noUpcomingDesc', { ns: 'media' }) }
+      : { title: t('noRecentTitle', { ns: 'media' }), desc: t('noRecentDesc', { ns: 'media' }) };
 
     return (
       <div className="bg-card p-6 rounded-lg text-center border border-border">
         <p className="text-muted-foreground mb-1">{noDataMessage.title}</p>
         <p className="text-muted-foreground text-sm">{noDataMessage.desc}</p>
       </div>
-    )
+    );
   }
 
-  const filteredItems = newsData.filter(newsItem =>
-    !items.some(item =>
-      item.tmdbId === newsItem.id.toString() &&
-      item.mediaType === newsItem.mediaType
-    )
-  )
+  const filteredItems = newsData.filter(
+    (newsItem) =>
+      !items.some(
+        (item) => item.tmdbId === newsItem.id.toString() && item.mediaType === newsItem.mediaType
+      )
+  );
 
   const getTimeText = (releaseDate: string) => {
-    const today = new Date()
-    const date = new Date(releaseDate)
-    const isUpcomingItem = date > today
-    const daysDiff = Math.abs(Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+    const today = new Date();
+    const date = new Date(releaseDate);
+    const isUpcomingItem = date > today;
+    const daysDiff = Math.abs(
+      Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    );
 
     if (isUpcomingItem) {
-      return daysDiff <= 0 
-        ? t("mediaNewsSection.todayUpoming", { ns: "nav.news" }) 
-        : daysDiff === 1 
-          ? t("mediaNewsSection.tomorrowUpoming", { ns: "nav.news" }) 
-          : `${daysDiff}${t("mediaNewsSection.daysLaterUpoming", { ns: "nav.news" })}`
+      return daysDiff <= 0
+        ? t('mediaNewsSection.todayUpoming', { ns: 'nav.news' })
+        : daysDiff === 1
+          ? t('mediaNewsSection.tomorrowUpoming', { ns: 'nav.news' })
+          : `${daysDiff}${t('mediaNewsSection.daysLaterUpoming', { ns: 'nav.news' })}`;
     } else {
-      return daysDiff <= 0 
-        ? t("mediaNewsSection.todayAired", { ns: "nav.news" }) 
-        : daysDiff === 1 
-          ? t("mediaNewsSection.yesterdayAired", { ns: "nav.news" }) 
-          : `${daysDiff}${t("mediaNewsSection.daysAgoAired", { ns: "nav.news" })}`
+      return daysDiff <= 0
+        ? t('mediaNewsSection.todayAired', { ns: 'nav.news' })
+        : daysDiff === 1
+          ? t('mediaNewsSection.yesterdayAired', { ns: 'nav.news' })
+          : `${daysDiff}${t('mediaNewsSection.daysAgoAired', { ns: 'nav.news' })}`;
     }
-  }
+  };
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 overflow-y-auto max-h-[calc(100vh-350px)]">
       {filteredItems.map((item) => {
-        const isUpcomingItem = new Date(item.releaseDate) > new Date()
-        const badgeColor = isUpcomingItem ? "bg-blue-500" : "bg-green-500"
-        
+        const isUpcomingItem = new Date(item.releaseDate) > new Date();
+        const badgeColor = isUpcomingItem ? 'bg-blue-500' : 'bg-green-500';
+
         return (
           <div key={`${item.mediaType}-${item.id}`} className="group">
             <div className="mb-2">
@@ -176,59 +203,77 @@ const renderMediaNews = (mediaNewsType: 'upcoming' | 'recent', mediaNews: MediaN
               </Badge>
             </div>
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg shadow-md transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.posterUrl ? `https://image.tmdb.org/t/p/w500${item.posterUrl}` : "/placeholder.svg"}
+                src={
+                  item.posterUrl
+                    ? `https://image.tmdb.org/t/p/w500${item.posterUrl}`
+                    : '/placeholder.svg'
+                }
                 alt={item.title}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="mt-2">
-              <h3 className="font-medium text-foreground text-sm">
-                {item.title}
-              </h3>
+              <h3 className="font-medium text-foreground text-sm">{item.title}</h3>
               <div className="flex items-center text-xs text-muted-foreground mt-1">
-                <span>{item.mediaType === 'movie' ? t("mediaNewsSection.movie", { ns: "nav.news" }) : t("mediaNewsSection.tv", { ns: "nav.news" })}</span>
+                <span>
+                  {item.mediaType === 'movie'
+                    ? t('mediaNewsSection.movie', { ns: 'nav.news' })
+                    : t('mediaNewsSection.tv', { ns: 'nav.news' })}
+                </span>
                 <span className="mx-1">·</span>
                 <span>{getTimeText(item.releaseDate)}</span>
               </div>
             </div>
           </div>
-        )
+        );
       })}
     </div>
-  )
-}
+  );
+};
 
 interface MediaCardListProps {
-  items: MediaItem[]
-  onItemClick: (itemId: string) => void
-  showAirTime: boolean
+  items: TMDBItem[];
+  onItemClick: (itemId: string) => void;
+  showAirTime: boolean;
 }
 
-const MediaCardList = function MediaCardList({ items, onItemClick, showAirTime }: MediaCardListProps) {
+const MediaCardList = function MediaCardList({
+  items,
+  onItemClick,
+  showAirTime,
+}: MediaCardListProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4">
       {items.map((item) => (
         <div key={item.id} className="transform scale-[0.98] origin-top-left">
-          <MediaCard item={item} itemId={item.id} onItemClick={onItemClick} showAirTime={showAirTime} />
+          <MediaCard
+            item={item}
+            itemId={item.id}
+            onItemClick={onItemClick}
+            showAirTime={showAirTime}
+          />
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 export default function HomePage() {
-  const { t, i18n } = useTranslation("nav/image")
-  const { toast } = useToast()
-  const homeState = useHomeState()
-  const { filterItemsByCategory } = useCategoryFilter()
-  const { getFilteredItems: getWeekdayFilteredItems } = useWeekdayFilter()
-  const { currentDay } = useCurrentDay()
-  const searchQuery = useUIStore((s) => s.searchQuery)
-  const selectedPlatform = useUIStore((s) => s.selectedPlatform)
-  const [selectedRegion, setSelectedRegion] = useState<string>(() => mapLanguageToRegion(getInitialLanguage()))
-  const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming')
-  const mediaNews = useMediaNews(selectedRegion)
+  const { t, i18n } = useTranslation('nav/image');
+  const { toast } = useToast();
+  const homeState = useHomeState();
+  const { filterItemsByCategory } = useCategoryFilter();
+  const { getFilteredItems: getWeekdayFilteredItems } = useWeekdayFilter();
+  const { currentDay } = useCurrentDay();
+  const searchQuery = useUIStore((s) => s.searchQuery);
+  const selectedPlatform = useUIStore((s) => s.selectedPlatform);
+  const [selectedRegion, setSelectedRegion] = useState<string>(() =>
+    mapLanguageToRegion(getInitialLanguage())
+  );
+  const [mediaNewsType, setMediaNewsType] = useState<'upcoming' | 'recent'>('upcoming');
+  const mediaNews = useMediaNews(selectedRegion);
 
   const {
     items,
@@ -238,98 +283,135 @@ export default function HomePage() {
     refreshData: handleRefresh,
     addItem: handleAddItem,
     updateItem: handleUpdateItem,
-    deleteItem: handleDeleteItem
-  } = useData()
+    deleteItem: handleDeleteItem,
+  } = useData();
 
   // 响应式跟随全局语言变化同步区域
-  const selectedRegionRef = useRef(selectedRegion)
-  selectedRegionRef.current = selectedRegion
+  const selectedRegionRef = useRef(selectedRegion);
+  selectedRegionRef.current = selectedRegion;
   useEffect(() => {
     const handler = (lng: string) => {
-      const region = mapLanguageToRegion(lng)
+      const region = mapLanguageToRegion(lng);
       if (region !== selectedRegionRef.current) {
-        requestAnimationFrame(() => setSelectedRegion(region))
+        requestAnimationFrame(() => setSelectedRegion(region));
       }
-    }
-    i18n.on("languageChanged", handler)
+    };
+    i18n.on('languageChanged', handler);
     return () => {
-      i18n.off("languageChanged", handler)
+      i18n.off('languageChanged', handler);
+    };
+  }, [i18n, setSelectedRegion]);
+
+  const handleCardClick = useCallback(
+    (itemId: string) => {
+      const item = items.find((i) => i.id === itemId);
+      if (item) {
+        homeState.setSelectedItem(item);
+      }
+    },
+    [items, homeState]
+  );
+
+  const ongoingItems = useMemo(() => items.filter((item) => item.status === 'ongoing'), [items]);
+  const completedItems = useMemo(
+    () => items.filter((item) => item.status === 'completed'),
+    [items]
+  );
+
+  const totalItems = items.length;
+
+  const filteredOngoingItems = filterItemsByCategory(ongoingItems, homeState.selectedCategory);
+  const filteredCompletedItems = filterItemsByCategory(completedItems, homeState.selectedCategory);
+  const filteredOngoingCount = filteredOngoingItems.length;
+  const filteredCompletedCount = filteredCompletedItems.length;
+
+  const filterItemsBySearchQuery = useCallback((items: TMDBItem[], query: string): TMDBItem[] => {
+    if (!query.trim()) {
+      return items;
     }
-  }, [])
+    const lowerQuery = query.toLowerCase().trim();
+    return items.filter(
+      (item) =>
+        item.title?.toLowerCase().includes(lowerQuery) ||
+        item.notes?.toLowerCase().includes(lowerQuery)
+    );
+  }, []);
 
-  const handleCardClick = useCallback((itemId: string) => {
-    const item = items.find(i => i.id === itemId)
-    if (item) {
-      homeState.setSelectedItem(item)
+  const filterItemsByPlatform = useCallback((items: TMDBItem[], platform: string): TMDBItem[] => {
+    if (platform === 'all') {
+      return items;
     }
-  }, [items, homeState])
-
-  const ongoingItems = useMemo(() => items.filter((item) => item.status === "ongoing"), [items])
-  const completedItems = useMemo(() => items.filter((item) => item.status === "completed"), [items])
-
-  const totalItems = items.length
-
-  const filteredOngoingItems = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
-  const filteredCompletedItems = filterItemsByCategory(completedItems, homeState.selectedCategory)
-  const filteredOngoingCount = filteredOngoingItems.length
-  const filteredCompletedCount = filteredCompletedItems.length
-
-  const filterItemsBySearchQuery = useCallback((items: MediaItem[], query: string): MediaItem[] => {
-    if (!query.trim()) return items
-    const lowerQuery = query.toLowerCase().trim()
-    return items.filter(item =>
-      item.title?.toLowerCase().includes(lowerQuery) ||
-      item.notes?.toLowerCase().includes(lowerQuery)
-    )
-  }, [])
-
-  const filterItemsByPlatform = useCallback((items: MediaItem[], platform: string): MediaItem[] => {
-    if (platform === 'all') return items
-    return items.filter(item => {
+    return items.filter((item) => {
       if (item.networkName) {
-        const platformId = item.networkName.toLowerCase().replace(/[^a-z0-9]/g, '')
-        if (platformId === platform) return true
+        const platformId = item.networkName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (platformId === platform) {
+          return true;
+        }
       }
       if (item.platformUrls) {
         for (const url of item.platformUrls) {
-          const info = getPlatformInfo(url)
-          if (info && info.icon === platform) return true
+          const info = getPlatformInfo(url);
+          if (info && info.icon === platform) {
+            return true;
+          }
         }
       }
-      return false
-    })
-  }, [])
+      return false;
+    });
+  }, []);
 
-  const getFinalFilteredItems = useCallback((items: MediaItem[]) => {
-    const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory)
-    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
-    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
-    return filterItemsByPlatform(searchFiltered, selectedPlatform)
-  }, [filterItemsByCategory, getWeekdayFilteredItems, filterItemsBySearchQuery, filterItemsByPlatform, homeState.selectedCategory, homeState.selectedDayFilter, searchQuery, selectedPlatform])
+  const getFinalFilteredItems = useCallback(
+    (items: TMDBItem[]) => {
+      const categoryFiltered = filterItemsByCategory(items, homeState.selectedCategory);
+      const weekdayFiltered = getWeekdayFilteredItems(
+        categoryFiltered,
+        homeState.selectedDayFilter,
+        homeState.selectedCategory
+      );
+      const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery);
+      return filterItemsByPlatform(searchFiltered, selectedPlatform);
+    },
+    [
+      filterItemsByCategory,
+      getWeekdayFilteredItems,
+      filterItemsBySearchQuery,
+      filterItemsByPlatform,
+      homeState.selectedCategory,
+      homeState.selectedDayFilter,
+      searchQuery,
+      selectedPlatform,
+    ]
+  );
 
-  const finalOngoingItems = useMemo(() => {
-    const categoryFiltered = filterItemsByCategory(ongoingItems, homeState.selectedCategory)
-    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
-    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
-    return filterItemsByPlatform(searchFiltered, selectedPlatform)
-  }, [ongoingItems, getFinalFilteredItems])
+  const finalOngoingItems = useMemo(
+    () => getFinalFilteredItems(ongoingItems),
+    [ongoingItems, getFinalFilteredItems]
+  );
 
-  const finalCompletedItems = useMemo(() => {
-    const categoryFiltered = filterItemsByCategory(completedItems, homeState.selectedCategory)
-    const weekdayFiltered = getWeekdayFilteredItems(categoryFiltered, homeState.selectedDayFilter, homeState.selectedCategory)
-    const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery)
-    return filterItemsByPlatform(searchFiltered, selectedPlatform)
-  }, [completedItems, getFinalFilteredItems])
+  const finalCompletedItems = useMemo(
+    () => getFinalFilteredItems(completedItems),
+    [completedItems, getFinalFilteredItems]
+  );
 
   // 渲染内容
   const renderContent = () => {
     if (loadError) {
-      return <ErrorState error={loadError} onRefresh={handleRefresh} onOpenSettings={() => homeState.setShowSettingsDialog(true)} />;
+      return (
+        <ErrorState
+          error={loadError}
+          onRefresh={handleRefresh}
+          onOpenSettings={() => homeState.setShowSettingsDialog(true)}
+        />
+      );
     }
 
     return (
-        <div className="w-full h-full">
-          <Tabs value={homeState.activeTab} onValueChange={homeState.setActiveTab} className="w-full h-full overflow-hidden">
+      <div className="w-full h-full">
+        <Tabs
+          value={homeState.activeTab}
+          onValueChange={homeState.setActiveTab}
+          className="w-full h-full overflow-hidden"
+        >
           <TabsContent value="ongoing">
             <WeekdayNavigation
               selectedDayFilter={homeState.selectedDayFilter}
@@ -345,10 +427,10 @@ export default function HomePage() {
             />
             <div className="mt-6 overflow-y-auto">
               <MediaCardList
-              items={finalOngoingItems}
-              onItemClick={handleCardClick}
-              showAirTime={true}
-            />
+                items={finalOngoingItems}
+                onItemClick={handleCardClick}
+                showAirTime={true}
+              />
 
               {finalOngoingItems.length === 0 && (
                 <div className="text-center py-16">
@@ -357,20 +439,32 @@ export default function HomePage() {
                       <>
                         <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                         <h3 className="text-lg font-medium mb-2 text-foreground">
-                          {t("searchResultsFor", { query: searchQuery, ns: "common" })}
+                          {t('searchResultsFor', { query: searchQuery, ns: 'common' })}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {t('noSearchResultsHint', { ns: 'media' })}
+                        </p>
                       </>
                     ) : (
                       <>
                         <Clock className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                         <h3 className="text-lg font-medium mb-2 text-foreground">
-                          {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, false)}
+                          {getEmptyStateMessage(
+                            homeState.selectedCategory,
+                            homeState.selectedDayFilter,
+                            t,
+                            false
+                          )}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-4">{t("startMaintenanceHint", { ns: "media" })}</p>
-                        <Button onClick={() => homeState.setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {t('startMaintenanceHint', { ns: 'media' })}
+                        </p>
+                        <Button
+                          onClick={() => homeState.setShowAddDialog(true)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
-                          {t("addNewItem", { ns: "media" })}
+                          {t('addNewItem', { ns: 'media' })}
                         </Button>
                       </>
                     )}
@@ -395,10 +489,10 @@ export default function HomePage() {
             />
             <div className="mt-6 overflow-y-auto">
               <MediaCardList
-              items={finalCompletedItems}
-              onItemClick={handleCardClick}
-              showAirTime={true}
-            />
+                items={finalCompletedItems}
+                onItemClick={handleCardClick}
+                showAirTime={true}
+              />
 
               {finalCompletedItems.length === 0 && (
                 <div className="text-center py-16">
@@ -406,17 +500,26 @@ export default function HomePage() {
                     <>
                       <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <h3 className="text-lg font-medium mb-2 text-foreground">
-                        {t("searchResultsFor", { query: searchQuery, ns: "common" })}
+                        {t('searchResultsFor', { query: searchQuery, ns: 'common' })}
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-4">{t("noSearchResultsHint", { ns: "media" })}</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t('noSearchResultsHint', { ns: 'media' })}
+                      </p>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <h3 className="text-lg font-medium mb-2 text-foreground">
-                        {getEmptyStateMessage(homeState.selectedCategory, homeState.selectedDayFilter, t, true)}
+                        {getEmptyStateMessage(
+                          homeState.selectedCategory,
+                          homeState.selectedDayFilter,
+                          t,
+                          true
+                        )}
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-4">{t("completedItemsHint", { ns: "media" })}</p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t('completedItemsHint', { ns: 'media' })}
+                      </p>
                     </>
                   )}
                 </div>
@@ -440,31 +543,43 @@ export default function HomePage() {
                 <div>
                   <div className="flex items-center">
                     <h2 className="text-xl font-semibold text-foreground">
-                      {mediaNewsType === 'upcoming' ? t("upcoming", { ns: "nav.news" }) : t("recent", { ns: "nav.news" })}
+                      {mediaNewsType === 'upcoming'
+                        ? t('upcoming', { ns: 'nav.news' })
+                        : t('recent', { ns: 'nav.news' })}
                     </h2>
                     {mediaNewsType === 'upcoming' && mediaNews.upcomingItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
-                        {mediaNews.upcomingItems.filter(upcomingItem =>
-                          !items.some(item =>
-                            item.tmdbId === upcomingItem.id.toString() &&
-                            item.mediaType === upcomingItem.mediaType
-                          )
-                        ).length}
+                        {
+                          mediaNews.upcomingItems.filter(
+                            (upcomingItem) =>
+                              !items.some(
+                                (item) =>
+                                  item.tmdbId === upcomingItem.id.toString() &&
+                                  item.mediaType === upcomingItem.mediaType
+                              )
+                          ).length
+                        }
                       </span>
                     )}
                     {mediaNewsType === 'recent' && mediaNews.recentItems.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
-                        {mediaNews.recentItems.filter(recentItem =>
-                          !items.some(item =>
-                            item.tmdbId === recentItem.id.toString() &&
-                            item.mediaType === recentItem.mediaType
-                          )
-                        ).length}
+                        {
+                          mediaNews.recentItems.filter(
+                            (recentItem) =>
+                              !items.some(
+                                (item) =>
+                                  item.tmdbId === recentItem.id.toString() &&
+                                  item.mediaType === recentItem.mediaType
+                              )
+                          ).length
+                        }
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {mediaNewsType === 'upcoming' ? t("upcomingDesc", { ns: "nav.news" }) : t("recentDesc", { ns: "nav.news" })}
+                    {mediaNewsType === 'upcoming'
+                      ? t('upcomingDesc', { ns: 'nav.news' })
+                      : t('recentDesc', { ns: 'nav.news' })}
                   </p>
                 </div>
               </div>
@@ -489,8 +604,8 @@ export default function HomePage() {
             <div className="min-h-0">
               <SubtitleEpisodeGenerator
                 onOpenGlobalSettings={(section) => {
-                  homeState.setSettingsInitialSection(section)
-                  homeState.setShowSettingsDialog(true)
+                  homeState.setSettingsInitialSection(section);
+                  homeState.setShowSettingsDialog(true);
                 }}
               />
             </div>
@@ -499,15 +614,17 @@ export default function HomePage() {
           <TabsContent value="thumbnail">
             <Tabs defaultValue="extract" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="extract">{t("extract")}</TabsTrigger>
-                <TabsTrigger value="crop">{t("crop")}</TabsTrigger>
+                <TabsTrigger value="extract">{t('extract')}</TabsTrigger>
+                <TabsTrigger value="crop">{t('crop')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="extract" className="mt-4">
-                <VideoScreenshot onOpenGlobalSettings={(section) => {
-                  homeState.setSettingsInitialSection(section)
-                  homeState.setShowSettingsDialog(true)
-                }} />
+                <VideoScreenshot
+                  onOpenGlobalSettings={(section) => {
+                    homeState.setSettingsInitialSection(section);
+                    homeState.setShowSettingsDialog(true);
+                  }}
+                />
               </TabsContent>
 
               <TabsContent value="crop" className="min-h-0">
@@ -518,7 +635,7 @@ export default function HomePage() {
         </Tabs>
       </div>
     );
-  }
+  };
 
   return (
     <>
@@ -527,16 +644,16 @@ export default function HomePage() {
         onDeleteItem={handleDeleteItem}
         fetchUpcomingItems={(silent?: boolean, _retryCount?: number, region?: string) => {
           if (region) {
-            mediaNews.fetchUpcomingItems(region, silent || false)
+            mediaNews.fetchUpcomingItems(region, silent || false);
           } else {
-            mediaNews.fetchUpcomingItems(selectedRegion, silent || false)
+            mediaNews.fetchUpcomingItems(selectedRegion, silent || false);
           }
         }}
         fetchRecentItems={(silent?: boolean, _retryCount?: number, region?: string) => {
           if (region) {
-            mediaNews.fetchRecentItems(region, silent || false)
+            mediaNews.fetchRecentItems(region, silent || false);
           } else {
-            mediaNews.fetchRecentItems(selectedRegion, silent || false)
+            mediaNews.fetchRecentItems(selectedRegion, silent || false);
           }
         }}
       >
@@ -556,15 +673,21 @@ export default function HomePage() {
       <SettingsDialog
         open={homeState.showSettingsDialog}
         onOpenChange={(open) => {
-          homeState.setShowSettingsDialog(open)
+          homeState.setShowSettingsDialog(open);
           if (!open) {
-            homeState.setSettingsInitialSection(undefined)
+            homeState.setSettingsInitialSection(undefined);
           }
         }}
-        initialSection={homeState.settingsInitialSection || ""}
+        initialSection={homeState.settingsInitialSection || ''}
       />
-      <ImportDataDialog open={homeState.showImportDialog} onOpenChange={homeState.setShowImportDialog} />
-      <ExportDataDialog open={homeState.showExportDialog} onOpenChange={homeState.setShowExportDialog} />
+      <ImportDataDialog
+        open={homeState.showImportDialog}
+        onOpenChange={homeState.setShowImportDialog}
+      />
+      <ExportDataDialog
+        open={homeState.showExportDialog}
+        onOpenChange={homeState.setShowExportDialog}
+      />
     </>
-  )
+  );
 }

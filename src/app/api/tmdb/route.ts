@@ -16,20 +16,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     switch (action) {
       case 'search':
         if (!query) {
-          return NextResponse.json(
-            { success: false, error: '缺少搜索关键词' },
-            { status: 400 }
-          );
+          return NextResponse.json({ success: false, error: '缺少搜索关键词' }, { status: 400 });
         }
         const searchResult = await TMDBService.search(query, page);
         return NextResponse.json({ success: true, data: searchResult });
 
       case 'getItemFromUrl':
         if (!url) {
-          return NextResponse.json(
-            { success: false, error: '缺少URL参数' },
-            { status: 400 }
-          );
+          return NextResponse.json({ success: false, error: '缺少URL参数' }, { status: 400 });
         }
         const itemResult = await TMDBService.getItemFromUrl(url, forceRefresh);
         if (!itemResult) {
@@ -41,17 +35,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ success: true, data: itemResult });
 
       default:
-        return NextResponse.json(
-          { success: false, error: '无效的action参数' },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: '无效的action参数' }, { status: 400 });
     }
   } catch (error) {
     logger.error('TMDB API Error', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '服务器内部错误'
+        error: error instanceof Error ? error.message : '服务器内部错误',
       },
       { status: 500 }
     );

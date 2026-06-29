@@ -28,27 +28,28 @@ export const POST = AuthMiddleware.withAuth(async (request: NextRequest) => {
     const success = await AuthService.changePassword(currentPassword, newPassword);
 
     if (success) {
-      const isSecure = process.env.COOKIE_SECURE !== undefined
-        ? process.env.COOKIE_SECURE === 'true'
-        : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
+      const isSecure =
+        process.env.COOKIE_SECURE !== undefined
+          ? process.env.COOKIE_SECURE === 'true'
+          : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
 
       const response = NextResponse.json({
         success: true,
-        message: '密码修改成功，请重新登录'
+        message: '密码修改成功，请重新登录',
       });
       response.cookies.set('auth-token', '', {
-        httpOnly: true, secure: isSecure, sameSite: 'lax', maxAge: 0, path: '/'
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
       });
       return response;
     } else {
-      return NextResponse.json(
-        { success: false, error: '当前密码错误' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: '当前密码错误' }, { status: 400 });
     }
-
   } catch (error) {
-    logger.error('修改密码失败', error)
+    logger.error('修改密码失败', error);
     return NextResponse.json(
       { success: false, error: ErrorHandler.toUserMessage(error) },
       { status: ErrorHandler.getStatusCode(error) }

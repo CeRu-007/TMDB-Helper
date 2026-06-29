@@ -40,8 +40,7 @@ interface ModelServiceData {
 
 interface ImageContent {
   type: string;
-  data: string;
-  format?: string;
+  image_url?: { url: string };
 }
 
 interface ChatMessage {
@@ -63,51 +62,49 @@ interface OCRResponse {
   };
 }
 
-
-
 export interface OCRRequest {
   /** 图像数据 (base64 或 URL) */
-  image: string
+  image: string;
   /** 字幕区域边界框 (百分比) */
   region?: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   /** 时间戳 (秒) */
-  timestamp: number
+  timestamp: number;
 }
 
 export interface OCRBatchRequest {
   /** 拼接后的图像数据 */
-  image: string
+  image: string;
   /** 各帧的时间戳列表 */
-  timestamps: number[]
+  timestamps: number[];
   /** 各帧对应的语音段 */
-  segments?: OCRSegment[]
+  segments?: OCRSegment[];
 }
 
 export interface OCRResult {
   /** 识别到的文本 */
-  text: string
+  text: string;
   /** 置信度 (0-1) */
-  confidence: number
+  confidence: number;
   /** 时间戳 (秒) */
-  timestamp: number
+  timestamp: number;
   /** 原始响应 */
-  rawResponse?: string
+  rawResponse?: string;
 }
 
 export interface SubtitleOCRConfig {
   /** 场景类型 */
-  scenarioType: 'subtitle_ocr'
+  scenarioType: 'subtitle_ocr';
   /** 温度参数 */
-  temperature?: number
+  temperature?: number;
   /** 最大 token 数 */
-  maxTokens?: number
+  maxTokens?: number;
   /** 超时时间 (毫秒) */
-  timeout?: number
+  timeout?: number;
 }
 
 /**
@@ -115,49 +112,49 @@ export interface SubtitleOCRConfig {
  * 调用模型服务的多模态视觉模型识别字幕
  */
 export class SubtitleOCR {
-  private config: SubtitleOCRConfig
+  private config: SubtitleOCRConfig;
 
   constructor(config?: Partial<SubtitleOCRConfig>) {
     this.config = {
       scenarioType: config?.scenarioType ?? 'subtitle_ocr',
       temperature: config?.temperature ?? 0.1,
       maxTokens: config?.maxTokens ?? 500,
-      timeout: config?.timeout ?? 30000
-    }
+      timeout: config?.timeout ?? 30000,
+    };
   }
 
   /**
    * 识别单帧图像中的字幕
    */
   async recognize(request: OCRRequest): Promise<OCRResult> {
-    const modelServiceData = await this.getModelConfig()
+    const modelServiceData = await this.getModelConfig();
 
     if (!modelServiceData.success || !modelServiceData.scenario?.primaryModelId) {
-      throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型')
+      throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型');
     }
 
-    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData)
+    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData);
 
-    logger.debug('SubtitleOCR', `使用模型: ${primaryModelId}`)
+    logger.debug('SubtitleOCR', `使用模型: ${primaryModelId}`);
 
     // 构建提示词
-    const prompt = this.buildOCRPrompt(request.region)
+    const prompt = this.buildOCRPrompt(request.region);
 
     // 构建消息
-    const messages = this.buildMessages(request.image, prompt)
+    const messages = this.buildMessages(request.image, prompt);
 
     // 调用模型API（不重试，失败即抛出）
-    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages)
+    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages);
 
     // 解析结果
-    const result = this.parseOCRResult(response)
+    const result = this.parseOCRResult(response);
 
     return {
       text: result.text,
       confidence: result.confidence,
       timestamp: request.timestamp,
-      rawResponse: response.choices?.[0]?.message?.content
-    }
+      rawResponse: response.choices?.[0]?.message?.content,
+    };
   }
 
   /**
@@ -165,47 +162,47 @@ export class SubtitleOCR {
    * 将多张图片拼接成一张，一次性识别所有字幕
    */
   async recognizeBatch(request: OCRBatchRequest): Promise<OCRResult[]> {
-    const modelServiceData = await this.getModelConfig()
+    const modelServiceData = await this.getModelConfig();
 
     if (!modelServiceData.success || !modelServiceData.scenario?.primaryModelId) {
-      throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型')
+      throw new Error('OCR模型未配置，请在模型服务-使用场景中配置字幕OCR模型');
     }
 
-    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData)
+    const { apiBaseUrl, apiKey, primaryModelId } = this.extractModelInfo(modelServiceData);
 
     logger.debug('SubtitleOCR', '批量识别', {
       frameCount: request.timestamps.length,
-      modelId: primaryModelId
-    })
+      modelId: primaryModelId,
+    });
 
     // 构建批量识别的提示词
-    const prompt = this.buildBatchOCRPrompt(request.timestamps.length)
+    const prompt = this.buildBatchOCRPrompt(request.timestamps.length);
 
     // 构建消息
-    const messages = this.buildMessages(request.image, prompt)
+    const messages = this.buildMessages(request.image, prompt);
 
     // 调用模型API
-    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages)
+    const response = await this.callModelAPI(apiBaseUrl, apiKey, primaryModelId, messages);
 
     // 解析结果
-    const allText = response.choices?.[0]?.message?.content || ''
+    const allText = response.choices?.[0]?.message?.content || '';
 
     // 按行分割文本，分配给各个时间戳
-    const lines = allText.split('\n').filter(line => line.trim().length > 0)
+    const lines = allText.split('\n').filter((line) => line.trim().length > 0);
 
-    const results: OCRResult[] = []
+    const results: OCRResult[] = [];
     for (let i = 0; i < request.timestamps.length; i++) {
-      const text = lines[i] || ''
-      const confidence = text && !text.includes('[无法识别]') ? 0.9 : 0.1
+      const text = lines[i] || '';
+      const confidence = text && !text.includes('[无法识别]') ? 0.9 : 0.1;
 
       results.push({
         text: text.replace(/^\d+[\.\)]\s*/, ''), // 移除序号前缀
         confidence,
-        timestamp: request.timestamps[i]
-      })
+        timestamp: request.timestamps[i],
+      });
     }
 
-    return results
+    return results;
   }
 
   /**
@@ -225,7 +222,7 @@ export class SubtitleOCR {
 第一句字幕内容
 第二句字幕内容
 [无法识别]
-第四句字幕内容`
+第四句字幕内容`;
   }
 
   /**
@@ -234,67 +231,67 @@ export class SubtitleOCR {
    */
   async recognizeBatchOriginal(requests: OCRRequest[]): Promise<OCRResult[]> {
     // 串行处理，每个请求都会等待前一个请求返回
-    const results: OCRResult[] = []
+    const results: OCRResult[] = [];
 
     for (let i = 0; i < requests.length; i++) {
       try {
-        const result = await this.recognize(requests[i])
-        results.push(result)
+        const result = await this.recognize(requests[i]);
+        results.push(result);
       } catch (err: unknown) {
         results.push({
           text: '',
           confidence: 0,
           timestamp: requests[i].timestamp,
-          rawResponse: `Error: ${err.message}`
-        })
+          rawResponse: `Error: ${(err as Error).message}`,
+        });
       }
     }
 
-    return results
+    return results;
   }
 
   /**
    * 获取模型服务配置
    */
   private async getModelConfig() {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4949'
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:4949';
     const response = await fetch(
       `${baseUrl}/api/model-service/scenario?scenario=${this.config.scenarioType}`
-    )
+    );
 
     if (!response.ok) {
-      throw new Error('获取模型服务配置失败')
+      throw new Error('获取模型服务配置失败');
     }
 
-    return response.json()
+    return response.json();
   }
 
   /**
    * 提取模型信息
    */
   private extractModelInfo(data: ModelServiceData) {
-    const primaryModelId = data.scenario.primaryModelId
-    const primaryModel = data.models.find((m) => m.id === primaryModelId)
+    const primaryModelId = data.scenario.primaryModelId;
+    const primaryModel = data.models.find((m) => m.id === primaryModelId);
 
     if (!primaryModel) {
-      throw new Error('配置的OCR模型不存在')
+      throw new Error('配置的OCR模型不存在');
     }
 
-    const provider = data.providers.find((p) => p.id === primaryModel.providerId)
+    const provider = data.providers.find((p) => p.id === primaryModel.providerId);
 
-    if (!provider?.apiKey) {
-      throw new Error('OCR模型提供商未配置API密钥')
+    if (!(provider as any)?.apiKey) {
+      throw new Error('OCR模型提供商未配置API密钥');
     }
 
     logger.debug('SubtitleOCR', '使用模型', {
-      primary: primaryModel.modelId || primaryModel.id
+      primary: primaryModel.modelId || primaryModel.id,
     });
 
     return {
-      apiBaseUrl: provider.apiBaseUrl,
-      apiKey: provider.apiKey,
-      primaryModelId: primaryModel.modelId || primaryModel.id
-    }
+      apiBaseUrl: (provider as any).apiBaseUrl,
+      apiKey: (provider as any).apiKey,
+      primaryModelId: primaryModel.modelId || primaryModel.id,
+    };
   }
 
   /**
@@ -307,40 +304,39 @@ export class SubtitleOCR {
 1. 精确识别每个字符，包括标点符号
 2. 如果是中文，使用中文标点；如果是英文，使用英文标点
 3. 如果无法识别或图片不清晰，请返回 "[无法识别]"
-4. 只返回字幕原文，不要包含时间信息或序号`
+4. 只返回字幕原文，不要包含时间信息或序号`;
 
     if (region) {
-      prompt += `\n\n注意：字幕位于图片的左上${Math.round(region.y)}%到右下${Math.round(region.y + region.height)}%区域。`
+      prompt += `\n\n注意：字幕位于图片的左上${Math.round(region.y)}%到右下${Math.round(region.y + region.height)}%区域。`;
     }
 
-    return prompt
+    return prompt;
   }
 
   /**
    * 构建API消息
    */
   private buildMessages(image: string, prompt: string) {
-    let imageContent: ImageContent
+    let imageContent: ImageContent;
 
     if (image.startsWith('data:')) {
       imageContent = {
         type: 'image_url',
-        image_url: { url: image }
-      }
+        image_url: { url: image },
+      };
     } else {
       imageContent = {
         type: 'image_url',
-        image_url: { url: image }
-      }
+        image_url: { url: image },
+      };
     }
 
-    return [{
-      role: 'user',
-      content: [
-        { type: 'text', text: prompt },
-        imageContent
-      ]
-    }]
+    return [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: prompt }, imageContent],
+      },
+    ];
   }
 
   /**
@@ -352,36 +348,36 @@ export class SubtitleOCR {
     modelId: string,
     messages: ChatMessage[]
   ): Promise<OCRResponse> {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
       const response = await fetch(`${apiBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: modelId,
           messages: messages,
           max_tokens: this.config.maxTokens,
-          temperature: this.config.temperature
+          temperature: this.config.temperature,
         }),
-        signal: controller.signal
-      })
+        signal: controller.signal,
+      });
 
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`API调用失败: ${response.status} ${errorText}`)
+        const errorText = await response.text();
+        throw new Error(`API调用失败: ${response.status} ${errorText}`);
       }
 
-      return response.json()
+      return response.json();
     } catch (error) {
-      clearTimeout(timeoutId)
-      throw error
+      clearTimeout(timeoutId);
+      throw error;
     }
   }
 
@@ -389,37 +385,37 @@ export class SubtitleOCR {
    * 解析OCR结果
    */
   private parseOCRResult(response: OCRResponse): { text: string; confidence: number } {
-    const content = response.choices?.[0]?.message?.content || ''
+    const content = response.choices?.[0]?.message?.content || '';
 
     // 清理结果
     const text = content
       .trim()
       .replace(/^["']|["']$/g, '') // 移除首尾引号
       .replace(/^(OCR识别结果|识别结果|字幕|Text)[:：]\s*/i, '') // 移除前缀
-      .trim()
+      .trim();
 
     // 估算置信度
-    let confidence = 0.9
+    let confidence = 0.9;
 
     // 根据内容特征调整置信度
     if (text.includes('[无法识别]') || text.includes('无法识别')) {
-      confidence = 0.1
+      confidence = 0.1;
     } else if (text.length < 2) {
-      confidence = 0.3
+      confidence = 0.3;
     } else if (text.length > 100) {
       // 长文本可能有错误
-      confidence = 0.7
+      confidence = 0.7;
     }
 
     // 检查是否包含常见错误模式
-    const errorPatterns = [/[oO0]{5,}/, /[iIl1]{10,}/, /[\?\。]{3,}/]
+    const errorPatterns = [/[oO0]{5,}/, /[iIl1]{10,}/, /[\?\。]{3,}/];
     for (const pattern of errorPatterns) {
       if (pattern.test(text)) {
-        confidence = Math.max(0.3, confidence - 0.2)
+        confidence = Math.max(0.3, confidence - 0.2);
       }
     }
 
-    return { text, confidence }
+    return { text, confidence };
   }
 }
 
@@ -436,7 +432,7 @@ export function cropSubtitleRegion(
   // 注意：实际实现需要在前端使用 canvas 或在后端使用 sharp/imageMagick
   // 这里只返回原始图像，区域裁剪由后端处理
 
-  return imageData
+  return imageData;
 }
 
 /**
@@ -446,41 +442,43 @@ export function mergeAdjacentSubtitles(
   results: OCRResult[],
   mergeThreshold: number = 2.0
 ): OCRResult[] {
-  if (results.length === 0) return []
+  if (results.length === 0) {
+    return [];
+  }
 
   // 按时间排序
-  const sorted = [...results].sort((a, b) => a.timestamp - b.timestamp)
+  const sorted = [...results].sort((a, b) => a.timestamp - b.timestamp);
 
-  const merged: OCRResult[] = []
-  let current: OCRResult | null = null
+  const merged: OCRResult[] = [];
+  let current: OCRResult | null = null;
 
   for (const result of sorted) {
     if (!result.text || result.text.includes('[无法识别]')) {
-      continue
+      continue;
     }
 
     if (current) {
       // 检查是否应该合并
-      const timeDiff = result.timestamp - (current.timestamp + estimateDuration(current.text))
+      const timeDiff = result.timestamp - (current.timestamp + estimateDuration(current.text));
 
       if (timeDiff < mergeThreshold) {
         // 合并文本
-        current.text = `${current.text} ${result.text}`
-        current.confidence = (current.confidence + result.confidence) / 2
+        current.text = `${current.text} ${result.text}`;
+        current.confidence = (current.confidence + result.confidence) / 2;
       } else {
-        merged.push(current)
-        current = result
+        merged.push(current);
+        current = result;
       }
     } else {
-      current = result
+      current = result;
     }
   }
 
   if (current) {
-    merged.push(current)
+    merged.push(current);
   }
 
-  return merged
+  return merged;
 }
 
 /**
@@ -488,5 +486,5 @@ export function mergeAdjacentSubtitles(
  */
 function estimateDuration(text: string): number {
   // 简单估算：每5个字符约1秒
-  return Math.max(1, text.length / 5)
+  return Math.max(1, text.length / 5);
 }

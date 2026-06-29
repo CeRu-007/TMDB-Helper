@@ -26,13 +26,15 @@ export async function GET() {
         appearanceSettings: config.appearanceSettings,
         videoThumbnailSettings: config.videoThumbnailSettings,
         hasSiliconFlowApiKey: !!config.siliconFlowApiKey,
-        hasModelScopeApiKey: !!config.modelScopeApiKey
-      }
+        hasModelScopeApiKey: !!config.modelScopeApiKey,
+      },
     });
   } catch (error) {
-
     return NextResponse.json(
-      { success: false, error: `获取配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
+      {
+        success: false,
+        error: `获取配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      },
       { status: 500 }
     );
   }
@@ -61,7 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (siliconFlowThumbnailModel) {
-      await ServerConfigManager.setConfigItem('siliconFlowThumbnailModel', siliconFlowThumbnailModel);
+      await ServerConfigManager.setConfigItem(
+        'siliconFlowThumbnailModel',
+        siliconFlowThumbnailModel
+      );
     }
 
     if (modelScopeApiKey) {
@@ -86,12 +91,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '配置保存成功'
+      message: '配置保存成功',
     });
   } catch (error) {
-
     return NextResponse.json(
-      { success: false, error: `保存配置失败: ${error instanceof Error ? error.message : '未知错误'}` },
+      {
+        success: false,
+        error: `保存配置失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      },
       { status: 500 }
     );
   }

@@ -3,8 +3,8 @@
  * 改写文字，使用不同表达
  */
 
-import { BaseEnhanceOperationPlugin } from './base-enhance-operation'
-import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types'
+import { BaseEnhanceOperationPlugin } from './base-enhance-operation';
+import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types';
 
 export class RewritePlugin extends BaseEnhanceOperationPlugin {
   constructor() {
@@ -17,16 +17,16 @@ export class RewritePlugin extends BaseEnhanceOperationPlugin {
       version: '1.0.0',
       author: 'TMDB-Helper',
       isBuiltin: true,
-      tags: ['enhance', 'rewrite']
-    })
+      tags: ['enhance', 'rewrite'],
+    });
   }
 
-  operationType: EnhanceOperationType = 'rewrite'
+  operationType: EnhanceOperationType = 'rewrite';
 
   defaultConfig: EnhanceConfig = {
     temperature: 0.7,
-    maxTokens: 1000
-  }
+    maxTokens: 1000,
+  };
 
   buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string {
     // 如果有选中的文字，只改写选中的部分
@@ -43,9 +43,9 @@ ${input.selectedText}
 4. 保持与上下文的连贯性
 5. 字数与原文相近
 
-请直接输出改写后的文字，不要包含其他说明：`
+请直接输出改写后的文字，不要包含其他说明：`;
     }
-    
+
     // 否则改写整个标题和简介
     return `请对以下影视剧集标题和简介进行改写，使用不同的表达方式重新组织内容：
 
@@ -62,8 +62,8 @@ ${input.selectedText}
 
 请严格按照以下格式输出：
 标题：[改写后的标题]
-简介：[改写后的简介]`
+简介：[改写后的简介]`;
   }
 }
 
-export const rewritePlugin = new RewritePlugin()
+export const rewritePlugin = new RewritePlugin();

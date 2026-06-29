@@ -3,8 +3,8 @@
  * 精简内容，提炼核心信息
  */
 
-import { BaseEnhanceOperationPlugin } from './base-enhance-operation'
-import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types'
+import { BaseEnhanceOperationPlugin } from './base-enhance-operation';
+import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types';
 
 export class ShortenPlugin extends BaseEnhanceOperationPlugin {
   constructor() {
@@ -17,16 +17,16 @@ export class ShortenPlugin extends BaseEnhanceOperationPlugin {
       version: '1.0.0',
       author: 'TMDB-Helper',
       isBuiltin: true,
-      tags: ['enhance', 'shorten']
-    })
+      tags: ['enhance', 'shorten'],
+    });
   }
 
-  operationType: EnhanceOperationType = 'shorten'
+  operationType: EnhanceOperationType = 'shorten';
 
   defaultConfig: EnhanceConfig = {
     temperature: 0.4,
-    maxTokens: 600
-  }
+    maxTokens: 600,
+  };
 
   buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string {
     return `请将以下影视剧集标题和简介进行专业精简，提炼出最核心的信息：
@@ -49,8 +49,8 @@ export class ShortenPlugin extends BaseEnhanceOperationPlugin {
 
 请严格按照以下格式输出：
 标题：[精简后的标题]
-简介：[精简后的简介]`
+简介：[精简后的简介]`;
   }
 }
 
-export const shortenPlugin = new ShortenPlugin()
+export const shortenPlugin = new ShortenPlugin();

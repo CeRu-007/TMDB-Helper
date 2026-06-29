@@ -34,7 +34,7 @@
 }
 
 /* 表格单元格样式优化 */
-.tmdb-table td input[type="text"] {
+.tmdb-table td input[type='text'] {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -48,12 +48,12 @@
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
 }
 
-.tmdb-table td input[type="text"]:focus {
+.tmdb-table td input[type='text']:focus {
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
 }
 
-.tmdb-table td input[type="text"]::placeholder {
+.tmdb-table td input[type='text']::placeholder {
   color: hsl(var(--muted-foreground));
   opacity: 0.7;
 }

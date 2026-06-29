@@ -1,9 +1,9 @@
 // Components
-export { MediaNewsSection } from './components/media-news-section'
-export { RegionNavigation } from './components/region-navigation'
+export { MediaNewsSection } from './components/media-news-section';
+export { RegionNavigation } from './components/region-navigation';
 
 // Hooks
-export { useMediaNews } from './lib/hooks/use-media-news'
+export { useMediaNews } from './lib/hooks/use-media-news';
 
 // Types
-export * from './types/media-news'
+export * from './types/media-news';

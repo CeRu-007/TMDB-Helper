@@ -1,55 +1,55 @@
-'use client'
+'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle } from 'lucide-react'
-import { Button } from './ui/button'
-import { Alert, AlertDescription } from './ui/alert'
-import { logger } from '@/lib/utils/logger'
-import i18n from '@/lib/i18n'
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Button } from './ui/button';
+import { Alert, AlertDescription } from './ui/alert';
+import { logger } from '@/lib/utils/logger';
+import i18n from '@/lib/i18n';
 
 interface ErrorBoundaryState {
-  hasError: boolean
-  error: Error | null
-  errorInfo: ErrorInfo | null
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 interface ErrorBoundaryProps {
-  children: ReactNode
-  fallback?: ReactNode
-  onError?: (error: Error, errorInfo: ErrorInfo) => void
-  showErrorDetails?: boolean
+  children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  showErrorDetails?: boolean;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
+    super(props);
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
-    }
+      errorInfo: null,
+    };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return {
       hasError: true,
       error,
-      errorInfo: null
-    }
+      errorInfo: null,
+    };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
-      errorInfo
-    })
+      errorInfo,
+    });
 
     if (this.props.onError) {
-      this.props.onError(error, errorInfo)
+      this.props.onError(error, errorInfo);
     }
 
     if (process.env.NODE_ENV === 'development') {
-      logger.error('ErrorBoundary caught an error:', error, errorInfo)
+      logger.error('ErrorBoundary caught an error:', error, errorInfo);
     }
   }
 
@@ -57,17 +57,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
-    })
-  }
+      errorInfo: null,
+    });
+  };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback
+        return this.props.fallback;
       }
 
-      const { t } = i18n
+      const { t } = i18n;
 
       return (
         <div className="min-h-[200px] flex items-center justify-center p-4">
@@ -76,9 +76,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="mt-2">
                 <div className="space-y-2">
-                  <p className="font-medium">
-                    {t('pageErrorTitle', { ns: 'common' })}
-                  </p>
+                  <p className="font-medium">{t('pageErrorTitle', { ns: 'common' })}</p>
                   <p className="text-sm text-muted-foreground">
                     {this.state.error?.message || t('unknownError', { ns: 'common' })}
                   </p>
@@ -95,18 +93,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   )}
 
                   <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={this.handleReset}
-                    >
+                    <Button variant="outline" size="sm" onClick={this.handleReset}>
                       {t('retry', { ns: 'common' })}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.location.reload()}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
                       {t('refreshPage', { ns: 'common' })}
                     </Button>
                   </div>
@@ -115,42 +105,39 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </Alert>
           </div>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
 export function AsyncErrorBoundary({
   children,
-  fallback
+  fallback,
 }: {
-  children: ReactNode
-  fallback?: ReactNode
+  children: ReactNode;
+  fallback?: ReactNode;
 }) {
-  const [error, setError] = React.useState<Error | null>(null)
+  const [error, setError] = React.useState<Error | null>(null);
 
   const resetError = React.useCallback(() => {
-    setError(null)
-  }, [])
+    setError(null);
+  }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    setError(error)
-  }, [])
+    setError(error);
+  }, []);
 
   if (error) {
     return (
-      <ErrorBoundary
-        fallback={fallback}
-        onError={handleError}
-      >
+      <ErrorBoundary fallback={fallback} onError={handleError}>
         <div />
       </ErrorBoundary>
-    )
+    );
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 export function withErrorBoundary<P extends object>(
@@ -161,9 +148,9 @@ export function withErrorBoundary<P extends object>(
     <ErrorBoundary {...errorBoundaryProps}>
       <Component {...props} />
     </ErrorBoundary>
-  )
+  );
 
-  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`
+  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
 
-  return WrappedComponent
+  return WrappedComponent;
 }

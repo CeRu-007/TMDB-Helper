@@ -38,13 +38,13 @@ export class RateLimiter {
     if (!entry) {
       const newEntry: RateLimitEntry = {
         attempts: 1,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       };
       this.store.set(identifier, newEntry);
       return {
         allowed: true,
         remainingAttempts: maxAttempts - 1,
-        resetTime: newEntry.resetTime
+        resetTime: newEntry.resetTime,
       };
     }
 
@@ -54,7 +54,7 @@ export class RateLimiter {
         allowed: false,
         remainingAttempts: 0,
         resetTime: entry.resetTime,
-        lockedUntil: entry.lockedUntil
+        lockedUntil: entry.lockedUntil,
       };
     }
 
@@ -67,7 +67,7 @@ export class RateLimiter {
       return {
         allowed: true,
         remainingAttempts: maxAttempts - 1,
-        resetTime: entry.resetTime
+        resetTime: entry.resetTime,
       };
     }
 
@@ -82,7 +82,7 @@ export class RateLimiter {
         allowed: false,
         remainingAttempts: 0,
         resetTime: entry.resetTime,
-        lockedUntil: entry.lockedUntil
+        lockedUntil: entry.lockedUntil,
       };
     }
 
@@ -90,7 +90,7 @@ export class RateLimiter {
     return {
       allowed: true,
       remainingAttempts: maxAttempts - entry.attempts,
-      resetTime: entry.resetTime
+      resetTime: entry.resetTime,
     };
   }
 
@@ -115,18 +115,14 @@ export class RateLimiter {
     }
 
     // Try different headers in order of preference
-    const headers = [
-      'x-forwarded-for',
-      'x-real-ip',
-      'cf-connecting-ip'
-    ];
+    const headers = ['x-forwarded-for', 'x-real-ip', 'cf-connecting-ip'];
 
     for (const header of headers) {
       const value = request.headers.get(header);
       if (value) {
         if (header === 'x-forwarded-for') {
           // x-forwarded-for format: clientIP, proxy1IP, proxy2IP
-          const ips = value.split(',').map(ip => ip.trim());
+          const ips = value.split(',').map((ip) => ip.trim());
           return ips[ips.length - 1] ?? 'unknown'; // Take the last IP (closest to server)
         }
         return value;

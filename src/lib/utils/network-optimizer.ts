@@ -75,7 +75,7 @@ export class NetworkOptimizer {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // 转换为32位整数
     }
     return Math.abs(hash).toString(36);
@@ -115,7 +115,7 @@ export class NetworkOptimizer {
             success: true,
             cacheHit: true,
             timestamp: Date.now(),
-            size: JSON.stringify(cached).length
+            size: JSON.stringify(cached).length,
           });
           return cached;
         }
@@ -123,7 +123,6 @@ export class NetworkOptimizer {
 
       // 2. 检查请求去重
       if (this.pendingRequests.has(dedupeKey)) {
-        
         return await this.pendingRequests.get(dedupeKey)!;
       }
 
@@ -133,7 +132,7 @@ export class NetworkOptimizer {
 
       try {
         const result = await requestPromise;
-        
+
         // 4. 缓存成功的GET请求结果
         if (config.cache !== false && (config.method || 'GET') === 'GET') {
           const ttl = config.cacheTTL || 5 * 60 * 1000; // 默认5分钟
@@ -147,7 +146,7 @@ export class NetworkOptimizer {
           success: true,
           cacheHit: false,
           timestamp: Date.now(),
-          size: JSON.stringify(result).length
+          size: JSON.stringify(result).length,
         });
 
         return result;
@@ -163,7 +162,7 @@ export class NetworkOptimizer {
         success: false,
         cacheHit: false,
         timestamp: Date.now(),
-        size: 0
+        size: 0,
       });
       throw error;
     }
@@ -173,14 +172,7 @@ export class NetworkOptimizer {
    * 执行实际的网络请求
    */
   private async executeRequest(config: RequestConfig): Promise<any> {
-    const {
-      url,
-      method = 'GET',
-      headers = {},
-      body,
-      timeout = 15000,
-      retries = 3
-    } = config;
+    const { url, method = 'GET', headers = {}, body, timeout = 15000, retries = 3 } = config;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -192,10 +184,10 @@ export class NetworkOptimizer {
             method,
             headers: {
               'Content-Type': 'application/json',
-              ...headers
+              ...headers,
             },
             body: body ? JSON.stringify(body) : undefined,
-            signal: controller.signal
+            signal: controller.signal,
           });
 
           if (!response.ok) {
@@ -213,7 +205,7 @@ export class NetworkOptimizer {
 
           // Exponential backoff
           const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     } finally {
@@ -224,12 +216,26 @@ export class NetworkOptimizer {
   /**
    * 判断是否为不可重试的错误
    */
-  private isNonRetryableError(error: { code?: number; message?: string }): boolean {
-    if (error.name === 'AbortError') return true;
-    if (error.message?.includes('400')) return true;
-    if (error.message?.includes('401')) return true;
-    if (error.message?.includes('403')) return true;
-    if (error.message?.includes('404')) return true;
+  private isNonRetryableError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    const e = error as { name?: string; message?: string };
+    if (e.name === 'AbortError') {
+      return true;
+    }
+    if (e.message?.includes('400')) {
+      return true;
+    }
+    if (e.message?.includes('401')) {
+      return true;
+    }
+    if (e.message?.includes('403')) {
+      return true;
+    }
+    if (e.message?.includes('404')) {
+      return true;
+    }
     return false;
   }
 
@@ -237,7 +243,7 @@ export class NetworkOptimizer {
    * 批量请求
    */
   async batchRequest<T = any>(configs: RequestConfig[]): Promise<T[]> {
-    return Promise.all(configs.map(config => this.request<T>(config)));
+    return Promise.all(configs.map((config) => this.request<T>(config)));
   }
 
   /**
@@ -248,9 +254,9 @@ export class NetworkOptimizer {
       const batchRequest: BatchRequest = {
         id: Math.random().toString(36).substr(2, 9),
         config,
-        resolve,
+        resolve: resolve as (value: unknown) => void,
         reject,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.batchQueue.push(batchRequest);
@@ -276,10 +282,12 @@ export class NetworkOptimizer {
       this.batchTimer = null;
     }
 
-    if (this.batchQueue.length === 0) return;
+    if (this.batchQueue.length === 0) {
+      return;
+    }
 
     const currentBatch = this.batchQueue.splice(0, this.maxBatchSize);
-    
+
     // 按优先级排序
     currentBatch.sort((a, b) => {
       const priorityOrder = { high: 3, normal: 2, low: 1 };
@@ -311,22 +319,22 @@ export class NetworkOptimizer {
    */
   async preload(configs: RequestConfig[]): Promise<void> {
     const priorities = {
-      high: configs.filter(c => c.priority === 'high'),
-      normal: configs.filter(c => c.priority === 'normal' || !c.priority),
-      low: configs.filter(c => c.priority === 'low')
+      high: configs.filter((c) => c.priority === 'high'),
+      normal: configs.filter((c) => c.priority === 'normal' || !c.priority),
+      low: configs.filter((c) => c.priority === 'low'),
     };
 
     // Execute immediately, don't wait
-    Promise.allSettled(priorities.high.map(config => this.request(config)));
+    Promise.allSettled(priorities.high.map((config) => this.request(config)));
 
     // Delay normal priority
     setTimeout(() => {
-      Promise.allSettled(priorities.normal.map(config => this.request(config)));
+      Promise.allSettled(priorities.normal.map((config) => this.request(config)));
     }, 100);
 
     // Use idle callback for low priority if available
     const loadLowPriority = () =>
-      Promise.allSettled(priorities.low.map(config => this.request(config)));
+      Promise.allSettled(priorities.low.map((config) => this.request(config)));
 
     if ('requestIdleCallback' in window) {
       (window as any).requestIdleCallback(loadLowPriority);
@@ -340,7 +348,7 @@ export class NetworkOptimizer {
    */
   private recordMetrics(metrics: RequestMetrics): void {
     this.requestMetrics.push(metrics);
-    
+
     // 保持指标历史记录在限制范围内
     if (this.requestMetrics.length > this.maxMetricsHistory) {
       this.requestMetrics = this.requestMetrics.slice(-this.maxMetricsHistory);
@@ -368,18 +376,18 @@ export class NetworkOptimizer {
         cacheHitRate: 0,
         totalDataTransferred: 0,
         requestsByUrl: {},
-        slowestRequests: []
+        slowestRequests: [],
       };
     }
 
-    const successful = this.requestMetrics.filter(m => m.success).length;
-    const cacheHits = this.requestMetrics.filter(m => m.cacheHit).length;
+    const successful = this.requestMetrics.filter((m) => m.success).length;
+    const cacheHits = this.requestMetrics.filter((m) => m.cacheHit).length;
     const totalDuration = this.requestMetrics.reduce((sum, m) => sum + m.duration, 0);
     const totalSize = this.requestMetrics.reduce((sum, m) => sum + m.size, 0);
 
     // 按URL统计请求次数
     const requestsByUrl: Record<string, number> = {};
-    this.requestMetrics.forEach(m => {
+    this.requestMetrics.forEach((m) => {
       requestsByUrl[m.url] = (requestsByUrl[m.url] || 0) + 1;
     });
 
@@ -395,7 +403,7 @@ export class NetworkOptimizer {
       cacheHitRate: cacheHits / total,
       totalDataTransferred: totalSize,
       requestsByUrl,
-      slowestRequests
+      slowestRequests,
     };
   }
 
@@ -405,7 +413,7 @@ export class NetworkOptimizer {
   async clearCache(pattern?: string): Promise<void> {
     if (pattern) {
       // 这里需要实现模式匹配的缓存清除
-      
+
       // 由于IndexedDB的限制，这里简化实现
       await indexedDBStorage.cleanupCache();
     } else {
@@ -430,11 +438,11 @@ export class NetworkOptimizer {
   }> {
     const stats = await indexedDBStorage.getStorageStats();
     const metrics = this.getPerformanceStats();
-    
+
     return {
       entries: stats.cacheEntries,
       totalSize: stats.totalCacheSize,
-      hitRate: metrics.cacheHitRate
+      hitRate: metrics.cacheHitRate,
     };
   }
 
@@ -450,13 +458,13 @@ export class NetworkOptimizer {
    */
   cancelAllRequests(): void {
     this.pendingRequests.clear();
-    
+
     // 清空批量队列
-    this.batchQueue.forEach(request => {
+    this.batchQueue.forEach((request) => {
       request.reject(new Error('请求已取消'));
     });
     this.batchQueue = [];
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = null;
@@ -476,7 +484,11 @@ export class TMDBNetworkOptimizer {
     this.apiKey = process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
-  private buildUrl(endpoint: string, params: Record<string, any> = {}, useFallback = false): string {
+  private buildUrl(
+    endpoint: string,
+    params: Record<string, any> = {},
+    useFallback = false
+  ): string {
     const allParams = { api_key: this.apiKey, ...params };
     const searchParams = new URLSearchParams();
 
@@ -490,20 +502,24 @@ export class TMDBNetworkOptimizer {
     return `${baseURL}${endpoint}?${searchParams.toString()}`;
   }
 
-  private async requestWithFallback(endpoint: string, params: Record<string, any> = {}, requestConfig: Omit<RequestConfig, 'url'> = {}): Promise<any> {
+  private async requestWithFallback(
+    endpoint: string,
+    params: Record<string, any> = {},
+    requestConfig: Omit<RequestConfig, 'url'> = {}
+  ): Promise<any> {
     const primaryUrl = this.buildUrl(endpoint, params, false);
-    
+
     try {
       return await this.optimizer.request({
         url: primaryUrl,
-        ...requestConfig
+        ...requestConfig,
       });
     } catch {
       // 主域名失败，尝试备用域名
       const fallbackUrl = this.buildUrl(endpoint, params, true);
       return this.optimizer.request({
         url: fallbackUrl,
-        ...requestConfig
+        ...requestConfig,
       });
     }
   }
@@ -511,104 +527,134 @@ export class TMDBNetworkOptimizer {
   /**
    * 搜索电影
    */
-  async searchMovie(query: string, options: {
-    language?: string;
-    page?: number;
-    includeAdult?: boolean;
-    region?: string;
-    year?: number;
-    primaryReleaseYear?: number;
-  } = {}): Promise<any> {
-    return this.requestWithFallback('/search/movie', {
-      query,
-      language: options.language || 'zh-CN',
-      page: options.page || 1,
-      include_adult: options.includeAdult || false,
-      region: options.region,
-      year: options.year,
-      primary_release_year: options.primaryReleaseYear
-    }, {
-      method: 'GET',
-      cache: true,
-      cacheTTL: 10 * 60 * 1000, // 10分钟缓存
-      priority: 'normal'
-    });
+  async searchMovie(
+    query: string,
+    options: {
+      language?: string;
+      page?: number;
+      includeAdult?: boolean;
+      region?: string;
+      year?: number;
+      primaryReleaseYear?: number;
+    } = {}
+  ): Promise<any> {
+    return this.requestWithFallback(
+      '/search/movie',
+      {
+        query,
+        language: options.language || 'zh-CN',
+        page: options.page || 1,
+        include_adult: options.includeAdult || false,
+        region: options.region,
+        year: options.year,
+        primary_release_year: options.primaryReleaseYear,
+      },
+      {
+        method: 'GET',
+        cache: true,
+        cacheTTL: 10 * 60 * 1000, // 10分钟缓存
+        priority: 'normal',
+      }
+    );
   }
 
   /**
    * 搜索电视剧
    */
-  async searchTV(query: string, options: {
-    language?: string;
-    page?: number;
-    includeAdult?: boolean;
-    firstAirDateYear?: number;
-  } = {}): Promise<any> {
-    return this.requestWithFallback('/search/tv', {
-      query,
-      language: options.language || 'zh-CN',
-      page: options.page || 1,
-      include_adult: options.includeAdult || false,
-      first_air_date_year: options.firstAirDateYear
-    }, {
-      method: 'GET',
-      cache: true,
-      cacheTTL: 10 * 60 * 1000,
-      priority: 'normal'
-    });
+  async searchTV(
+    query: string,
+    options: {
+      language?: string;
+      page?: number;
+      includeAdult?: boolean;
+      firstAirDateYear?: number;
+    } = {}
+  ): Promise<any> {
+    return this.requestWithFallback(
+      '/search/tv',
+      {
+        query,
+        language: options.language || 'zh-CN',
+        page: options.page || 1,
+        include_adult: options.includeAdult || false,
+        first_air_date_year: options.firstAirDateYear,
+      },
+      {
+        method: 'GET',
+        cache: true,
+        cacheTTL: 10 * 60 * 1000,
+        priority: 'normal',
+      }
+    );
   }
 
   /**
    * 获取电影详情
    */
-  async getMovieDetails(movieId: string, options: {
-    language?: string;
-    appendToResponse?: string[];
-  } = {}): Promise<any> {
-    return this.requestWithFallback(`/movie/${movieId}`, {
-      language: options.language || 'zh-CN',
-      append_to_response: options.appendToResponse?.join(',')
-    }, {
-      method: 'GET',
-      cache: true,
-      cacheTTL: 30 * 60 * 1000, // 30分钟缓存
-      priority: 'high'
-    });
+  async getMovieDetails(
+    movieId: string,
+    options: {
+      language?: string;
+      appendToResponse?: string[];
+    } = {}
+  ): Promise<any> {
+    return this.requestWithFallback(
+      `/movie/${movieId}`,
+      {
+        language: options.language || 'zh-CN',
+        append_to_response: options.appendToResponse?.join(','),
+      },
+      {
+        method: 'GET',
+        cache: true,
+        cacheTTL: 30 * 60 * 1000, // 30分钟缓存
+        priority: 'high',
+      }
+    );
   }
 
   /**
    * 获取电视剧详情
    */
-  async getTVDetails(tvId: string, options: {
-    language?: string;
-    appendToResponse?: string[];
-  } = {}): Promise<any> {
-    return this.requestWithFallback(`/tv/${tvId}`, {
-      language: options.language || 'zh-CN',
-      append_to_response: options.appendToResponse?.join(',')
-    }, {
-      method: 'GET',
-      cache: true,
-      cacheTTL: 30 * 60 * 1000,
-      priority: 'high'
-    });
+  async getTVDetails(
+    tvId: string,
+    options: {
+      language?: string;
+      appendToResponse?: string[];
+    } = {}
+  ): Promise<any> {
+    return this.requestWithFallback(
+      `/tv/${tvId}`,
+      {
+        language: options.language || 'zh-CN',
+        append_to_response: options.appendToResponse?.join(','),
+      },
+      {
+        method: 'GET',
+        cache: true,
+        cacheTTL: 30 * 60 * 1000,
+        priority: 'high',
+      }
+    );
   }
 
   /**
    * 批量获取项目详情
    */
-  async batchGetDetails(items: Array<{
-    id: string;
-    type: 'movie' | 'tv';
-  }>): Promise<any[]> {
-    const configs = items.map(item => ({
+  async batchGetDetails(
+    items: Array<{
+      id: string;
+      type: 'movie' | 'tv';
+    }>
+  ): Promise<any[]> {
+    const configs = items.map((item) => ({
       url: this.buildUrl(`/${item.type}/${item.id}`, {
-        language: 'zh-CN'
+        language: 'zh-CN',
       }),
       method: 'GET' as const,
       cache: true,
       cacheTTL: 30 * 60 * 1000,
-      priority: 'normal' as const
+      priority: 'normal' as const,
     }));
 
     return this.optimizer.batchRequest(configs);
@@ -624,22 +670,22 @@ export class TMDBNetworkOptimizer {
         method: 'GET' as const,
         cache: true,
         cacheTTL: 60 * 60 * 1000, // 1小时缓存
-        priority: 'low' as const
+        priority: 'low' as const,
       },
       {
         url: this.buildUrl('/tv/popular', { language: 'zh-CN', page: 1 }),
         method: 'GET' as const,
         cache: true,
         cacheTTL: 60 * 60 * 1000,
-        priority: 'low' as const
+        priority: 'low' as const,
       },
       {
         url: this.buildUrl('/trending/all/day', { language: 'zh-CN' }),
         method: 'GET' as const,
         cache: true,
         cacheTTL: 60 * 60 * 1000,
-        priority: 'low' as const
-      }
+        priority: 'low' as const,
+      },
     ];
 
     await this.optimizer.preload(configs);

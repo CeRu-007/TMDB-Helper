@@ -97,8 +97,10 @@ export function hasProperties<T extends Record<string, unknown>>(
   obj: unknown,
   props: (keyof T)[]
 ): obj is T {
-  if (!isObject(obj)) return false;
-  return props.every(prop => prop in obj);
+  if (!isObject(obj)) {
+    return false;
+  }
+  return props.every((prop) => prop in obj);
 }
 
 /**
@@ -112,10 +114,12 @@ export interface ApiResponseShape {
 }
 
 export function isApiResponse(value: unknown): value is ApiResponseShape {
-  return isObject(value) &&
-         typeof value.success === 'boolean' &&
-         (value.data === undefined || value.data !== undefined) &&
-         (value.error === undefined || isString(value.error));
+  return (
+    isObject(value) &&
+    typeof value.success === 'boolean' &&
+    (value.data === undefined || value.data !== undefined) &&
+    (value.error === undefined || isString(value.error))
+  );
 }
 
 /**
@@ -128,10 +132,12 @@ export interface ErrorShape {
 }
 
 export function isError(value: unknown): value is ErrorShape {
-  return isObject(value) &&
-         isString(value.message) &&
-         (value.stack === undefined || isString(value.stack)) &&
-         (value.code === undefined || isString(value.code) || isNumber(value.code));
+  return (
+    isObject(value) &&
+    isString(value.message) &&
+    (value.stack === undefined || isString(value.stack)) &&
+    (value.code === undefined || isString(value.code) || isNumber(value.code))
+  );
 }
 
 /**
@@ -144,10 +150,14 @@ export interface DatabaseRecord {
 }
 
 export function isDatabaseRecord(value: unknown): value is DatabaseRecord {
-  return isObject(value) &&
-         (isString(value.id) || isNumber(value.id)) &&
-         (value.createdAt === undefined || isString(value.createdAt) || value.createdAt instanceof Date) &&
-         (value.updatedAt === undefined || isString(value.updatedAt) || value.updatedAt instanceof Date);
+  return (
+    isObject(value) &&
+    (isString(value.id) || isNumber(value.id)) &&
+    (value.createdAt === undefined ||
+      isString(value.createdAt) ||
+      value.createdAt instanceof Date) &&
+    (value.updatedAt === undefined || isString(value.updatedAt) || value.updatedAt instanceof Date)
+  );
 }
 
 /**
@@ -166,27 +176,29 @@ export function isPaginatedResponse<T>(
   value: unknown,
   itemGuard: (item: unknown) => item is T
 ): value is PaginatedResponseShape<T> {
-  return isObject(value) &&
-         isArray(value.data) &&
-         value.data.every(itemGuard) &&
-         isNumber(value.total) &&
-         isNumber(value.page) &&
-         isNumber(value.pageSize) &&
-         isBoolean(value.hasNext) &&
-         isBoolean(value.hasPrev);
+  return (
+    isObject(value) &&
+    isArray(value.data) &&
+    value.data.every(itemGuard) &&
+    isNumber(value.total) &&
+    isNumber(value.page) &&
+    isNumber(value.pageSize) &&
+    isBoolean(value.hasNext) &&
+    isBoolean(value.hasPrev)
+  );
 }
 
 /**
  * 类型谓词生成器
  * 根据对象的结构生成类型守卫
  */
-export function createTypeGuard<T extends Record<string, unknown>>(
-  schema: {
-    [K in keyof T]: (value: unknown) => value is T[K];
-  }
-) {
+export function createTypeGuard<T extends Record<string, unknown>>(schema: {
+  [K in keyof T]: (value: unknown) => value is T[K];
+}) {
   return function (value: unknown): value is T {
-    if (!isObject(value)) return false;
+    if (!isObject(value)) {
+      return false;
+    }
 
     for (const [key, validator] of Object.entries(schema)) {
       if (!(key in value) || !validator(value[key])) {
@@ -203,7 +215,7 @@ export function createTypeGuard<T extends Record<string, unknown>>(
  */
 export function createUnionGuard<T>(guards: ((value: unknown) => value is T)[]) {
   return function (value: unknown): value is T {
-    return guards.some(guard => guard(value));
+    return guards.some((guard) => guard(value));
   };
 }
 
@@ -248,8 +260,12 @@ export function safeConvert<T>(
  * 字符串转换器
  */
 export function toString(value: unknown, defaultValue: string = ''): string {
-  if (isString(value)) return value;
-  if (isNumber(value) || isBoolean(value)) return String(value);
+  if (isString(value)) {
+    return value;
+  }
+  if (isNumber(value) || isBoolean(value)) {
+    return String(value);
+  }
   return defaultValue;
 }
 
@@ -257,7 +273,9 @@ export function toString(value: unknown, defaultValue: string = ''): string {
  * 数字转换器
  */
 export function toNumber(value: unknown, defaultValue: number = 0): number {
-  if (isNumber(value)) return value;
+  if (isNumber(value)) {
+    return value;
+  }
   if (isString(value)) {
     const parsed = parseFloat(value);
     return isNaN(parsed) ? defaultValue : parsed;
@@ -269,7 +287,9 @@ export function toNumber(value: unknown, defaultValue: number = 0): number {
  * 布尔值转换器
  */
 export function toBoolean(value: unknown, defaultValue: boolean = false): boolean {
-  if (isBoolean(value)) return value;
+  if (isBoolean(value)) {
+    return value;
+  }
   if (isString(value)) {
     const lower = value.toLowerCase();
     return lower === 'true' || lower === '1' || lower === 'yes';

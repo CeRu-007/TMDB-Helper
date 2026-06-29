@@ -1,60 +1,58 @@
-import type { NextRequest } from "next/server"
-import { logger } from "@/lib/utils/logger"
- 
+import type { NextRequest } from 'next/server';
+import { logger } from '@/lib/utils/logger';
+
 // 声明全局activeProcesses类型
 declare global {
-  var activeProcesses: Map<number, any> | undefined;
+  var activeProcesses: Map<number, any>;
 }
 
 export async function GET(request: NextRequest) {
   try {
     // 获取或初始化全局进程列表
-    global.activeProcesses = global.activeProcesses || new Map()
-    
+    global.activeProcesses = global.activeProcesses || new Map();
+
     // 获取所有活跃进程ID
-    const processIds = Array.from(global.activeProcesses.keys())
-    logger.info(`当前活跃进程: ${processIds.join(', ') || '无'}`)
-    
+    const processIds = Array.from(global.activeProcesses.keys());
+    logger.info(`当前活跃进程: ${processIds.join(', ') || '无'}`);
+
     // 过滤掉那些已经结束的进程
-    const validProcesses = processIds.filter(pid => {
-      const process = global.activeProcesses!.get(pid)
-      return process && !process.killed
-    })
-    
+    const validProcesses = processIds.filter((pid) => {
+      const process = global.activeProcesses!.get(pid);
+      return process && !process.killed;
+    });
+
     if (validProcesses.length !== processIds.length) {
-      logger.info(`过滤后的有效进程: ${validProcesses.join(', ') || '无'}`)
-      
+      logger.info(`过滤后的有效进程: ${validProcesses.join(', ') || '无'}`);
+
       // 清理已结束的进程
-      processIds.forEach(pid => {
+      processIds.forEach((pid) => {
         if (!validProcesses.includes(pid)) {
-          global.activeProcesses!.delete(pid)
-          
+          global.activeProcesses!.delete(pid);
         }
-      })
+      });
     }
-    
+
     return new Response(
       JSON.stringify({
         success: true,
         processes: validProcesses,
-        count: validProcesses.length
+        count: validProcesses.length,
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
-    )
+    );
   } catch (error) {
-    
     return new Response(
       JSON.stringify({
         success: false,
         error: `服务器内部错误: ${error instanceof Error ? error.message : '未知错误'}`,
-        processes: []
+        processes: [],
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       }
-    )
+    );
   }
-} 
+}

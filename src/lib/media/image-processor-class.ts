@@ -3,7 +3,7 @@
  * 使用单例模式实现，确保整个应用中只有一个实例
  */
 
-import { logger } from '@/lib/utils/logger'
+import { logger } from '@/lib/utils/logger';
 
 type ImageProcessingWorker = Worker;
 
@@ -38,7 +38,7 @@ export class ImageProcessor {
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
-    
+
     // 创建初始化Promise
     this.initializationPromise = new Promise<void>((resolve, reject) => {
       try {
@@ -50,15 +50,15 @@ export class ImageProcessor {
         }
 
         logger.info('[ImageProcessor] 正在初始化图像处理器...');
-        
+
         try {
           // 直接创建Worker，不使用Blob
           this.worker = new Worker(new URL('./image-processing-worker.ts', import.meta.url));
-          
+
           // 设置消息处理程序
           this.worker.onmessage = (e: MessageEvent) => {
             const { taskId, error } = e.data as { taskId?: string; error?: string };
-            
+
             // 如果有任务ID，调用对应的回调
             if (taskId && this.taskCallbacks.has(taskId)) {
               const callback = this.taskCallbacks.get(taskId)!;
@@ -66,46 +66,45 @@ export class ImageProcessor {
               callback(e.data);
             } else if (error) {
               // 如果有错误但没有任务ID，通知所有等待的任务
-              
+
               const callbacks = new Map(this.taskCallbacks); // 创建副本避免修改原始Map
               this.taskCallbacks.clear(); // 先清空回调列表
-              
+
               // 然后调用回调
               callbacks.forEach((callback) => {
                 callback({ error });
               });
             }
           };
-          
+
           // 设置错误处理程序
           this.worker.onerror = (e: ErrorEvent) => {
-            
             // 通知所有等待的任务
             const callbacks = new Map(this.taskCallbacks); // 创建副本避免修改原始Map
             this.taskCallbacks.clear(); // 先清空回调列表
-            
+
             // 然后调用回调
             callbacks.forEach((callback) => {
               callback({ error: `Worker错误: ${e.message}` });
             });
-            
+
             // 如果初始化过程中出错，拒绝Promise
             reject(new Error(`Worker错误: ${e.message}`));
-            
+
             // 标记为未初始化
             this.initialized = false;
             this.worker = null;
           };
-          
+
           // 发送测试消息以确保Worker正常工作
           const testTaskId = `test_${Date.now()}`;
-          
+
           // 设置超时
           const timeoutId = setTimeout(() => {
             if (this.taskCallbacks.has(testTaskId)) {
               this.taskCallbacks.delete(testTaskId);
               reject(new Error('Worker初始化超时'));
-              
+
               // 标记为未初始化
               this.initialized = false;
               if (this.worker) {
@@ -114,7 +113,7 @@ export class ImageProcessor {
               }
             }
           }, 5000);
-          
+
           // 注册测试回调
           this.taskCallbacks.set(testTaskId, (result) => {
             clearTimeout(timeoutId);
@@ -123,7 +122,7 @@ export class ImageProcessor {
 
             if (resultData.error) {
               reject(new Error(`Worker初始化失败: ${resultData.error}`));
-              
+
               // 标记为未初始化
               this.initialized = false;
               if (this.worker) {
@@ -131,38 +130,35 @@ export class ImageProcessor {
                 this.worker = null;
               }
             } else {
-              
               this.initialized = true;
               resolve();
             }
           });
-          
+
           // 发送测试消息
           this.worker.postMessage({
             type: 'test',
             taskId: testTaskId,
-            data: { test: true }
+            data: { test: true },
           });
         } catch (error) {
-          
           reject(error);
-          
+
           // 标记为未初始化
           this.initialized = false;
           this.worker = null;
           this.initializationPromise = null;
         }
       } catch (error) {
-        
         reject(error);
-        
+
         // 标记为未初始化
         this.initialized = false;
         this.worker = null;
         this.initializationPromise = null;
       }
     });
-    
+
     return this.initializationPromise;
   }
 
@@ -175,7 +171,6 @@ export class ImageProcessor {
     duration: number,
     frameCount: number
   ): Promise<number[]> {
-    
     // 基于视频长度的智能采样策略
     const timePoints: number[] = [];
 
@@ -185,7 +180,9 @@ export class ImageProcessor {
       for (let i = 1; i <= frameCount; i++) {
         const baseTime = startTime + i * step;
         const randomOffset = (Math.random() - 0.5) * Math.min(step * 0.3, 2);
-        timePoints.push(Math.max(startTime + 1, Math.min(startTime + duration - 1, baseTime + randomOffset)));
+        timePoints.push(
+          Math.max(startTime + 1, Math.min(startTime + duration - 1, baseTime + randomOffset))
+        );
       }
     } else if (duration <= 300) {
       // 中等视频：分段采样
@@ -210,11 +207,11 @@ export class ImageProcessor {
       // 长视频：重点采样开头、中间、结尾
       const sections = [
         { start: 0.05, end: 0.25, weight: 0.4 }, // 开头部分
-        { start: 0.3, end: 0.7, weight: 0.4 },   // 中间部分
-        { start: 0.75, end: 0.95, weight: 0.2 }  // 结尾部分
+        { start: 0.3, end: 0.7, weight: 0.4 }, // 中间部分
+        { start: 0.75, end: 0.95, weight: 0.2 }, // 结尾部分
       ];
 
-      sections.forEach(section => {
+      sections.forEach((section) => {
         const sectionFrames = Math.ceil(frameCount * section.weight);
         const sectionStart = startTime + duration * section.start;
         const sectionDuration = duration * (section.end - section.start);
@@ -228,11 +225,13 @@ export class ImageProcessor {
     }
 
     // 确保时间点不重复且在有效范围内
-    const uniqueTimePoints = Array.from(new Set(
-      timePoints
-        .filter(t => t >= startTime && t <= startTime + duration - 1)
-        .map(t => Math.round(t * 10) / 10) // 保留1位小数
-    )).sort((a, b) => a - b);
+    const uniqueTimePoints = Array.from(
+      new Set(
+        timePoints
+          .filter((t) => t >= startTime && t <= startTime + duration - 1)
+          .map((t) => Math.round(t * 10) / 10) // 保留1位小数
+      )
+    ).sort((a, b) => a - b);
 
     return uniqueTimePoints.slice(0, frameCount);
   }
@@ -243,25 +242,24 @@ export class ImageProcessor {
   public dispose(): void {
     // 创建回调的副本以避免递归调用
     const callbacks = new Map(this.taskCallbacks);
-    
+
     // 清空原始回调Map
     this.taskCallbacks.clear();
-    
+
     // 终止Worker
     if (this.worker) {
       this.worker.terminate();
       this.worker = null;
     }
-    
+
     // 通知所有待处理任务
     callbacks.forEach((callback) => {
       callback({ error: '图像处理器已被销毁' });
     });
-    
+
     this.initialized = false;
     ImageProcessor.instance = null;
     this.initializationPromise = null;
-    
   }
 
   /**
@@ -270,7 +268,11 @@ export class ImageProcessor {
    * @param existingFrames 已存在的帧
    * @returns 如果相似度超过阈值，返回true
    */
-  private checkFrameSimilarity(newFrame: ImageData | undefined, existingFrames: ImageData[], similarityThreshold: number = 0.85): boolean {
+  private checkFrameSimilarity(
+    newFrame: ImageData | undefined,
+    existingFrames: ImageData[],
+    similarityThreshold: number = 0.85
+  ): boolean {
     // 如果没有帧进行比较，直接返回false
     if (existingFrames.length === 0 || !newFrame) {
       return false;
@@ -282,97 +284,102 @@ export class ImageProcessor {
     // 使用更高效的采样方式比较帧
     // 降低采样率以获得更准确的比较结果
     const sampleRate = Math.max(3, Math.floor(Math.min(newFrame.width, newFrame.height) / 80));
-    
+
     // 划分图像为9个区域进行分析，确保整体结构差异
     const regionsX = 3;
     const regionsY = 3;
     const regionWidth = Math.floor(newFrame.width / regionsX);
     const regionHeight = Math.floor(newFrame.height / regionsY);
-    
+
     for (const existingFrame of existingFrames) {
       // 确保尺寸相同，否则继续下一次比较
       if (newFrame.width !== existingFrame.width || newFrame.height !== existingFrame.height) {
         continue;
       }
-      
+
       // 对每个帧比较像素相似度
       const newData = newFrame.data;
-          const existingData = existingFrame.data;
+      const existingData = existingFrame.data;
 
-          let overallSimilarPixels = 0;
-          let overallTotalPixels = 0;
+      let overallSimilarPixels = 0;
+      let overallTotalPixels = 0;
 
-          // 分区域检查相似度
-          let regionSimilarCount = 0; // 计数有多少区域相似
+      // 分区域检查相似度
+      let regionSimilarCount = 0; // 计数有多少区域相似
 
-          // 对每个区域进行采样比较
-          for (let regionY = 0; regionY < regionsY; regionY++) {
-            for (let regionX = 0; regionX < regionsX; regionX++) {
-              let similarPixels = 0;
-              let totalPixels = 0;
+      // 对每个区域进行采样比较
+      for (let regionY = 0; regionY < regionsY; regionY++) {
+        for (let regionX = 0; regionX < regionsX; regionX++) {
+          let similarPixels = 0;
+          let totalPixels = 0;
 
-              // 计算当前区域边界
-              const startX = regionX * regionWidth;
-              const endX = (regionX + 1) * regionWidth;
-              const startY = regionY * regionHeight;
-              const endY = (regionY + 1) * regionHeight;
+          // 计算当前区域边界
+          const startX = regionX * regionWidth;
+          const endX = (regionX + 1) * regionWidth;
+          const startY = regionY * regionHeight;
+          const endY = (regionY + 1) * regionHeight;
 
-              // 对区域内采样比较
-              for (let y = startY; y < endY; y += sampleRate) {
-                for (let x = startX; x < endX; x += sampleRate) {
-                  const i = (y * newFrame.width + x) * 4;
+          // 对区域内采样比较
+          for (let y = startY; y < endY; y += sampleRate) {
+            for (let x = startX; x < endX; x += sampleRate) {
+              const i = (y * newFrame.width + x) * 4;
 
-                  // 确保索引在范围内
-                  if (i >= newData.length - 3 || i >= existingData.length - 3) continue;
+              // 确保索引在范围内
+              if (i >= newData.length - 3 || i >= existingData.length - 3) {
+                continue;
+              }
 
-                  // 计算RGB差异
-                  const diffRVal = Math.abs(newData[i!]! - existingData[i!]!);
-                  const diffGVal = Math.abs(newData[i! + 1]! - existingData[i! + 1]!);
-                  const diffBVal = Math.abs(newData[i! + 2]! - existingData[i! + 2]!);
+              // 计算RGB差异
+              const diffRVal = Math.abs(newData[i!]! - existingData[i!]!);
+              const diffGVal = Math.abs(newData[i! + 1]! - existingData[i! + 1]!);
+              const diffBVal = Math.abs(newData[i! + 2]! - existingData[i! + 2]!);
 
               // 如果是快速比较，使用更简单的相似度计算
               if (fastCompare) {
                 // 平均每个通道的差异小于阈值，认为像素相似
                 const avgDiff = (diffRVal + diffGVal + diffBVal) / 3;
-                if (avgDiff < 30) { // 使用更严格的阈值检测相似性 (从40降低到30)
+                if (avgDiff < 30) {
+                  // 使用更严格的阈值检测相似性 (从40降低到30)
                   similarPixels++;
                 }
               } else {
                 // 更复杂的相似度计算
-                const _pixelSimilarity = 1 - ((diffRVal + diffGVal + diffBVal) / 765); // 765 = 255*3
+                const _pixelSimilarity = 1 - (diffRVal + diffGVal + diffBVal) / 765; // 765 = 255*3
                 if (_pixelSimilarity > 0.85) {
                   similarPixels++;
                 }
               }
-              
+
               totalPixels++;
             }
           }
-          
+
           // 计算当前区域相似度
           const regionSimilarity = totalPixels > 0 ? similarPixels / totalPixels : 0;
-          
+
           // 记录相似像素数
           overallSimilarPixels += similarPixels;
           overallTotalPixels += totalPixels;
-          
+
           // 如果区域相似度高于阈值，增加区域计数
-          if (regionSimilarity > comparisonThreshold - 0.05) { // 区域阈值略低于总体阈值
+          if (regionSimilarity > comparisonThreshold - 0.05) {
+            // 区域阈值略低于总体阈值
             regionSimilarCount++;
           }
         }
       }
-      
+
       // 计算整体相似度
-      const overallSimilarity = overallTotalPixels > 0 ? overallSimilarPixels / overallTotalPixels : 0;
-      
+      const overallSimilarity =
+        overallTotalPixels > 0 ? overallSimilarPixels / overallTotalPixels : 0;
+
       // 如果相似度高于阈值或有太多区域相似，认为帧太相似
       // 有超过6个区域相似度高，表示两帧实质上非常相似
       if (overallSimilarity > comparisonThreshold || regionSimilarCount >= 6) {
         return true;
       }
     }
-    
+
     // 没有找到相似帧
     return false;
   }
@@ -383,7 +390,10 @@ export class ImageProcessor {
    * @param similarityThreshold 相似度阈值 (0-1)
    * @returns 过滤后的帧数组
    */
-  private applyDiversityFilter(frames: ImageData[], similarityThreshold: number = 0.75): ImageData[] {
+  private applyDiversityFilter(
+    frames: ImageData[],
+    similarityThreshold: number = 0.75
+  ): ImageData[] {
     if (frames.length <= 1) {
       return frames;
     }
@@ -410,7 +420,10 @@ export class ImageProcessor {
     if (diverseFrames.length < Math.max(2, Math.floor(frames.length * 0.3))) {
       logger.warn(`多样性过滤过度 (${diverseFrames.length}/${frames.length})，使用回退策略`);
       // 均匀选择帧作为回退
-      const step = Math.max(1, Math.floor(frames.length / Math.max(2, Math.floor(frames.length * 0.5))));
+      const step = Math.max(
+        1,
+        Math.floor(frames.length / Math.max(2, Math.floor(frames.length * 0.5)))
+      );
       const fallbackFrames: ImageData[] = [];
       for (let i = 0; i < frames.length; i += step) {
         const frame = frames[i];
@@ -441,153 +454,159 @@ export class ImageProcessor {
     }
   ): Promise<ImageData[]> {
     try {
-        const duration = video.duration;
-        const startTime = options.startTime || 0;
-        const frameCount = Math.min(options.frameCount || 10, 30);
-        const interval = options.interval || 'keyframes';
-        const keepOriginalResolution = options.keepOriginalResolution || false;
-        const enhancedFrameDiversity = options.enhancedFrameDiversity !== undefined ?
-          options.enhancedFrameDiversity : true;
+      const duration = video.duration;
+      const startTime = options.startTime || 0;
+      const frameCount = Math.min(options.frameCount || 10, 30);
+      const interval = options.interval || 'keyframes';
+      const keepOriginalResolution = options.keepOriginalResolution || false;
+      const enhancedFrameDiversity =
+        options.enhancedFrameDiversity !== undefined ? options.enhancedFrameDiversity : true;
 
-        // 快速验证视频状态
-        if (duration <= 0 || isNaN(duration)) {
-          throw new Error('无效的视频时长');
+      // 快速验证视频状态
+      if (duration <= 0 || isNaN(duration)) {
+        throw new Error('无效的视频时长');
+      }
+
+      // 创建canvas用于帧提取
+      const canvas = document.createElement('canvas');
+
+      // 设置canvas尺寸
+      let scale = 1;
+
+      if (keepOriginalResolution) {
+        // 保持原始分辨率
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      } else {
+        // 对于大型视频，降低canvas尺寸以提高性能
+        const maxDimension = 1280; // 限制最大尺寸
+
+        if (video.videoWidth > maxDimension || video.videoHeight > maxDimension) {
+          scale = maxDimension / Math.max(video.videoWidth, video.videoHeight);
         }
 
-        // 创建canvas用于帧提取
-        const canvas = document.createElement('canvas');
-        
-        // 设置canvas尺寸
-        let scale = 1;
-        
-        if (keepOriginalResolution) {
-          // 保持原始分辨率
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-        } else {
-          // 对于大型视频，降低canvas尺寸以提高性能
-          const maxDimension = 1280; // 限制最大尺寸
-          
-          if (video.videoWidth > maxDimension || video.videoHeight > maxDimension) {
-            scale = maxDimension / Math.max(video.videoWidth, video.videoHeight);
-            
-          }
-          
-          canvas.width = Math.floor(video.videoWidth * scale);
-          canvas.height = Math.floor(video.videoHeight * scale);
-          
-        }
-        
-        const ctx = canvas.getContext('2d', {
-          alpha: false,  // 禁用alpha通道以提高性能
-          willReadFrequently: true // 提示频繁读取以优化性能
+        canvas.width = Math.floor(video.videoWidth * scale);
+        canvas.height = Math.floor(video.videoHeight * scale);
+      }
+
+      const ctx = canvas.getContext('2d', {
+        alpha: false, // 禁用alpha通道以提高性能
+        willReadFrequently: true, // 提示频繁读取以优化性能
+      });
+
+      if (!ctx) {
+        throw new Error('无法创建Canvas上下文');
+      }
+
+      // 确保视频可以播放
+      if (video.readyState < 2) {
+        await new Promise<void>((resolve, reject) => {
+          const loadHandler = () => {
+            video.removeEventListener('loadeddata', loadHandler);
+            video.removeEventListener('error', errorHandler);
+            resolve();
+          };
+
+          const errorHandler = () => {
+            video.removeEventListener('loadeddata', loadHandler);
+            video.removeEventListener('error', errorHandler);
+            reject(new Error('视频加载失败'));
+          };
+
+          video.addEventListener('loadeddata', loadHandler);
+          video.addEventListener('error', errorHandler);
         });
+      }
 
-        if (!ctx) {
-          throw new Error('无法创建Canvas上下文');
+      // 计算可用的视频时长
+      const availableDuration = Math.max(0, duration - startTime);
+      if (availableDuration <= 0) {
+        throw new Error('无效的视频时长或开始时间');
+      }
+
+      // 🔑 智能时间点计算
+      let timePoints: number[] = [];
+
+      if (interval === 'keyframes') {
+        // 关键帧检测模式 - 使用智能采样
+        timePoints = await this.detectKeyFrameTimePoints(
+          video,
+          startTime,
+          availableDuration,
+          frameCount
+        );
+      } else if (interval === 'uniform') {
+        // 均匀分布模式 - 简化版本
+        const step = availableDuration / (frameCount + 1);
+        for (let i = 1; i <= frameCount; i++) {
+          timePoints.push(startTime + i * step);
         }
-        
-        // 确保视频可以播放
-        if (video.readyState < 2) {
-          
-          await new Promise<void>((resolve, reject) => {
-            const loadHandler = () => {
-              video.removeEventListener('loadeddata', loadHandler);
-              video.removeEventListener('error', errorHandler);
-              resolve();
-            };
+      } else {
+        // 随机分布模式 - 简化版本
+        const segments = Math.max(frameCount * 2, 10);
+        const segmentSize = availableDuration / segments;
+        const selectedSegments = Array.from({ length: segments }, (_, i) => i)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, frameCount)
+          .sort((a, b) => a - b);
 
-            const errorHandler = () => {
-              video.removeEventListener('loadeddata', loadHandler);
-              video.removeEventListener('error', errorHandler);
-              reject(new Error('视频加载失败'));
-            };
+        timePoints = selectedSegments.map(
+          (seg) => startTime + seg * segmentSize + Math.random() * segmentSize * 0.8
+        );
+      }
 
-            video.addEventListener('loadeddata', loadHandler);
-            video.addEventListener('error', errorHandler);
-          });
-        }
-        
-        // 计算可用的视频时长
-        const availableDuration = Math.max(0, duration - startTime);
-        if (availableDuration <= 0) {
-          throw new Error('无效的视频时长或开始时间');
-        }
+      // 确保时间点有效
+      timePoints = timePoints.filter((t) => t >= startTime && t < duration - 0.1);
 
-        // 🔑 智能时间点计算
-        let timePoints: number[] = [];
+      if (timePoints.length === 0) {
+        throw new Error('未能生成有效的时间点');
+      }
 
-        if (interval === 'keyframes') {
-          // 关键帧检测模式 - 使用智能采样
-          timePoints = await this.detectKeyFrameTimePoints(video, startTime, availableDuration, frameCount);
-        } else if (interval === 'uniform') {
-          // 均匀分布模式 - 简化版本
-          const step = availableDuration / (frameCount + 1);
-          for (let i = 1; i <= frameCount; i++) {
-            timePoints.push(startTime + i * step);
-          }
-        } else {
-          // 随机分布模式 - 简化版本
-          const segments = Math.max(frameCount * 2, 10);
-          const segmentSize = availableDuration / segments;
-          const selectedSegments = Array.from({length: segments}, (_, i) => i)
-            .sort(() => Math.random() - 0.5)
-            .slice(0, frameCount)
-            .sort((a, b) => a - b);
+      logger.debug(
+        `🎯 生成${timePoints.length}个时间点:`,
+        timePoints.map((t) => t.toFixed(1))
+      );
 
-          timePoints = selectedSegments.map(seg =>
-            startTime + seg * segmentSize + Math.random() * segmentSize * 0.8
-          );
-        }
+      // 🚀 优化的帧提取逻辑
+      const candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[] = [];
 
-        // 确保时间点有效
-        timePoints = timePoints.filter(t => t >= startTime && t < duration - 0.1);
+      // 🔧 增强的帧提取逻辑，包含详细错误诊断
+      let successCount = 0;
+      let skipCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
 
-        if (timePoints.length === 0) {
-          throw new Error('未能生成有效的时间点');
-        }
+      for (let i = 0; i < timePoints.length; i++) {
+        const timePoint = timePoints[i]!;
+        const maxRetries = 2; // 每个帧最多重试2次
 
-        logger.debug(`🎯 生成${timePoints.length}个时间点:`, timePoints.map(t => t.toFixed(1)));
-        
-        // 🚀 优化的帧提取逻辑
-        const candidateFrames: { imageData: ImageData; timePoint: number; aiScore?: number }[] = [];
+        for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+          try {
+            const retryText = retryCount > 0 ? ` (重试${retryCount}/${maxRetries})` : '';
+            logger.debug(
+              `📸 提取帧 ${i + 1}/${timePoints.length} (${timePoint.toFixed(1)}s)${retryText}`
+            );
 
-        // 🔧 增强的帧提取逻辑，包含详细错误诊断
-        let successCount = 0;
-        let skipCount = 0;
-        let errorCount = 0;
-        const errors: string[] = [];
+            // 验证视频状态
+            if (video.readyState < 2) {
+              throw new Error(`视频未准备好，readyState: ${video.readyState}`);
+            }
 
-        for (let i = 0; i < timePoints.length; i++) {
-          const timePoint = timePoints[i]!;
-          let retryCount = 0;
-          const maxRetries = 2; // 每个帧最多重试2次
-          const isLastRetry = retryCount === maxRetries;
+            if (video.duration <= 0 || isNaN(video.duration)) {
+              throw new Error(`视频时长无效: ${video.duration}`);
+            }
 
-          while (retryCount <= maxRetries) {
-            try {
-              const retryText = retryCount > 0 ? ` (重试${retryCount}/${maxRetries})` : '';
-              logger.debug(`📸 提取帧 ${i + 1}/${timePoints.length} (${timePoint.toFixed(1)}s)${retryText}`);
-
-              // 验证视频状态
-              if (video.readyState < 2) {
-                throw new Error(`视频未准备好，readyState: ${video.readyState}`);
+            if (timePoint >= video.duration) {
+              // 调整时间点到有效范围内
+              const adjustedTime = Math.min(timePoint, video.duration - 0.5);
+              logger.warn(
+                `时间点超出范围，调整: ${timePoint.toFixed(1)}s -> ${adjustedTime.toFixed(1)}s`
+              );
+              if (adjustedTime <= 0) {
+                throw new Error(`调整后的时间点仍然无效: ${adjustedTime}`);
               }
-
-              if (video.duration <= 0 || isNaN(video.duration)) {
-                throw new Error(`视频时长无效: ${video.duration}`);
-              }
-
-              if (timePoint >= video.duration) {
-                // 调整时间点到有效范围内
-                const adjustedTime = Math.min(timePoint, video.duration - 0.5);
-                logger.warn(`时间点超出范围，调整: ${timePoint.toFixed(1)}s -> ${adjustedTime.toFixed(1)}s`);
-                if (adjustedTime <= 0) {
-                  throw new Error(`调整后的时间点仍然无效: ${adjustedTime}`);
-                }
-                // 使用调整后的时间点继续
-              }
+              // 使用调整后的时间点继续
+            }
 
             // 设置视频时间
             const oldTime = video.currentTime;
@@ -598,7 +617,9 @@ export class ImageProcessor {
               const timeoutId = setTimeout(() => {
                 video.removeEventListener('seeked', seekedHandler);
                 video.removeEventListener('error', errorHandler);
-                rejectSeek(new Error(`Seek超时: ${timePoint.toFixed(1)}s (从 ${oldTime.toFixed(1)}s)`));
+                rejectSeek(
+                  new Error(`Seek超时: ${timePoint.toFixed(1)}s (从 ${oldTime.toFixed(1)}s)`)
+                );
               }, 5000); // 增加到5秒超时
 
               const seekedHandler = () => {
@@ -633,7 +654,9 @@ export class ImageProcessor {
             try {
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             } catch (drawError) {
-              throw new Error(`绘制视频帧失败: ${drawError instanceof Error ? drawError.message : '未知错误'}`);
+              throw new Error(
+                `绘制视频帧失败: ${drawError instanceof Error ? drawError.message : '未知错误'}`
+              );
             }
 
             // 获取图像数据
@@ -642,14 +665,18 @@ export class ImageProcessor {
               const rawData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               imageData = rawData as ImageData;
             } catch (getDataError) {
-              throw new Error(`获取图像数据失败: ${getDataError instanceof Error ? getDataError.message : '未知错误'}`);
+              throw new Error(
+                `获取图像数据失败: ${getDataError instanceof Error ? getDataError.message : '未知错误'}`
+              );
             }
 
             // 验证帧有效性
             if (imageData && this.isValidImageData(imageData)) {
               candidateFrames.push({ imageData, timePoint });
               successCount++;
-              logger.debug(`✅ 成功提取帧 ${successCount}/${timePoints.length} (${timePoint.toFixed(1)}s)`);
+              logger.debug(
+                `✅ 成功提取帧 ${successCount}/${timePoints.length} (${timePoint.toFixed(1)}s)`
+              );
               break; // 成功提取，跳出重试循环
             } else {
               skipCount++;
@@ -658,32 +685,32 @@ export class ImageProcessor {
               // 如果是因为帧无效而失败，也跳出重试循环（重试不会改善帧质量）
               break;
             }
-
           } catch (error) {
             const errorMsg = `提取帧失败 ${timePoint.toFixed(1)}s: ${error instanceof Error ? error.message : '未知错误'}`;
 
             // 🔧 区分可重试和不可重试的错误
-            const isRetryableError = error instanceof Error && (
-              error.message.includes('Seek超时') ||
-              error.message.includes('Seek失败') ||
-              error.message.includes('绘制视频帧失败')
-            );
+            const isRetryableError =
+              error instanceof Error &&
+              (error.message.includes('Seek超时') ||
+                error.message.includes('Seek失败') ||
+                error.message.includes('绘制视频帧失败'));
 
-            const isFatalError = error instanceof Error && (
-              error.message.includes('Canvas上下文') ||
-              error.message.includes('视频未准备好') ||
-              error.message.includes('视频时长无效')
-            );
+            const isFatalError =
+              error instanceof Error &&
+              (error.message.includes('Canvas上下文') ||
+                error.message.includes('视频未准备好') ||
+                error.message.includes('视频时长无效'));
 
-            if (isLastRetry || !isRetryableError) {
+            if (retryCount === maxRetries || !isRetryableError) {
               // 最后一次重试失败，或者是不可重试的错误
               errorCount++;
               errors.push(errorMsg);
-              logger.warn(`❌ ${errorMsg} ${isLastRetry ? '(重试已用尽)' : '(不可重试)'}`);
+              logger.warn(
+                `❌ ${errorMsg} ${retryCount === maxRetries ? '(重试已用尽)' : '(不可重试)'}`
+              );
 
               // 致命错误立即终止整个提取过程
               if (isFatalError) {
-                
                 throw error;
               }
 
@@ -691,7 +718,7 @@ export class ImageProcessor {
             } else {
               // 可重试的错误，等待一小段时间后重试
               logger.warn(`⚠️ ${errorMsg} (将重试 ${retryCount}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 100 * retryCount)); // 递增延迟
+              await new Promise((resolve) => setTimeout(resolve, 100 * retryCount)); // 递增延迟
             }
           }
         } // 结束重试循环
@@ -699,91 +726,96 @@ export class ImageProcessor {
         // 🔧 优化的错误率检查 - 只在极端情况下终止
         const currentErrorRate = errorCount / timePoints.length;
         if (currentErrorRate > 0.95 && errorCount > 5) {
-          logger.error(`错误率极高 (${errorCount}/${timePoints.length}, ${(currentErrorRate * 100).toFixed(1)}%)，终止剩余提取`);
+          logger.error(
+            `错误率极高 (${errorCount}/${timePoints.length}, ${(currentErrorRate * 100).toFixed(1)}%)，终止剩余提取`
+          );
           break;
         }
-        }
+      }
 
-        // 详细的提取结果报告
-        logger.debug(`📊 帧提取统计:`, {
-          总帧数: timePoints.length,
-          成功: successCount,
-          跳过: skipCount,
-          错误: errorCount,
-          成功率: `${((successCount / timePoints.length) * 100).toFixed(1)}%`,
-          有效帧率: `${(((successCount + skipCount) / timePoints.length) * 100).toFixed(1)}%`
-        });
+      // 详细的提取结果报告
+      logger.debug(`📊 帧提取统计:`, {
+        总帧数: timePoints.length,
+        成功: successCount,
+        跳过: skipCount,
+        错误: errorCount,
+        成功率: `${((successCount / timePoints.length) * 100).toFixed(1)}%`,
+        有效帧率: `${(((successCount + skipCount) / timePoints.length) * 100).toFixed(1)}%`,
+      });
 
-        if (errors.length > 0) {
-          logger.warn('提取过程中的错误:', errors.slice(0, 5)); // 只显示前5个错误
-        }
+      if (errors.length > 0) {
+        logger.warn('提取过程中的错误:', errors.slice(0, 5)); // 只显示前5个错误
+      }
 
-        // 🔧 增强的错误处理和回退机制
-        if (candidateFrames.length === 0) {
-          // 尝试回退策略
-          if (timePoints.length > 0) {
-            
-            try {
-              // 回退策略1：尝试提取视频中间的一帧
-              const middleTime = duration / 2;
-              video.currentTime = middleTime;
+      // 🔧 增强的错误处理和回退机制
+      if (candidateFrames.length === 0) {
+        // 尝试回退策略
+        if (timePoints.length > 0) {
+          try {
+            // 回退策略1：尝试提取视频中间的一帧
+            const middleTime = duration / 2;
+            video.currentTime = middleTime;
 
-              await new Promise<void>((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('回退策略超时')), 3000);
-                const handler = () => {
-                  clearTimeout(timeout);
-                  video.removeEventListener('seeked', handler);
-                  resolve();
-                };
-                video.addEventListener('seeked', handler);
-              });
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error('回退策略超时')), 3000);
+              const handler = () => {
+                clearTimeout(timeout);
+                video.removeEventListener('seeked', handler);
+                resolve();
+              };
+              video.addEventListener('seeked', handler);
+            });
 
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const _fallbackImageData = ctx.getImageData(0, 0, canvas.width, canvas.height) as ImageData;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const _fallbackImageData = ctx.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            ) as ImageData;
 
-              // 降低验证标准
-              if (_fallbackImageData && _fallbackImageData.data && _fallbackImageData.data.length > 0) {
-                candidateFrames.push({ imageData: _fallbackImageData, timePoint: middleTime });
-                
-              }
-            } catch (fallbackError) {
-              
+            // 降低验证标准
+            if (
+              _fallbackImageData &&
+              _fallbackImageData.data &&
+              _fallbackImageData.data.length > 0
+            ) {
+              candidateFrames.push({ imageData: _fallbackImageData, timePoint: middleTime });
             }
-          }
+          } catch (fallbackError) {}
+        }
 
-          // 如果回退策略也失败了
-          if (candidateFrames.length === 0) {
-            const errorMessage = `未能提取到任何有效帧。诊断信息：
+        // 如果回退策略也失败了
+        if (candidateFrames.length === 0) {
+          const errorMessage = `未能提取到任何有效帧。诊断信息：
 - 视频时长: ${duration.toFixed(1)}s，尺寸: ${video.videoWidth}x${video.videoHeight}
 - 尝试提取 ${timePoints.length} 个时间点
 - 成功: ${successCount}，跳过: ${skipCount}，错误: ${errorCount}
 - 主要错误: ${errors.slice(0, 3).join('; ')}
 建议：检查视频文件是否完整，或尝试其他视频格式`;
 
-            throw new Error(errorMessage);
-          }
+          throw new Error(errorMessage);
         }
+      }
 
-        let finalFrames: ImageData[];
+      let finalFrames: ImageData[];
 
-        if (candidateFrames.length <= frameCount) {
-          finalFrames = candidateFrames.map(f => f.imageData);
-        } else {
-          const step = Math.max(1, Math.floor(candidateFrames.length / frameCount));
-          finalFrames = candidateFrames
-            .filter((_, index) => index % step === 0)
-            .slice(0, frameCount)
-            .map(f => f.imageData);
-        }
+      if (candidateFrames.length <= frameCount) {
+        finalFrames = candidateFrames.map((f) => f.imageData);
+      } else {
+        const step = Math.max(1, Math.floor(candidateFrames.length / frameCount));
+        finalFrames = candidateFrames
+          .filter((_, index) => index % step === 0)
+          .slice(0, frameCount)
+          .map((f) => f.imageData);
+      }
 
-        if (enhancedFrameDiversity && finalFrames.length > 1) {
-          finalFrames = this.applyDiversityFilter(finalFrames, 0.75);
-        }
+      if (enhancedFrameDiversity && finalFrames.length > 1) {
+        finalFrames = this.applyDiversityFilter(finalFrames, 0.75);
+      }
 
-        return finalFrames;
-
+      return finalFrames;
     } catch (error) {
-      
       throw error;
     }
   }
@@ -865,7 +897,9 @@ export class ImageProcessor {
         const batchEnd = Math.min(i + batchSize, framesToAnalyze.length);
         const currentBatch = framesToAnalyze.slice(i, batchEnd);
 
-        logger.debug(`分析帧批次 ${i/batchSize + 1}/${Math.ceil(framesToAnalyze.length/batchSize)}`);
+        logger.debug(
+          `分析帧批次 ${i / batchSize + 1}/${Math.ceil(framesToAnalyze.length / batchSize)}`
+        );
 
         try {
           // 创建批处理Promise
@@ -878,7 +912,7 @@ export class ImageProcessor {
                 sampleRate: effectiveSampleRate,
                 subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
                 staticFrameThreshold: options.staticFrameThreshold || 0.8,
-                simplifiedAnalysis: true
+                simplifiedAnalysis: true,
               });
 
               const scores: Record<string, number> = {
@@ -888,13 +922,13 @@ export class ImageProcessor {
                 emptyFrameScore: results.emptyFrameScore || 0.5,
                 diversityScore: results.diversityScore || 0.5,
                 motionBlurScore: results.motionBlurScore ?? 0.5,
-                atmosphereScore: results.atmosphereScore ?? 0.5
+                atmosphereScore: results.atmosphereScore ?? 0.5,
               };
 
               return {
                 index: frames.indexOf(frame),
                 originalIndex: originalIndex,
-                scores: scores
+                scores: scores,
               };
             } catch (error) {
               return {
@@ -907,31 +941,28 @@ export class ImageProcessor {
                   emptyFrameScore: 0.5,
                   diversityScore: 0.5,
                   motionBlurScore: 0.5,
-                  atmosphereScore: 0.5
-                }
+                  atmosphereScore: 0.5,
+                },
               };
             }
           });
-          
+
           // 等待当前批次完成
           const batchResults = await Promise.allSettled(batchPromises);
-          
+
           // 处理结果
-          batchResults.forEach(result => {
+          batchResults.forEach((result) => {
             if (result.status === 'fulfilled') {
               frameAnalysis.push(result.value as FrameAnalysis);
             }
           });
-          
         } catch (error) {
-          
           // 继续处理其他批次，不要中断整个过程
         }
       }
-      
+
       // 如果没有成功分析任何帧，返回基本结果
       if (frameAnalysis.length === 0) {
-        
         return {
           frames: frames.slice(0, count).map((_, index) => ({
             index,
@@ -940,30 +971,30 @@ export class ImageProcessor {
               subtitleScore: 0.5,
               peopleScore: 0.5,
               emptyFrameScore: 0.5,
-              diversityScore: 0.5
-            }
-          }))
+              diversityScore: 0.5,
+            },
+          })),
         };
       }
 
       // ==================== 新增: 优先检测人物帧并优化字幕 ====================
-      
+
       // 1. 先按人物分数对帧排序，找出包含人物的高质量帧
-      const peopleFrames = [...frameAnalysis].sort((a, b) => 
-        b.scores.peopleScore - a.scores.peopleScore
-      ).filter(frame => frame.scores.peopleScore > 0.6); // 选择人物分数较高的帧
+      const peopleFrames = [...frameAnalysis]
+        .sort((a, b) => b.scores.peopleScore - a.scores.peopleScore)
+        .filter((frame) => frame.scores.peopleScore > 0.6); // 选择人物分数较高的帧
 
       // 2. 处理每个包含人物的帧，检查其相邻帧是否有无字幕的更好选择
       const optimizedFrames: typeof frameAnalysis = [];
       const processedIndices = new Set<number>();
-      
+
       // 尝试为每个高质量人物帧找到最佳的无字幕替代帧
       for (const peopleFrame of peopleFrames) {
         // 如果这个帧已经被处理过，跳过
         if (processedIndices.has(peopleFrame.index)) {
           continue;
         }
-        
+
         // 检查该帧字幕分数
         if (peopleFrame.scores.subtitleScore < 0.3) {
           // 如果已经是低字幕分数，直接使用该帧
@@ -971,41 +1002,44 @@ export class ImageProcessor {
           processedIndices.add(peopleFrame.index);
           continue;
         }
-        
+
         // 查找相邻帧 (在原始帧数组中的相邻帧)
         const adjacentFrameIndices: number[] = [];
         const searchRange = 5; // 搜索前后5帧
-        
+
         for (let offset = -searchRange; offset <= searchRange; offset++) {
-          if (offset === 0) continue; // 跳过自身
-          
+          if (offset === 0) {
+            continue;
+          } // 跳过自身
+
           const adjIndex = peopleFrame.index + offset;
           if (adjIndex >= 0 && adjIndex < frames.length) {
             adjacentFrameIndices.push(adjIndex);
           }
         }
-        
+
         // 如果没有相邻帧，使用原始帧
         if (adjacentFrameIndices.length === 0) {
           optimizedFrames.push(peopleFrame);
           processedIndices.add(peopleFrame.index);
           continue;
         }
-        
+
         // 在相邻帧中找出已分析过的帧
-        const analyzedAdjacentFrames = frameAnalysis.filter(f => 
+        const analyzedAdjacentFrames = frameAnalysis.filter((f) =>
           adjacentFrameIndices.includes(f.index)
         );
-        
+
         // 如果没有已分析的相邻帧，分析一些相邻帧
         if (analyzedAdjacentFrames.length === 0) {
           try {
             // 选择一些相邻帧进行分析
             const framesToAnalyzeAdditionally: ImageData[] = [];
-            for (const adjIndex of adjacentFrameIndices.slice(0, 3)) { // 最多分析3个相邻帧
+            for (const adjIndex of adjacentFrameIndices.slice(0, 3)) {
+              // 最多分析3个相邻帧
               framesToAnalyzeAdditionally.push(frames[adjIndex]!);
             }
-            
+
             // 分析这些相邻帧
             for (let i = 0; i < framesToAnalyzeAdditionally.length; i++) {
               const adjFrame = framesToAnalyzeAdditionally[i]!;
@@ -1014,9 +1048,9 @@ export class ImageProcessor {
               const results = await this._batchAnalyzeImage(adjFrame, {
                 sampleRate: Math.min(options.sampleRate || 2, 3),
                 subtitleDetectionStrength: options.subtitleDetectionStrength || 0.8,
-                simplifiedAnalysis: true
+                simplifiedAnalysis: true,
               });
-              
+
               analyzedAdjacentFrames.push({
                 index: adjIndex,
                 originalIndex: -1, // 不在原始分析集中
@@ -1025,19 +1059,18 @@ export class ImageProcessor {
                   subtitleScore: results.subtitleScore || 0.5,
                   peopleScore: results.peopleScore || 0.5,
                   emptyFrameScore: results.emptyFrameScore || 0.5,
-                  diversityScore: results.diversityScore || 0.5
-                }
+                  diversityScore: results.diversityScore || 0.5,
+                },
               } as any);
             }
           } catch (error) {
-            
             // 如果分析失败，使用原始帧
             optimizedFrames.push(peopleFrame);
             processedIndices.add(peopleFrame.index);
             continue;
           }
         }
-        
+
         // 在相邻帧中找出无字幕的最佳替代帧
         // 按照字幕分数升序排序（低字幕分数优先）
         analyzedAdjacentFrames.sort((a, b) => {
@@ -1058,25 +1091,28 @@ export class ImageProcessor {
           // 两者都相近，考虑静态分数
           return b.scores.staticScore - a.scores.staticScore;
         }) as any;
-        
+
         // 选择最佳替代帧 - 字幕分数低且人物分数不低于原始帧的70%
-        const bestAlternative = analyzedAdjacentFrames.find(frame => 
-          frame.scores.subtitleScore < 0.3 && // 低字幕分数
-          frame.scores.peopleScore > peopleFrame.scores.peopleScore * 0.7 // 人物分数不能太低
+        const bestAlternative = analyzedAdjacentFrames.find(
+          (frame) =>
+            frame.scores.subtitleScore < 0.3 && // 低字幕分数
+            frame.scores.peopleScore > peopleFrame.scores.peopleScore * 0.7 // 人物分数不能太低
         );
-        
+
         if (bestAlternative) {
-          
           // 使用这个替代帧，但保留原始帧的一些特性
           optimizedFrames.push({
             ...bestAlternative,
             scores: {
               ...bestAlternative.scores,
               // 混合原始帧和替代帧的分数，保留替代帧的低字幕特性
-              peopleScore: Math.max(bestAlternative.scores.peopleScore, peopleFrame.scores.peopleScore * 0.9)
-            }
+              peopleScore: Math.max(
+                bestAlternative.scores.peopleScore,
+                peopleFrame.scores.peopleScore * 0.9
+              ),
+            },
           });
-          
+
           // 标记两个帧都已处理
           processedIndices.add(peopleFrame.index);
           processedIndices.add(bestAlternative.index);
@@ -1091,8 +1127,8 @@ export class ImageProcessor {
       interface ScoredFrame extends FrameAnalysis {
         totalScore: number;
       }
-      
-      const scoredFrames = frameAnalysis.map(frame => {
+
+      const scoredFrames = frameAnalysis.map((frame) => {
         const { scores } = frame;
         let totalScore = 0;
 
@@ -1126,63 +1162,66 @@ export class ImageProcessor {
 
         return {
           ...frame,
-          totalScore
+          totalScore,
         } as ScoredFrame;
       });
-      
+
       // 按总分排序
       const sortedFrames = [...scoredFrames].sort((a, b) => b.totalScore - a.totalScore);
-      
+
       // 补充剩余帧 - 优先使用已优化的人物帧，然后添加其他高分帧
-      const finalSelectedFrames: ScoredFrame[] = optimizedFrames.map(frame => ({
+      const finalSelectedFrames: ScoredFrame[] = optimizedFrames.map((frame) => ({
         ...frame,
-        totalScore: 0 // 临时占位，不会影响结果
+        totalScore: 0, // 临时占位，不会影响结果
       }));
-      
+
       // 已选择的帧索引集合
-      const selectedIndices = new Set(finalSelectedFrames.map(f => f.index));
-      
+      const selectedIndices = new Set(finalSelectedFrames.map((f) => f.index));
+
       // 从高分到低分遍历，选择尚未选择的帧
       for (const frame of sortedFrames) {
         // 如果已经选择了足够的帧，停止
         if (finalSelectedFrames.length >= count) {
           break;
         }
-        
+
         // 如果这个帧已经被选择，跳过
         if (selectedIndices.has(frame.index)) {
           continue;
         }
-        
+
         // 检查这个帧是否与已选帧有明显差异
         let isDiverseEnough = true;
         for (const selected of finalSelectedFrames) {
           // 使用帧索引获取实际帧
           const candidateFrame = frames[frame.index]!;
           const selectedFrame = frames[selected.index]!;
-          
+
           // 检查相似度 - 使用较低的阈值来确保多样性
-              if (candidateFrame! && selectedFrame! &&
-                  this.checkFrameSimilarity(candidateFrame!, [selectedFrame!], 0.75)) {
+          if (
+            candidateFrame! &&
+            selectedFrame! &&
+            this.checkFrameSimilarity(candidateFrame!, [selectedFrame!], 0.75)
+          ) {
             isDiverseEnough = false;
             break;
           }
         }
-        
+
         // 如果这个帧与已选帧差异够大，添加它
         if (isDiverseEnough) {
           finalSelectedFrames.push(frame);
           selectedIndices.add(frame.index);
         }
       }
-      
+
       // 如果仍然不够，添加其他未被选择的帧
       if (finalSelectedFrames.length < count) {
         for (const frame of sortedFrames) {
           if (finalSelectedFrames.length >= count) {
             break;
           }
-          
+
           if (!selectedIndices.has(frame.index)) {
             finalSelectedFrames.push(frame);
             selectedIndices.add(frame.index);
@@ -1192,30 +1231,30 @@ export class ImageProcessor {
 
       // 根据索引排序，保持时间顺序
       finalSelectedFrames.sort((a, b) => a.index - b.index);
-      
+
       // 移除临时属性，返回最终结果
       return {
-        frames: finalSelectedFrames.map(({ index, scores }) => ({ index, scores }))
+        frames: finalSelectedFrames.map(({ index, scores }) => ({ index, scores })),
       };
     } catch (error) {
-      
       // 发生错误时，尝试返回最少一帧
       if (frames.length > 0) {
-        
         return {
-          frames: [{ 
-            index: 0, 
-            scores: { 
-              staticScore: 0.5, 
-              subtitleScore: 0.5, 
-              peopleScore: 0.5,
-              motionBlurScore: 0.5,
-              atmosphereScore: 0.5
-            } 
-          }]
+          frames: [
+            {
+              index: 0,
+              scores: {
+                staticScore: 0.5,
+                subtitleScore: 0.5,
+                peopleScore: 0.5,
+                motionBlurScore: 0.5,
+                atmosphereScore: 0.5,
+              },
+            },
+          ],
         };
       }
-      
+
       throw error;
     }
   }
@@ -1240,20 +1279,26 @@ export class ImageProcessor {
       const maxHeight = options.maxHeight || 360;
       const quality = options.quality || 0.8;
       const format = options.format || 'jpeg';
-      
+
       // 创建canvas
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
+
       if (!ctx) {
         throw new Error('无法创建Canvas上下文');
       }
-      
+
       // 验证输入帧的有效性
-      if (!frame || frame.width <= 0 || frame.height <= 0 || !frame.data || frame.data.length === 0) {
+      if (
+        !frame ||
+        frame.width <= 0 ||
+        frame.height <= 0 ||
+        !frame.data ||
+        frame.data.length === 0
+      ) {
         throw new Error('无效的图像数据');
       }
-      
+
       // 检查是否是全黑图像
       let isEntirelyBlack = true;
       const sampleRate = 10; // 每10个像素采样一次
@@ -1261,32 +1306,33 @@ export class ImageProcessor {
         for (let x = 0; x < frame.width && isEntirelyBlack; x += sampleRate) {
           const offset = (y * frame.width + x) * 4;
           // 如果任何一个像素不是黑色，则图像不是全黑的
-          if (frame.data[offset!]! > 5 ||
-              frame.data[offset! + 1]! > 5 ||
-              frame.data[offset! + 2]! > 5) {
+          if (
+            frame.data[offset!]! > 5 ||
+            frame.data[offset! + 1]! > 5 ||
+            frame.data[offset! + 2]! > 5
+          ) {
             isEntirelyBlack = false;
             break;
           }
         }
       }
-      
+
       // 如果是全黑图像，创建带文本的图像
       if (isEntirelyBlack) {
-        
         // 设置canvas尺寸
         canvas.width = maxWidth;
         canvas.height = maxHeight;
-        
+
         // 填充灰色背景
         ctx.fillStyle = '#333333';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         // 绘制文本
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('无法提取缩略图', canvas.width / 2, canvas.height / 2);
-        
+
         // 转换为数据URL
         let mimeType: string;
         switch (format) {
@@ -1299,61 +1345,58 @@ export class ImageProcessor {
           default:
             mimeType = 'image/jpeg';
         }
-        
+
         const url = canvas.toDataURL(mimeType, quality);
         return { url };
       }
-      
+
       // 计算缩放比例
-      const scale = Math.min(
-        maxWidth / frame.width,
-        maxHeight / frame.height
-      );
-      
+      const scale = Math.min(maxWidth / frame.width, maxHeight / frame.height);
+
       // 设置canvas尺寸
       canvas.width = frame.width * scale;
       canvas.height = frame.height * scale;
-      
+
       // 创建临时canvas来处理原始ImageData
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
-      
+
       if (!tempCtx) {
         throw new Error('无法创建临时Canvas上下文');
       }
-      
+
       tempCanvas.width = frame.width;
       tempCanvas.height = frame.height;
       tempCtx.putImageData(frame, 0, 0);
-      
+
       // 将原始图像缩放到目标尺寸
-      ctx.drawImage(
-        tempCanvas,
-        0, 0, frame.width, frame.height,
-        0, 0, canvas.width, canvas.height
-      );
-      
+      ctx.drawImage(tempCanvas, 0, 0, frame.width, frame.height, 0, 0, canvas.width, canvas.height);
+
       // 增强图像对比度和亮度（可选）
       try {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        
+
         // 简单的对比度增强
         const contrast = 1.1; // 增强对比度10%
         const brightness = 5; // 轻微提高亮度
-        
+
         for (let i = 0; i < data.length; i += 4) {
           // 应用亮度和对比度
           data[i!] = Math.max(0, Math.min(255, (data[i!]! - 128) * contrast + 128 + brightness));
-          data[i! + 1] = Math.max(0, Math.min(255, (data[i! + 1]! - 128) * contrast + 128 + brightness));
-          data[i! + 2] = Math.max(0, Math.min(255, (data[i! + 2]! - 128) * contrast + 128 + brightness));
+          data[i! + 1] = Math.max(
+            0,
+            Math.min(255, (data[i! + 1]! - 128) * contrast + 128 + brightness)
+          );
+          data[i! + 2] = Math.max(
+            0,
+            Math.min(255, (data[i! + 2]! - 128) * contrast + 128 + brightness)
+          );
         }
-        
+
         ctx.putImageData(imageData, 0, 0);
-      } catch (error) {
-        
-      }
-      
+      } catch (error) {}
+
       // 转换为数据URL
       let mimeType: string;
       switch (format) {
@@ -1366,34 +1409,33 @@ export class ImageProcessor {
         default:
           mimeType = 'image/jpeg';
       }
-      
+
       const url = canvas.toDataURL(mimeType, quality);
-      
+
       return { url };
     } catch (error) {
-      
       // 创建错误占位图
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
+
       if (ctx) {
         canvas.width = options.maxWidth || 640;
         canvas.height = options.maxHeight || 360;
-        
+
         // 填充红色背景表示错误
         ctx.fillStyle = '#881111';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         // 绘制错误文本
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
         ctx.fillText('缩略图生成失败', canvas.width / 2, canvas.height / 2);
-        
+
         const url = canvas.toDataURL('image/jpeg', 0.8);
         return { url };
       }
-      
+
       throw error;
     }
   }
@@ -1405,20 +1447,17 @@ export class ImageProcessor {
     try {
       // 基本结构检查
       if (!imageData || !imageData.data || !imageData.width || !imageData.height) {
-        
         return false;
       }
 
       // 尺寸检查
       if (imageData.width <= 0 || imageData.height <= 0) {
-        
         return false;
       }
 
       // 数据长度检查
       const expectedLength = imageData.width * imageData.height * 4;
       if (imageData.data.length !== expectedLength) {
-        
         return false;
       }
 
@@ -1478,7 +1517,6 @@ export class ImageProcessor {
 
       return true;
     } catch (error) {
-
       return false;
     }
   }
@@ -1537,7 +1575,7 @@ export class ImageProcessor {
           width: frame.width,
           height: frame.height,
           taskId,
-          options
+          options,
         });
       });
     }
@@ -1581,7 +1619,9 @@ export class ImageProcessor {
     for (let y = 0; y < height; y += sampleRate) {
       for (let x = 0; x < width; x += sampleRate) {
         const i = (y * width + x) * 4;
-        if (i >= data.length - 3) continue;
+        if (i >= data.length - 3) {
+          continue;
+        }
 
         const r = data[i]!;
         const g = data[i + 1]!;
@@ -1589,23 +1629,39 @@ export class ImageProcessor {
         const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
 
         totalPixels++;
-        if (brightness > 128) brightPixels++;
-        if (brightness < 30) darkPixels++;
+        if (brightness > 128) {
+          brightPixels++;
+        }
+        if (brightness < 30) {
+          darkPixels++;
+        }
         minLuma = Math.min(minLuma, brightness);
         maxLuma = Math.max(maxLuma, brightness);
 
-        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && (r - b) > 15;
+        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && r - g > 15 && r - b > 15;
         const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
         const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
         const isSkinYCbCr = brightness > 80 && cb > 85 && cb < 135 && cr > 135 && cr < 180;
-        if (isSkinRGB || isSkinYCbCr) skinPixels++;
+        if (isSkinRGB || isSkinYCbCr) {
+          skinPixels++;
+        }
 
         const maxC = Math.max(r, g, b);
         const minC = Math.min(r, g, b);
         const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
-        const isAnimeSkin = brightness > 140 && brightness < 250 && saturation < 0.25 && r > 180 && g > 140 && b > 120 && Math.abs(r - g) < 50 && Math.abs(r - b) < 70;
+        const isAnimeSkin =
+          brightness > 140 &&
+          brightness < 250 &&
+          saturation < 0.25 &&
+          r > 180 &&
+          g > 140 &&
+          b > 120 &&
+          Math.abs(r - g) < 50 &&
+          Math.abs(r - b) < 70;
         const isAnimeHair = saturation > 0.4 && maxC > 100;
-        if (isAnimeSkin || isAnimeHair) animeCharPixels++;
+        if (isAnimeSkin || isAnimeHair) {
+          animeCharPixels++;
+        }
 
         if (y > 0 && y < height - 1 && x > 0 && x < width - 1) {
           const left = (y * width + (x - 1)) * 4;
@@ -1616,7 +1672,8 @@ export class ImageProcessor {
             const lb = 0.299 * data[left]! + 0.587 * data[left + 1]! + 0.114 * data[left + 2]!;
             const rb = 0.299 * data[right]! + 0.587 * data[right + 1]! + 0.114 * data[right + 2]!;
             const tb = 0.299 * data[top]! + 0.587 * data[top + 1]! + 0.114 * data[top + 2]!;
-            const bb = 0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
+            const bb =
+              0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
             const laplacian = Math.abs(4 * brightness - lb - rb - tb - bb);
             laplacianSum += laplacian;
             laplacianSqSum += laplacian * laplacian;
@@ -1624,13 +1681,19 @@ export class ImageProcessor {
           }
         }
 
-        const cKey = (Math.floor(r / 24) * 24 << 16) | (Math.floor(g / 24) * 24 << 8) | Math.floor(b / 24) * 24;
+        const cKey =
+          ((Math.floor(r / 24) * 24) << 16) |
+          ((Math.floor(g / 24) * 24) << 8) |
+          (Math.floor(b / 24) * 24);
         colorBuckets.set(cKey, (colorBuckets.get(cKey) || 0) + 1);
       }
     }
 
-    const staticScore = totalPixels > 0 ? Math.min(1, brightPixels / totalPixels * 1.5) : 0.5;
-    const peopleScore = totalPixels > 0 ? Math.min(1, Math.max((skinPixels / totalPixels) * 5, (animeCharPixels / totalPixels) * 3)) : 0.5;
+    const staticScore = totalPixels > 0 ? Math.min(1, (brightPixels / totalPixels) * 1.5) : 0.5;
+    const peopleScore =
+      totalPixels > 0
+        ? Math.min(1, Math.max((skinPixels / totalPixels) * 5, (animeCharPixels / totalPixels) * 3))
+        : 0.5;
     const emptyFrameScore = totalPixels > 0 ? darkPixels / totalPixels : 0.5;
 
     let subtitleRows = 0;
@@ -1641,13 +1704,19 @@ export class ImageProcessor {
       let prevLuma = -1;
       for (let x = 0; x < width; x += sampleRate) {
         const i = (y * width + x) * 4;
-        if (i >= data.length - 3) continue;
+        if (i >= data.length - 3) {
+          continue;
+        }
         const luma = 0.299 * data[i]! + 0.587 * data[i + 1]! + 0.114 * data[i + 2]!;
-        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 45) transitions++;
+        if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 45) {
+          transitions++;
+        }
         prevLuma = luma;
       }
       bottomRowsChecked++;
-      if (transitions > 2 && transitions < width / sampleRate * 0.35) subtitleRows++;
+      if (transitions > 2 && transitions < (width / sampleRate) * 0.35) {
+        subtitleRows++;
+      }
     }
 
     const bottomRatio = bottomRowsChecked > 0 ? subtitleRows / bottomRowsChecked : 0;
@@ -1656,7 +1725,9 @@ export class ImageProcessor {
     let entropy = 0;
     for (const count of colorBuckets.values()) {
       const p = count / totalPixels;
-      if (p > 0) entropy -= p * Math.log2(p);
+      if (p > 0) {
+        entropy -= p * Math.log2(p);
+      }
     }
     const diversityScore = Math.min(1, entropy / 4);
 
@@ -1683,4 +1754,4 @@ export class ImageProcessor {
   }
 }
 
-export default ImageProcessor; 
+export default ImageProcessor;

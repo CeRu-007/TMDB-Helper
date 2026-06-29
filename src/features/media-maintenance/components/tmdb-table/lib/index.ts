@@ -16,7 +16,7 @@ export {
   findColumnIndex,
   calculateSelectionArea,
   debounce,
-} from './tableUtils'
+} from './tableUtils';
 
 export {
   isValidUrl,
@@ -30,7 +30,7 @@ export {
   isValidCSVData,
   validateBatchPattern,
   validateReplaceText,
-} from './validationUtils'
+} from './validationUtils';
 
 export {
   copyToClipboard,
@@ -38,11 +38,11 @@ export {
   selectionToClipboardData,
   applyClipboardData,
   getSelectionBounds,
-} from './clipboardUtils'
+} from './clipboardUtils';
 
 export {
   applyBatchModification,
   findMatchingRows,
   calculateBatchModification,
   previewBatchModification,
-} from './batchEditUtils'
+} from './batchEditUtils';

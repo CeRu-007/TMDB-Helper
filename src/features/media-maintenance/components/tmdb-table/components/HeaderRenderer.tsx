@@ -1,31 +1,24 @@
-import React from "react"
-import { useTranslation } from "react-i18next"
-import { TableHead } from "@/shared/components/ui/table"
-import { Button } from "@/shared/components/ui/button"
-import { cn } from "@/lib/utils"
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { TableHead } from '@/shared/components/ui/table';
+import { Button } from '@/shared/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
-import {
-  Plus,
-  MoreHorizontal,
-  ArrowLeft,
-  ArrowRight,
-  Copy,
-  Trash2,
-} from "lucide-react"
+} from '@/shared/components/ui/dropdown-menu';
+import { Plus, MoreHorizontal, ArrowLeft, ArrowRight, Copy, Trash2 } from 'lucide-react';
 
 interface HeaderRendererProps {
-  headers: string[]
-  showColumnOperations: boolean
-  onInsertColumn: (index: number, position: "before" | "after") => void
-  onDeleteColumn: (index: number) => void
-  onDuplicateColumn: (index: number) => void
-  onMoveColumn: (index: number, direction: "left" | "right") => void
+  headers: string[];
+  showColumnOperations: boolean;
+  onInsertColumn: (index: number, position: 'before' | 'after') => void;
+  onDeleteColumn: (index: number) => void;
+  onDuplicateColumn: (index: number) => void;
+  onMoveColumn: (index: number, direction: 'left' | 'right') => void;
 }
 
 export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
@@ -36,8 +29,8 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
   onDuplicateColumn,
   onMoveColumn,
 }) => {
-  const { t: tMedia } = useTranslation('media')
-  const m = (key: string) => tMedia(`csvEditor.${key}`)
+  const { t: tMedia } = useTranslation('media');
+  const m = (key: string) => tMedia(`csvEditor.${key}`);
 
   return (
     <>
@@ -57,15 +50,11 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem
-                    onClick={() => onInsertColumn(index, "before")}
-                  >
+                  <DropdownMenuItem onClick={() => onInsertColumn(index, 'before')}>
                     <Plus className="mr-2 h-4 w-4" />
                     {m('insertColumnLeft')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onInsertColumn(index, "after")}
-                  >
+                  <DropdownMenuItem onClick={() => onInsertColumn(index, 'after')}>
                     <Plus className="mr-2 h-4 w-4" />
                     {m('insertColumnRight')}
                   </DropdownMenuItem>
@@ -75,14 +64,14 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => onMoveColumn(index, "left")}
+                    onClick={() => onMoveColumn(index, 'left')}
                     disabled={index === 0}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     {m('moveLeft')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => onMoveColumn(index, "right")}
+                    onClick={() => onMoveColumn(index, 'right')}
                     disabled={index === headers.length - 1}
                   >
                     <ArrowRight className="mr-2 h-4 w-4" />
@@ -104,7 +93,7 @@ export const HeaderRenderer: React.FC<HeaderRendererProps> = ({
         </TableHead>
       ))}
     </>
-  )
-}
+  );
+};
 
-export default HeaderRenderer
+export default HeaderRenderer;

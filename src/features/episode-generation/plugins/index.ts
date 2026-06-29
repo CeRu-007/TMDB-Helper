@@ -3,13 +3,13 @@
  * 导出所有插件和核心功能
  */
 
-export * from './core'
-export * from './title-styles'
-export * from './summary-styles'
-export * from './enhance-operations'
+export * from './core';
+export * from './title-styles';
+export * from './summary-styles';
+export * from './enhance-operations';
 
 // 导出内置插件集合
-import { 
+import {
   locationSkillPlugin,
   characterFocusPlugin,
   plot_highlightPlugin,
@@ -24,8 +24,8 @@ import {
   poetic_artisticPlugin,
   simple_directPlugin,
   symbolic_metaphorPlugin,
-  countdown_urgencyPlugin
-} from './title-styles'
+  countdown_urgencyPlugin,
+} from './title-styles';
 
 import {
   netflixPlugin,
@@ -47,12 +47,10 @@ import {
   technicalPlugin,
   artisticPlugin,
   accessiblePlugin,
-  objectivePlugin
-} from './summary-styles'
+  objectivePlugin,
+} from './summary-styles';
 
-import {
-  builtinEnhanceOperationPlugins
-} from './enhance-operations'
+import { builtinEnhanceOperationPlugins } from './enhance-operations';
 
 export const builtinTitleStylePlugins = [
   locationSkillPlugin,
@@ -69,8 +67,8 @@ export const builtinTitleStylePlugins = [
   poetic_artisticPlugin,
   simple_directPlugin,
   symbolic_metaphorPlugin,
-  countdown_urgencyPlugin
-]
+  countdown_urgencyPlugin,
+];
 
 export const builtinSummaryStylePlugins = [
   netflixPlugin,
@@ -92,11 +90,11 @@ export const builtinSummaryStylePlugins = [
   technicalPlugin,
   artisticPlugin,
   accessiblePlugin,
-  objectivePlugin
-]
+  objectivePlugin,
+];
 
 export const allBuiltinPlugins = [
   ...builtinTitleStylePlugins,
   ...builtinSummaryStylePlugins,
-  ...builtinEnhanceOperationPlugins
-]
+  ...builtinEnhanceOperationPlugins,
+];

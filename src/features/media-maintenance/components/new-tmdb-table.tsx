@@ -1,25 +1,29 @@
-"use client"
+'use client';
 
-import React, { useState } from "react"
-import { TMDBTable as BaseTMDBTable } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
-import { cn } from "@/lib/utils"
-import { Button } from "@/shared/components/ui/button"
-import { Grid, LayoutGrid } from "lucide-react"
-import { Toggle } from "@/shared/components/ui/toggle"
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/shared/components/ui/tooltip"
-import { Separator } from "@/shared/components/ui/separator"
-import { TableHelpTooltip } from "../../../shared/components/ui/table-help-tooltip"
-import { Trash2, Save, Eraser } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import type { CSVData } from "@/types/csv-editor"
-import type { TMDBTableProps } from "@/features/media-maintenance/components/tmdb-table/tmdb-table"
+import React, { useState } from 'react';
+import { TMDBTable as BaseTMDBTable } from '@/features/media-maintenance/components/tmdb-table/tmdb-table';
+import { cn } from '@/lib/utils';
+import { Button } from '@/shared/components/ui/button';
+import { Grid, LayoutGrid, Trash2, Save, Eraser } from 'lucide-react';
+import { Toggle } from '@/shared/components/ui/toggle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/shared/components/ui/tooltip';
+import { Separator } from '@/shared/components/ui/separator';
+import { TableHelpTooltip } from '../../../shared/components/ui/table-help-tooltip';
+import { useTranslation } from 'react-i18next';
+import type { CSVData } from '@/types/csv-editor';
+import type { TMDBTableProps } from '@/features/media-maintenance/components/tmdb-table/types';
 export interface NewTMDBTableProps extends TMDBTableProps {
-  onChange?: (newData: CSVData) => void
-  onSave?: () => Promise<boolean | undefined>
-  onCancel?: () => void
-  height?: string
-  isSaving?: boolean
-  onCleanNewlines?: () => void
+  onChange?: (newData: CSVData) => void;
+  onSave?: () => Promise<boolean | undefined>;
+  onCancel?: () => void;
+  height?: string;
+  isSaving?: boolean;
+  onCleanNewlines?: () => void;
 }
 
 /**
@@ -35,7 +39,7 @@ export interface NewTMDBTableProps extends TMDBTableProps {
  * - 改善的单元格编辑体验
  */
 const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
-  const { t } = useTranslation('media')
+  const { t } = useTranslation('media');
   const [config, setConfig] = useState({
     showGridLines: true,
     fixedRowHeight: true,
@@ -52,33 +56,33 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
   // 选中行状态（从子组件传递上来）
   const [selectedRowsCount, setSelectedRowsCount] = useState(0);
   const [tableRef, setTableRef] = useState<any>(null);
-  
+
   // 切换网格线显示
   const toggleGridLines = () => {
     setConfig({
       ...config,
-      showGridLines: !config.showGridLines
+      showGridLines: !config.showGridLines,
     });
   };
-  
+
   // 切换交替行颜色
   const toggleAlternateRowColors = () => {
     setConfig({
       ...config,
-      alternateRowColors: !config.alternateRowColors
+      alternateRowColors: !config.alternateRowColors,
     });
   };
-  
+
   // 增强的样式类
   const enhancedClassName = cn(
-    props.className || "",
-    "new-tmdb-table",
-    "optimized-table", // 添加新的样式类
-    config.showGridLines && "grid-lines",
-    config.fixedRowHeight && "fixed-row-height",
-    config.alternateRowColors && "alternate-rows"
+    props.className || '',
+    'new-tmdb-table',
+    'optimized-table', // 添加新的样式类
+    config.showGridLines && 'grid-lines',
+    config.fixedRowHeight && 'fixed-row-height',
+    config.alternateRowColors && 'alternate-rows'
   );
-  
+
   // 增强的属性
   const enhancedProps = {
     ...props,
@@ -90,9 +94,9 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
     // 设置行高
     rowHeight: config.fixedRowHeight ? config.rowHeight : 40,
     // 传递数据变更回调
-    onDataChange: props.onChange || undefined
+    onDataChange: props.onChange || undefined,
   };
-  
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden" style={{ maxWidth: '100%' }}>
       {/* 工具栏 */}
@@ -135,9 +139,12 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
           </TooltipProvider>
 
           <Separator orientation="vertical" className="h-6" />
-          
+
           <span className="text-xs text-muted-foreground">
-            {t('table.rowCount', { rows: props.data?.rows?.length || 0, cols: props.data?.headers?.length || 0 })}
+            {t('table.rowCount', {
+              rows: props.data?.rows?.length || 0,
+              cols: props.data?.headers?.length || 0,
+            })}
           </span>
         </div>
 
@@ -189,7 +196,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
           showColumnOperations={config.showColumnOperations}
           showRowOperations={config.showRowOperations}
         />
-        
+
         {/* 滚动提示器 - 视觉反馈区域 */}
         <div className="csv-scroll-indicators">
           <div className="scroll-indicator-left"></div>
@@ -198,7 +205,7 @@ const NewTMDBTableComponent = (props: NewTMDBTableProps) => {
       </div>
     </div>
   );
-}
+};
 
 // 使用React.memo优化性能
 export const NewTMDBTable = React.memo(NewTMDBTableComponent, (prevProps, nextProps) => {
@@ -211,7 +218,7 @@ export const NewTMDBTable = React.memo(NewTMDBTableComponent, (prevProps, nextPr
     prevProps.height === nextProps.height &&
     prevProps.isSaving === nextProps.isSaving &&
     prevProps.className === nextProps.className
-  )
-})
+  );
+});
 
-NewTMDBTable.displayName = 'NewTMDBTable'
+NewTMDBTable.displayName = 'NewTMDBTable';

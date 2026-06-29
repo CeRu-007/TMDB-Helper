@@ -112,4 +112,4 @@ If you notice incorrect credits on a person's profile, please use the report but
 - Credits attributed to the wrong person (same name, different person)
 - Missing credits
 - Duplicate credits
-`
+`;

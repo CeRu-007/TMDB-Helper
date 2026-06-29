@@ -48,9 +48,7 @@ export class ImageCacheRepository extends BaseRepository<ImageCacheData, ImageCa
 
     try {
       return db
-        .prepare(
-          'SELECT * FROM image_cache WHERE tmdbId = ? AND imageType = ? AND sizeType = ?'
-        )
+        .prepare('SELECT * FROM image_cache WHERE tmdbId = ? AND imageType = ? AND sizeType = ?')
         .get(tmdbId, imageType, sizeType) as ImageCacheRow | undefined;
     } catch (error) {
       logger.error(`[ImageCacheRepository] 获取缓存记录失败: ${tmdbId}/${imageType}`, error);
@@ -265,9 +263,7 @@ export class ImageCacheRepository extends BaseRepository<ImageCacheData, ImageCa
 
     try {
       const result = db
-        .prepare(
-          'SELECT 1 FROM image_cache WHERE tmdbId = ? AND imageType = ? AND sizeType = ?'
-        )
+        .prepare('SELECT 1 FROM image_cache WHERE tmdbId = ? AND imageType = ? AND sizeType = ?')
         .get(tmdbId, imageType, sizeType);
 
       return !!result;
@@ -307,7 +303,9 @@ export class ImageCacheRepository extends BaseRepository<ImageCacheData, ImageCa
     const db = getDatabase();
 
     try {
-      const total = (db.prepare('SELECT COUNT(*) as count FROM image_cache').get() as { count: number }).count;
+      const total = (
+        db.prepare('SELECT COUNT(*) as count FROM image_cache').get() as { count: number }
+      ).count;
 
       const byTypeRows = db
         .prepare('SELECT imageType, COUNT(*) as count FROM image_cache GROUP BY imageType')

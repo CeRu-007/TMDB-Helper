@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const monokaiProTheme: ThemeConfig = {
   id: 'monokai-pro',
@@ -40,4 +40,4 @@ export const monokaiProTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

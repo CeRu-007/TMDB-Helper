@@ -70,7 +70,7 @@ const DEFAULT_TMDB_CONFIG: TMDBConfig = {
 
 // 辅助函数：查找内置提供商
 function findBuiltinProvider(
-  providers: Array<{ id: string; type: string; isBuiltIn: boolean }>,
+  providers: Array<{ id: string; type: string; isBuiltIn: boolean; apiKey?: string }>,
   id: string,
   type: string
 ) {
@@ -109,7 +109,7 @@ export default function SettingsDialog({
     [initialSection, validSections]
   );
 
-  const [activeSection, setActiveSection] = useState<string>(validInitialSection);
+  const [activeSection, setActiveSection] = useState<string>(validInitialSection ?? '');
   const isMobile = useMobile();
   const [showMobileMenu, setShowMobileMenu] = useState(true);
 
@@ -216,7 +216,7 @@ export default function SettingsDialog({
   const [appInfo] = useState<AppInfo>({
     name: 'TMDB Helper',
     version: packageJson.version,
-    buildDate: packageJson.buildTime || new Date().toISOString().split('T')[0],
+    buildDate: (packageJson as any).buildTime || new Date().toISOString().split('T')[0],
   });
 
   // 保存状态
@@ -254,7 +254,9 @@ export default function SettingsDialog({
   // 初始化设置
   const initRef = useRef(false);
   useEffect(() => {
-    if (typeof window === 'undefined' || initRef.current) return;
+    if (typeof window === 'undefined' || initRef.current) {
+      return;
+    }
     initRef.current = true;
 
     const initializeSettings = async () => {
@@ -308,7 +310,9 @@ export default function SettingsDialog({
           const savedGeneralSettings = await ClientConfigManager.getItem('general_settings');
           if (savedGeneralSettings) {
             const parsed = safeJsonParse<GeneralSettings>(savedGeneralSettings);
-            if (parsed) setGeneralSettings(parsed);
+            if (parsed) {
+              setGeneralSettings(parsed);
+            }
           }
         } catch (error) {
           logger.warn('加载通用设置失败:', error);
@@ -432,6 +436,7 @@ export default function SettingsDialog({
     };
 
     initializeSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 对话框打开时刷新配置
@@ -456,6 +461,7 @@ export default function SettingsDialog({
 
       refreshConfig();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // 提取模型服务配置刷新逻辑
@@ -482,6 +488,7 @@ export default function SettingsDialog({
       logger.warn('刷新模型服务配置失败:', error);
       resetModelServiceState();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 辅助函数：重置模型服务状态
@@ -543,7 +550,9 @@ export default function SettingsDialog({
 
   // 监听模型服务配置更新事件
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     const handleConfigUpdate = async () => {
       try {
@@ -615,7 +624,7 @@ export default function SettingsDialog({
 
               updatedScenarioSettings[scenario.type] = {
                 selectedModelIds: filteredModelIds,
-                primaryModelId: primaryId,
+                primaryModelId: primaryId ?? '',
                 parameters: scenario.parameters || {},
               };
             }
@@ -630,6 +639,7 @@ export default function SettingsDialog({
 
     window.addEventListener('model-service-config-updated', handleConfigUpdate);
     return () => window.removeEventListener('model-service-config-updated', handleConfigUpdate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 保存处理函数
@@ -678,12 +688,13 @@ export default function SettingsDialog({
   };
 
   const getStatusIcon = () => {
-    const icons = {
+    const icons: Record<string, React.ReactNode> = {
       saving: (
         <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
       ),
       success: <CheckCircle2 className="h-4 w-4 text-green-600" />,
       error: <AlertCircle className="h-4 w-4 text-red-600" />,
+      idle: null,
     };
     return icons[saveStatus] || null;
   };
@@ -699,7 +710,9 @@ export default function SettingsDialog({
 
   const loadTmdbConfig = useCallback(
     async (path: string) => {
-      if (!path) return;
+      if (!path) {
+        return;
+      }
 
       setConfigLoading(true);
       try {
@@ -744,7 +757,7 @@ export default function SettingsDialog({
         setConfigLoading(false);
       }
     },
-    [toast]
+    [t, toast]
   );
 
   // 保存TMDB配置
@@ -790,7 +803,7 @@ export default function SettingsDialog({
     } finally {
       setConfigSaving(false);
     }
-  }, [tmdbImportPath, tmdbConfig, toast]);
+  }, [t, tmdbImportPath, tmdbConfig, toast]);
 
   // 保存通用设置
   const saveGeneralSettings = useCallback(async () => {
@@ -820,6 +833,7 @@ export default function SettingsDialog({
         variant: 'destructive',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generalSettings, toast]);
 
   // 保存外观设置
@@ -849,6 +863,7 @@ export default function SettingsDialog({
         variant: 'destructive',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoThumbnailSettings, toast]);
 
   // 密码修改
@@ -910,7 +925,7 @@ export default function SettingsDialog({
     } finally {
       setPasswordChangeLoading(false);
     }
-  }, [passwordForm, changePassword, toast]);
+  }, [t, passwordForm, changePassword, toast, onOpenChange, router]);
 
   // 检查是否为Docker环境
   const checkDockerEnvironment = useCallback(async (): Promise<boolean> => {
@@ -925,18 +940,21 @@ export default function SettingsDialog({
   }, []);
 
   // 保存Docker配置
-  const saveDockerConfig = useCallback(async (configData: Record<string, unknown>) => {
-    const response = await fetch('/api/system/docker-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(configData),
-    });
+  const saveDockerConfig = useCallback(
+    async (configData: Record<string, unknown>) => {
+      const response = await fetch('/api/system/docker-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData),
+      });
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || t('settings.saveFailed'));
-    }
-  }, []);
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || t('settings.saveFailed'));
+      }
+    },
+    [t]
+  );
 
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen);
@@ -1046,7 +1064,50 @@ export default function SettingsDialog({
       case 'help':
         return <HelpSettingsPanel helpTab={helpTab} setHelpTab={setHelpTab} appInfo={appInfo} />;
       default:
-        return <ModelServiceSettingsPanel />;
+        return (
+          <ModelServiceSettingsPanel
+            modelServiceTab={modelServiceTab}
+            setModelServiceTab={setModelServiceTab}
+            apiSettings={apiSettings}
+            setApiSettings={setApiSettings}
+            customProviders={customProviders}
+            setCustomProviders={setCustomProviders}
+            configuredModels={configuredModels}
+            setConfiguredModels={setConfiguredModels}
+            scenarioSettings={scenarioSettings}
+            setScenarioSettings={setScenarioSettings}
+            showProviderDialog={showProviderDialog}
+            setShowProviderDialog={setShowProviderDialog}
+            showModelDialog={showModelDialog}
+            setShowModelDialog={setShowModelDialog}
+            showAvailableModelsDialog={showAvailableModelsDialog}
+            setShowAvailableModelsDialog={setShowAvailableModelsDialog}
+            editingProvider={editingProvider}
+            setEditingProvider={setEditingProvider}
+            providerForm={providerForm}
+            setProviderForm={setProviderForm}
+            modelForm={modelForm}
+            setModelForm={setModelForm}
+            connectionTestResult={connectionTestResult}
+            setConnectionTestResult={setConnectionTestResult}
+            testingConnection={testingConnection}
+            setTestingConnection={setTestingConnection}
+            loadingModels={loadingModels}
+            setLoadingModels={setLoadingModels}
+            availableModels={availableModels}
+            setAvailableModels={setAvailableModels}
+            selectedProviderId={selectedProviderId}
+            setSelectedProviderId={setSelectedProviderId}
+            expandedScenario={expandedScenario}
+            setExpandedScenario={setExpandedScenario}
+            showSiliconFlowApiKey={showSiliconFlowApiKey}
+            setShowSiliconFlowApiKey={setShowSiliconFlowApiKey}
+            showModelScopeApiKey={showModelScopeApiKey}
+            setShowModelScopeApiKey={setShowModelScopeApiKey}
+            showZhipuApiKey={showZhipuApiKey}
+            setShowZhipuApiKey={setShowZhipuApiKey}
+          />
+        );
     }
   };
 

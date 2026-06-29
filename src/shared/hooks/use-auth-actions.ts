@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import { useRouter } from 'next/navigation'
-import type { AuthUser } from '@/shared/types/auth.types'
+import { useRouter } from 'next/navigation';
+import type { AuthUser } from '@/shared/types/auth.types';
 
 export function useAuthActions() {
-  const router = useRouter()
+  const router = useRouter();
 
   const login = async (
     username: string,
@@ -16,65 +16,65 @@ export function useAuthActions() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ username, password, rememberMe })
-      })
+        body: JSON.stringify({ username, password, rememberMe }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok && data.success) {
-        return { success: true, user: data.user }
+        return { success: true, user: data.user };
       }
-      return { success: false, error: data.error || '用户名或密码错误' }
+      return { success: false, error: data.error || '用户名或密码错误' };
     } catch {
-      return { success: false, error: '网络错误，请稍后重试' }
+      return { success: false, error: '网络错误，请稍后重试' };
     }
-  }
+  };
 
   const logout = async (): Promise<void> => {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
-      })
+        credentials: 'include',
+      });
     } catch {}
 
-    router.push('/login')
-  }
+    router.push('/login');
+  };
 
-  const changePassword = async (
-    currentPassword: string,
-    newPassword: string
-  ): Promise<void> => {
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
     const response = await fetch('/api/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ currentPassword, newPassword })
-    })
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || '密码修改失败')
+      const error = await response.json();
+      throw new Error(error.message || '密码修改失败');
     }
-  }
+  };
 
-  const register = async (username: string, password: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
+  const register = async (
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ username, password })
-      })
-      const data = await response.json()
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
       if (response.ok && data.success) {
-        return { success: true, user: data.user }
+        return { success: true, user: data.user };
       }
-      return { success: false, error: data.error || '注册失败' }
+      return { success: false, error: data.error || '注册失败' };
     } catch {
-      return { success: false, error: '网络错误，请稍后重试' }
+      return { success: false, error: '网络错误，请稍后重试' };
     }
-  }
+  };
 
-  return { login, logout, changePassword, register }
+  return { login, logout, changePassword, register };
 }

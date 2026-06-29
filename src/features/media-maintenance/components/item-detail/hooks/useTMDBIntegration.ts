@@ -1,25 +1,24 @@
-"use client"
+'use client';
 
-import { useMemo } from "react"
-import { createElement } from "react"
-import { Link, Terminal } from "lucide-react"
-import type { TMDBItem } from "@/lib/data/storage"
-import { getPlatformInfo } from "@/lib/utils"
+import { useMemo, createElement } from 'react';
+import { Link, Terminal } from 'lucide-react';
+import type { TMDBItem } from '@/lib/data/storage';
+import { getPlatformInfo } from '@/lib/utils';
 
 export interface TMDBCommand {
-  type: "platform" | "tmdb"
-  title: string
-  command: string
-  description: string
-  icon: React.ReactNode
+  type: 'platform' | 'tmdb';
+  title: string;
+  command: string;
+  description: string;
+  icon: React.ReactNode;
 }
 
 interface UseTMDBIntegrationProps {
-  item: TMDBItem
-  customSeasonNumber: number
-  selectedLanguage: string
-  pythonCmd: string
-  tmdbModule?: string
+  item: TMDBItem;
+  customSeasonNumber: number;
+  selectedLanguage: string;
+  pythonCmd: string;
+  tmdbModule?: string;
 }
 
 export function useTMDBIntegration({
@@ -27,46 +26,46 @@ export function useTMDBIntegration({
   customSeasonNumber,
   selectedLanguage,
   pythonCmd,
-  tmdbModule = 'tmdb_import'
+  tmdbModule = 'tmdb_import',
 }: UseTMDBIntegrationProps) {
   // Generate TMDB import commands
   const generateTmdbImportCommands = useMemo((): TMDBCommand[] => {
-    const commands: TMDBCommand[] = []
+    const commands: TMDBCommand[] = [];
 
     // 播出平台抓取命令（多URL支持）
     if (item.platformUrls && item.platformUrls.length > 0) {
       item.platformUrls.forEach((url, idx) => {
-        const info = getPlatformInfo(url)
-        const platformName = info?.name || `平台${idx + 1}`
-        const platformCommand = `${pythonCmd} -m ${tmdbModule} "${url}"`
+        const info = getPlatformInfo(url);
+        const platformName = info?.name || `平台${idx + 1}`;
+        const platformCommand = `${pythonCmd} -m ${tmdbModule} "${url}"`;
         commands.push({
-          type: "platform",
+          type: 'platform',
           title: `播出平台抓取 - ${platformName}`,
           command: platformCommand,
           description: `从${platformName}抓取剧集元数据`,
-          icon: createElement(Link, { className: "h-4 w-4" }),
-        })
-      })
+          icon: createElement(Link, { className: 'h-4 w-4' }),
+        });
+      });
     }
 
     // TMDB抓取命令
     if (item.tmdbId) {
-      if (item.mediaType === "tv") {
-        const tmdbCommand = `${pythonCmd} -m ${tmdbModule} "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${selectedLanguage}"`
+      if (item.mediaType === 'tv') {
+        const tmdbCommand = `${pythonCmd} -m ${tmdbModule} "https://www.themoviedb.org/tv/${item.tmdbId}/season/${customSeasonNumber}?language=${selectedLanguage}"`;
         commands.push({
-          type: "tmdb",
+          type: 'tmdb',
           title: `上传至TMDB第${customSeasonNumber}季`,
           command: tmdbCommand,
           description: `上传数据至TMDB第${customSeasonNumber}季`,
-          icon: createElement(Terminal, { className: "h-4 w-4" }),
-        })
+          icon: createElement(Terminal, { className: 'h-4 w-4' }),
+        });
       }
     }
 
-    return commands
-  }, [item, customSeasonNumber, selectedLanguage, pythonCmd, tmdbModule])
+    return commands;
+  }, [item, customSeasonNumber, selectedLanguage, pythonCmd, tmdbModule]);
 
   return {
     commands: generateTmdbImportCommands,
-  }
+  };
 }

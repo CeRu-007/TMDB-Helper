@@ -1,3 +1,4 @@
+export type { TMDBItem } from '@/types/tmdb-item';
 import { ItemManager } from './storage/item-manager';
 import { ImportExportManager } from './storage/import-export-manager';
 

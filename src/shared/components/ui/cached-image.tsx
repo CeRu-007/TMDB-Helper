@@ -94,7 +94,9 @@ export function CachedImage({
 
   // 处理刷新
   const handleRefresh = useCallback(async () => {
-    if (!enableRefresh || isRefreshing) return;
+    if (!enableRefresh || isRefreshing) {
+      return;
+    }
 
     setIsRefreshing(true);
     setImageState('loading');
@@ -126,12 +128,7 @@ export function CachedImage({
     <div className="relative h-full w-full" style={style}>
       {/* 骨架屏 */}
       {showSkeleton && imageState === 'loading' && (
-        <div
-          className={cn(
-            'absolute inset-0 animate-pulse bg-muted',
-            skeletonClassName
-          )}
-        />
+        <div className={cn('absolute inset-0 animate-pulse bg-muted', skeletonClassName)} />
       )}
 
       {/* 错误状态 */}
@@ -145,6 +142,7 @@ export function CachedImage({
       )}
 
       {/* 图片 */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={currentSrc}
         alt={alt}

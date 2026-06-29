@@ -1,4 +1,4 @@
-import type { BatchModificationInfo } from "../types"
+import type { BatchModificationInfo } from '../types';
 
 /**
  * 应用批量修改规则
@@ -11,25 +11,21 @@ export function applyBatchModification(
   if (isOverview) {
     // overview列：处理前缀和后缀
     if (text.endsWith(matchInfo.pattern)) {
-      return (
-        text.slice(0, -matchInfo.pattern.length) + matchInfo.replaceWith
-      )
+      return text.slice(0, -matchInfo.pattern.length) + matchInfo.replaceWith;
     }
     if (text.startsWith(matchInfo.pattern)) {
-      return matchInfo.replaceWith + text.slice(matchInfo.pattern.length)
+      return matchInfo.replaceWith + text.slice(matchInfo.pattern.length);
     }
   } else {
     // 其他列：文本替换
-    const index = text.indexOf(matchInfo.pattern)
+    const index = text.indexOf(matchInfo.pattern);
     if (index !== -1) {
       return (
-        text.slice(0, index) +
-        matchInfo.replaceWith +
-        text.slice(index + matchInfo.pattern.length)
-      )
+        text.slice(0, index) + matchInfo.replaceWith + text.slice(index + matchInfo.pattern.length)
+      );
     }
   }
-  return text
+  return text;
 }
 
 /**
@@ -43,12 +39,12 @@ export function findMatchingRows(
   return columnData
     .filter(({ value }) => {
       if (isOverview) {
-        return value.startsWith(pattern) || value.endsWith(pattern)
+        return value.startsWith(pattern) || value.endsWith(pattern);
       } else {
-        return value.includes(pattern)
+        return value.includes(pattern);
       }
     })
-    .map(({ rowIndex }) => rowIndex)
+    .map(({ rowIndex }) => rowIndex);
 }
 
 /**
@@ -60,13 +56,13 @@ export function calculateBatchModification(
   replaceWith: string,
   isOverview: boolean
 ): BatchModificationInfo {
-  const affectedRows = findMatchingRows(columnData, pattern, isOverview)
+  const affectedRows = findMatchingRows(columnData, pattern, isOverview);
 
   return {
     pattern,
     replaceWith,
     affectedRows,
-  }
+  };
 }
 
 /**
@@ -78,15 +74,11 @@ export function previewBatchModification(
   replaceWith: string,
   isOverview: boolean
 ): { original: string; modified: string; willChange: boolean } {
-  const modified = applyBatchModification(
-    originalText,
-    { pattern, replaceWith },
-    isOverview
-  )
+  const modified = applyBatchModification(originalText, { pattern, replaceWith }, isOverview);
 
   return {
     original: originalText,
     modified,
     willChange: originalText !== modified,
-  }
+  };
 }

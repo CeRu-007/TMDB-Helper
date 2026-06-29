@@ -1,38 +1,46 @@
-import React from 'react'
-import { UserAvatarImage } from "@/shared/components/ui/smart-avatar"
-import { Bot } from "lucide-react"
-import { Message } from "@/types/ai-chat"
-import { MessageContent } from "./molecules/message-content"
-import { MessageActions } from "./molecules/message-actions"
-import { MessageEditor } from "./molecules/message-editor"
-import { SuggestionList } from "./molecules/suggestion-list"
-import { useTranslation } from "react-i18next"
+import React from 'react';
+import { UserAvatarImage } from '@/shared/components/ui/smart-avatar';
+import { Bot } from 'lucide-react';
+import { Message } from '@/types/ai-chat';
+import { MessageContent } from './molecules/message-content';
+import { MessageActions } from './molecules/message-actions';
+import { MessageEditor } from './molecules/message-editor';
+import { SuggestionList } from './molecules/suggestion-list';
+import { useTranslation } from 'react-i18next';
 
 // User info type
 interface UserInfo {
-  avatarUrl?: string
-  displayName?: string
+  avatarUrl?: string;
+  displayName?: string;
 }
 
 interface ChatMessageItemProps {
-  message: Message
-  isLastMessage: boolean
-  isEditing: boolean
-  editingContent: string
-  userInfo: UserInfo | null
-  isLoading: boolean
-  onStartEdit: (messageId: string, content: string) => void
-  onCancelEdit: () => void
-  onSaveEdit: (messageId: string, callback?: (content: string, index: number) => Promise<void>) => void
-  onSetEditingContent: (content: string) => void
-  onCopyMessage: (content: string) => void
-  onDeleteMessage: (messageId: string) => void
-  onRegenerateResponse: (messageId: string) => void
-  onContinueGeneration: (messageId: string) => void
-  onRateMessage: (messageId: string, rating: 'like' | 'dislike' | null, chatId: string | null, model: string) => void
-  onQuickReply: (content: string) => void
-  currentChatId: string | null
-  selectedModel: string
+  message: Message;
+  isLastMessage: boolean;
+  isEditing: boolean;
+  editingContent: string;
+  userInfo: UserInfo | null;
+  isLoading: boolean;
+  onStartEdit: (messageId: string, content: string) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (
+    messageId: string,
+    callback?: (content: string, index: number) => Promise<void>
+  ) => void;
+  onSetEditingContent: (content: string) => void;
+  onCopyMessage: (content: string) => void;
+  onDeleteMessage: (messageId: string) => void;
+  onRegenerateResponse: (messageId: string) => void;
+  onContinueGeneration: (messageId: string) => void;
+  onRateMessage: (
+    messageId: string,
+    rating: 'like' | 'dislike' | null,
+    chatId: string | null,
+    model: string
+  ) => void;
+  onQuickReply: (content: string) => void;
+  currentChatId: string | null;
+  selectedModel: string;
 }
 
 export function ChatMessageItem({
@@ -53,10 +61,10 @@ export function ChatMessageItem({
   onRateMessage,
   onQuickReply,
   currentChatId,
-  selectedModel
+  selectedModel,
 }: ChatMessageItemProps) {
-  const { t } = useTranslation('ai-chat')
-  const isUser = message.role === 'user'
+  const { t } = useTranslation('ai-chat');
+  const isUser = message.role === 'user';
 
   if (isUser) {
     return (
@@ -102,19 +110,24 @@ export function ChatMessageItem({
           />
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div key={message.id} className={`group ${!message.isStreaming && message.role === 'assistant' && isLastMessage ? 'pb-3' : 'py-3'}`}>
+    <div
+      key={message.id}
+      className={`group ${!message.isStreaming && message.role === 'assistant' && isLastMessage ? 'pb-3' : 'py-3'}`}
+    >
       <div className="flex items-center gap-3 mb-4">
         <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-sm">
           <Bot className="w-4 h-4 text-white" />
         </div>
         <div className="text-sm font-medium text-foreground">{t('aiAssistant')}</div>
-        <div className="text-xs text-muted-foreground">{message.timestamp.toLocaleTimeString()}</div>
+        <div className="text-xs text-muted-foreground">
+          {message.timestamp.toLocaleTimeString()}
+        </div>
       </div>
-      
+
       <div>
         {isEditing ? (
           <MessageEditor
@@ -135,7 +148,7 @@ export function ChatMessageItem({
               isEdited={message.isEdited}
               role="assistant"
             />
-            
+
             {!message.isStreaming && (
               <MessageActions
                 messageId={message.id}
@@ -151,16 +164,13 @@ export function ChatMessageItem({
                 onRate={(rating) => onRateMessage(message.id, rating, currentChatId, selectedModel)}
               />
             )}
-            
+
             {!message.isStreaming && message.role === 'assistant' && isLastMessage && (
-              <SuggestionList
-                suggestions={message.suggestions}
-                onSuggestionClick={onQuickReply}
-              />
+              <SuggestionList suggestions={message.suggestions} onSuggestionClick={onQuickReply} />
             )}
           </>
         )}
       </div>
     </div>
-  )
+  );
 }

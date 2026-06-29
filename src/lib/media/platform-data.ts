@@ -158,8 +158,9 @@ export const platforms: Platform[] = [
     url: 'https://www.hbomax.com',
     region: '美国',
     popular: true,
-    logoUrl: 'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png',
-    fallbackEmoji: '🎭'
+    logoUrl:
+      'https://cdn.cookielaw.org/logos/1b21e05d-c206-4e0b-970e-2d73a23e42e8/0197a675-cce2-7363-aa77-c0700565dd28/ab24c856-14e8-485a-ab26-fdc354c49b32/hbomax25_-_min_-_resized.png',
+    fallbackEmoji: '🎭',
   },
   {
     id: 'hulu',
@@ -172,7 +173,7 @@ export const platforms: Platform[] = [
     region: '美国',
     popular: false,
     logoUrl: 'https://cdn.worldvectorlogo.com/logos/hulu.svg',
-    fallbackEmoji: '🟢'
+    fallbackEmoji: '🟢',
   },
   {
     id: 'paramount-plus',
@@ -185,7 +186,7 @@ export const platforms: Platform[] = [
     region: '美国',
     popular: false,
     logoUrl: 'https://cdn.worldvectorlogo.com/logos/paramount-3.svg',
-    fallbackEmoji: '⛰️'
+    fallbackEmoji: '⛰️',
   },
   {
     id: 'peacock',
@@ -198,7 +199,7 @@ export const platforms: Platform[] = [
     region: '美国',
     popular: false,
     logoUrl: 'https://cdn.worldvectorlogo.com/logos/peacock-1.svg',
-    fallbackEmoji: '🦚'
+    fallbackEmoji: '🦚',
   },
 
   // 中国大陆平台
@@ -213,7 +214,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=cctv.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'sohu',
@@ -226,7 +227,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=sohu.com&sz=64',
-    fallbackEmoji: '🦊'
+    fallbackEmoji: '🦊',
   },
   {
     id: 'douyin',
@@ -239,7 +240,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=douyin.com&sz=64',
-    fallbackEmoji: '🎵'
+    fallbackEmoji: '🎵',
   },
   {
     id: 'iqiyi',
@@ -252,7 +253,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=iqiyi.com&sz=64',
-    fallbackEmoji: '🎯'
+    fallbackEmoji: '🎯',
   },
   {
     id: 'tencent-video',
@@ -265,7 +266,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=v.qq.com&sz=64',
-    fallbackEmoji: '🐧'
+    fallbackEmoji: '🐧',
   },
   {
     id: 'youku',
@@ -278,7 +279,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=youku.com&sz=64',
-    fallbackEmoji: '📱'
+    fallbackEmoji: '📱',
   },
   {
     id: 'bilibili',
@@ -291,7 +292,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=bilibili.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'mango-tv',
@@ -304,7 +305,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=mgtv.com&sz=64',
-    fallbackEmoji: '🥭'
+    fallbackEmoji: '🥭',
   },
   {
     id: 'migu-video',
@@ -317,7 +318,7 @@ export const platforms: Platform[] = [
     region: '中国大陆',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=miguvideo.com&sz=64',
-    fallbackEmoji: '📱'
+    fallbackEmoji: '📱',
   },
 
   // 日本平台
@@ -332,7 +333,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=video.unext.jp&sz=64',
-    fallbackEmoji: '🇯🇵'
+    fallbackEmoji: '🇯🇵',
   },
   {
     id: 'nhk',
@@ -345,7 +346,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=nhk.or.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'asahi',
@@ -358,7 +359,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=tv-asahi.co.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'paravi',
@@ -371,7 +372,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=paravi.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'abema-tv',
@@ -384,7 +385,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=abema.tv&sz=64',
-    fallbackEmoji: '📡'
+    fallbackEmoji: '📡',
   },
   {
     id: 'tver',
@@ -397,7 +398,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=tver.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'fod-premium',
@@ -410,7 +411,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=fod.fujitv.co.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'yahoo-japan',
@@ -423,7 +424,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=yahoo.co.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'dtv',
@@ -436,7 +437,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=video.dmkt-sp.jp&sz=64',
-    fallbackEmoji: '📱'
+    fallbackEmoji: '📱',
   },
   {
     id: 'd-anime-store',
@@ -449,7 +450,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=animestore.docomo.ne.jp&sz=64',
-    fallbackEmoji: '🎌'
+    fallbackEmoji: '🎌',
   },
   {
     id: 'niconico',
@@ -462,7 +463,7 @@ export const platforms: Platform[] = [
     region: '日本',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=nicovideo.jp&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 韩国平台
@@ -477,7 +478,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=wavve.com&sz=64',
-    fallbackEmoji: '🌊'
+    fallbackEmoji: '🌊',
   },
   {
     id: 'tving',
@@ -490,7 +491,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=tving.com&sz=64',
-    fallbackEmoji: '🇰🇷'
+    fallbackEmoji: '🇰🇷',
   },
   {
     id: 'coupang-play',
@@ -503,7 +504,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=coupangplay.com&sz=64',
-    fallbackEmoji: '🛒'
+    fallbackEmoji: '🛒',
   },
   {
     id: 'sbs',
@@ -516,7 +517,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=sbs.co.kr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'mbc',
@@ -529,7 +530,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=imbc.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'kbs',
@@ -542,7 +543,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=kbs.co.kr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'jtbc',
@@ -555,7 +556,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=jtbc.co.kr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'tvn',
@@ -568,7 +569,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=tvn.co.kr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'ocn',
@@ -581,7 +582,7 @@ export const platforms: Platform[] = [
     region: '韩国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=ocn.co.kr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 台湾平台
@@ -596,7 +597,7 @@ export const platforms: Platform[] = [
     region: '台湾',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=linetv.tw&sz=64',
-    fallbackEmoji: '💚'
+    fallbackEmoji: '💚',
   },
   {
     id: 'kktv',
@@ -609,7 +610,7 @@ export const platforms: Platform[] = [
     region: '台湾',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=kktv.me&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'litv',
@@ -622,7 +623,7 @@ export const platforms: Platform[] = [
     region: '台湾',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=litv.tv&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'myvideo',
@@ -635,7 +636,7 @@ export const platforms: Platform[] = [
     region: '台湾',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=myvideo.net.tw&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'friday-video',
@@ -648,7 +649,7 @@ export const platforms: Platform[] = [
     region: '台湾',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=video.friday.tw&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 香港平台
@@ -663,7 +664,7 @@ export const platforms: Platform[] = [
     region: '香港',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=mytvsuper.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'tvbanywhere',
@@ -676,7 +677,7 @@ export const platforms: Platform[] = [
     region: '香港',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=tvbanywhere.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'viu',
@@ -689,7 +690,7 @@ export const platforms: Platform[] = [
     region: '香港',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=viu.com&sz=64',
-    fallbackEmoji: '🏙️'
+    fallbackEmoji: '🏙️',
   },
   {
     id: 'now-tv',
@@ -702,7 +703,7 @@ export const platforms: Platform[] = [
     region: '香港',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=nowtv.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 新加坡平台
@@ -717,7 +718,7 @@ export const platforms: Platform[] = [
     region: '新加坡',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=starhubgo.com&sz=64',
-    fallbackEmoji: '🇸🇬'
+    fallbackEmoji: '🇸🇬',
   },
   {
     id: 'singtel-tv',
@@ -730,7 +731,7 @@ export const platforms: Platform[] = [
     region: '新加坡',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=singtel.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 印度平台
@@ -745,7 +746,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=sonyliv.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'hotstar',
@@ -758,7 +759,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=hotstar.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'mx-player',
@@ -771,7 +772,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=mxplayer.in&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'jiocinema',
@@ -784,7 +785,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=jiocinema.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'alt-balaji',
@@ -797,7 +798,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=altbalaji.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'eros-now',
@@ -810,7 +811,7 @@ export const platforms: Platform[] = [
     region: '印度',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=erosnow.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 英国平台
@@ -825,7 +826,7 @@ export const platforms: Platform[] = [
     region: '英国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=bbc.co.uk&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'itv-hub',
@@ -838,7 +839,7 @@ export const platforms: Platform[] = [
     region: '英国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=itv.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'all-4',
@@ -851,7 +852,7 @@ export const platforms: Platform[] = [
     region: '英国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=channel4.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'uktv-play',
@@ -864,7 +865,7 @@ export const platforms: Platform[] = [
     region: '英国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=uktvplay.uktv.co.uk&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 澳大利亚平台
@@ -879,7 +880,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=stan.com.au&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'abc-iview',
@@ -892,7 +893,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=abc.net.au&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: '7plus',
@@ -905,7 +906,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=7plus.com.au&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: '9now',
@@ -918,7 +919,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=9now.com.au&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: '10-play',
@@ -931,7 +932,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=10play.com.au&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'animelab',
@@ -944,7 +945,7 @@ export const platforms: Platform[] = [
     region: '澳大利亚',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=animelab.com&sz=64',
-    fallbackEmoji: '🦘'
+    fallbackEmoji: '🦘',
   },
 
   // 加拿大平台
@@ -959,7 +960,7 @@ export const platforms: Platform[] = [
     region: '加拿大',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=cbc.ca&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'crave',
@@ -972,7 +973,7 @@ export const platforms: Platform[] = [
     region: '加拿大',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=crave.ca&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 法国平台
@@ -987,7 +988,7 @@ export const platforms: Platform[] = [
     region: '法国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=salto.fr&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'molotov',
@@ -1000,7 +1001,7 @@ export const platforms: Platform[] = [
     region: '法国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=molotov.tv&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 泰国平台
@@ -1015,7 +1016,7 @@ export const platforms: Platform[] = [
     region: '泰国',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=pptvhd36.com&sz=64',
-    fallbackEmoji: '🇹🇭'
+    fallbackEmoji: '🇹🇭',
   },
   {
     id: 'gmm-25',
@@ -1028,7 +1029,7 @@ export const platforms: Platform[] = [
     region: '泰国',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=gmm25.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
 
   // 东南亚平台
@@ -1043,7 +1044,7 @@ export const platforms: Platform[] = [
     region: '东南亚',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=wetv.vip&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'iqiyi-international',
@@ -1056,7 +1057,7 @@ export const platforms: Platform[] = [
     region: '东南亚',
     popular: true,
     logoUrl: 'https://www.google.com/s2/favicons?domain=iq.com&sz=64',
-    fallbackEmoji: '📺'
+    fallbackEmoji: '📺',
   },
   {
     id: 'iwant-tfc',
@@ -1069,16 +1070,24 @@ export const platforms: Platform[] = [
     region: '东南亚',
     popular: false,
     logoUrl: 'https://www.google.com/s2/favicons?domain=iwanttfc.com&sz=64',
-    fallbackEmoji: '📺'
-  }
+    fallbackEmoji: '📺',
+  },
 ];
 
 // 自定义排序：全球/中国大陆优先，其他按字母顺序
 function sortCategories(a: string, b: string): number {
-  if (a === '全球') return -1;
-  if (b === '全球') return 1;
-  if (a === '中国大陆') return -1;
-  if (b === '中国大陆') return 1;
+  if (a === '全球') {
+    return -1;
+  }
+  if (b === '全球') {
+    return 1;
+  }
+  if (a === '中国大陆') {
+    return -1;
+  }
+  if (b === '中国大陆') {
+    return 1;
+  }
   return a.localeCompare(b, 'zh-CN');
 }
 

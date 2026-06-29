@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '缺少CSV文件路径参数',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             error: error instanceof Error ? error.message : String(error),
           },
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
             message: 'CSV文件为空或只有标题行',
           },
         },
-        { status: 200 },
+        { status: 200 }
       );
     }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: 'CSV文件没有标题行',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     for (const possibleName of possibleEpisodeColumns) {
       episodeColumnIndex = headers.findIndex((h) =>
-        h.toLowerCase().includes(possibleName.toLowerCase()),
+        h.toLowerCase().includes(possibleName.toLowerCase())
       );
       if (episodeColumnIndex !== -1) {
         matchedColumnName = headers[episodeColumnIndex] || '';
@@ -108,19 +108,20 @@ export async function POST(request: NextRequest) {
             searchedColumns: possibleEpisodeColumns,
           },
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // 解析数据行，提取集数
     const remainingEpisodes: number[] = [];
     const dataLines = lines.slice(1);
-    const parseErrors: Array<{ line: number; value: string; error: string }> =
-      [];
+    const parseErrors: Array<{ line: number; value: string; error: string }> = [];
 
     for (let i = 0; i < dataLines.length; i++) {
       const line = dataLines[i];
-      if (!line) continue;
+      if (!line) {
+        continue;
+      }
 
       const columns = parseCSVLine(line);
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
               : null,
         },
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     return NextResponse.json(
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
         error: '分析失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

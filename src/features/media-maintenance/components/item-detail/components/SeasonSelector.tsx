@@ -1,26 +1,22 @@
-"use client"
+'use client';
 
-import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Tv } from "lucide-react"
-import type { Season } from "@/lib/data/storage"
-import { useTranslation } from "react-i18next"
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Tv } from 'lucide-react';
+import type { Season } from '@/types/tmdb-item';
+import { useTranslation } from 'react-i18next';
 
 interface SeasonSelectorProps {
-  seasons: Season[]
-  selectedSeason: number | null
-  onSeasonClick: (seasonNumber: number) => void
+  seasons: Season[];
+  selectedSeason: number | null;
+  onSeasonClick: (seasonNumber: number) => void;
 }
 
-export function SeasonSelector({
-  seasons,
-  selectedSeason,
-  onSeasonClick
-}: SeasonSelectorProps) {
-  const { t } = useTranslation('media')
+export function SeasonSelector({ seasons, selectedSeason, onSeasonClick }: SeasonSelectorProps) {
+  const { t } = useTranslation('media');
 
   if (!seasons || seasons.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -36,7 +32,7 @@ export function SeasonSelector({
           {seasons.map((season) => (
             <Button
               key={season.seasonNumber}
-              variant={selectedSeason === season.seasonNumber ? "default" : "outline"}
+              variant={selectedSeason === season.seasonNumber ? 'default' : 'outline'}
               size="sm"
               onClick={() => onSeasonClick(season.seasonNumber)}
               className="flex-shrink-0 whitespace-nowrap"
@@ -52,5 +48,5 @@ export function SeasonSelector({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

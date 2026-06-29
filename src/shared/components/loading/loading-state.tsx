@@ -12,10 +12,7 @@ const SIZE_CLASSES = {
   lg: 'h-12 w-12',
 } as const;
 
-export function LoadingState({
-  message,
-  size = 'md'
-}: LoadingStateProps): JSX.Element {
+export function LoadingState({ message, size = 'md' }: LoadingStateProps): JSX.Element {
   const { t } = useTranslation('common');
   return (
     <div className="flex justify-center items-center h-48">

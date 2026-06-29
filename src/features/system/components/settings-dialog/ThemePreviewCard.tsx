@@ -1,11 +1,11 @@
-"use client"
+'use client';
 
-import type { ThemeConfig } from "@/lib/themes/types"
+import type { ThemeConfig } from '@/lib/themes/types';
 
 interface ThemePreviewCardProps {
-  theme: ThemeConfig
-  isSelected: boolean
-  onSelect: (themeId: string) => void
+  theme: ThemeConfig;
+  isSelected: boolean;
+  onSelect: (themeId: string) => void;
 }
 
 export function ThemePreviewCard({ theme, isSelected, onSelect }: ThemePreviewCardProps) {
@@ -15,16 +15,17 @@ export function ThemePreviewCard({ theme, isSelected, onSelect }: ThemePreviewCa
     theme.colors.accent,
     theme.colors.muted,
     theme.colors.destructive,
-  ]
+  ];
 
   return (
     <button
       onClick={() => onSelect(theme.id)}
       className={`
         relative w-full p-3 rounded-lg border-2 text-left transition-all
-        ${isSelected
-          ? "border-primary ring-2 ring-primary/20"
-          : "border-border hover:border-muted-foreground/30"
+        ${
+          isSelected
+            ? 'border-primary ring-2 ring-primary/20'
+            : 'border-border hover:border-muted-foreground/30'
         }
       `}
     >
@@ -42,15 +43,11 @@ export function ThemePreviewCard({ theme, isSelected, onSelect }: ThemePreviewCa
       {/* Theme info */}
       <div className="text-sm font-medium">{theme.name}</div>
       {theme.description && (
-        <div className="text-xs text-muted-foreground mt-0.5">
-          {theme.description}
-        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">{theme.description}</div>
       )}
 
       {/* Selected indicator */}
-      {isSelected && (
-        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
-      )}
+      {isSelected && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />}
     </button>
-  )
+  );
 }

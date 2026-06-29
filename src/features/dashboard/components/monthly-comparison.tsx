@@ -1,32 +1,43 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
 
 interface MonthlyComparisonProps {
   data: Array<{
-    month: string
-    newItems: number
-    completedItems: number
-  }>
+    month: string;
+    newItems: number;
+    completedItems: number;
+  }>;
 }
 
 export function MonthlyComparison({ data }: MonthlyComparisonProps) {
-  const { t } = useTranslation('dashboard')
+  const { t } = useTranslation('dashboard');
 
-  const chartData = data.map(item => ({
+  const chartData = data.map((item) => ({
     ...item,
     name: item.month.slice(5),
-  }))
+  }));
 
-  const hasData = chartData.length > 0
+  const hasData = chartData.length > 0;
 
   return (
     <div className="rounded-xl border border-border bg-muted/50 p-5">
       <h3 className="text-sm font-medium text-foreground mb-4">{t('monthlyComparison.title')}</h3>
       {!hasData ? (
-        <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">{t('noData')}</div>
+        <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">
+          {t('noData')}
+        </div>
       ) : (
         <div className="h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -51,15 +62,25 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
                   fontSize: '12px',
                 }}
               />
-              <Legend
-                wrapperStyle={{ fontSize: '12px' }}
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
+              <Bar
+                dataKey="newItems"
+                name={t('monthlyComparison.newItems')}
+                fill="#8b5cf6"
+                radius={[3, 3, 0, 0]}
+                maxBarSize={24}
               />
-              <Bar dataKey="newItems" name={t('monthlyComparison.newItems')} fill="#8b5cf6" radius={[3, 3, 0, 0]} maxBarSize={24} />
-              <Bar dataKey="completedItems" name={t('monthlyComparison.completedItems')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={24} />
+              <Bar
+                dataKey="completedItems"
+                name={t('monthlyComparison.completedItems')}
+                fill="#3b82f6"
+                radius={[3, 3, 0, 0]}
+                maxBarSize={24}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
     </div>
-  )
+  );
 }

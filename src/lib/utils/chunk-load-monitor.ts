@@ -50,19 +50,21 @@ export class ChunkLoadMonitor {
    * 设置 webpack 监控
    */
   private setupWebpackMonitoring(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // 监控 webpack 的 chunk 加载
     const originalRequire = (window as any).__webpack_require__;
     if (originalRequire && originalRequire.f && originalRequire.f.j) {
       this.originalWebpackRequire = originalRequire.f.j;
-      
+
       (window as any).__webpack_require__.f.j = (chunkId: string, promises: Promise<any>[]) => {
         const startTime = Date.now();
 
         // 调用原始的 chunk 加载函数
-        const result = this.originalWebpackRequire.call(this, chunkId, promises);
-        
+        const result = this.originalWebpackRequire!.call(this, chunkId, promises);
+
         // 监控 promises 的结果
         if (promises && promises.length > 0) {
           const lastPromise = promises[promises.length - 1];
@@ -74,7 +76,7 @@ export class ChunkLoadMonitor {
                   chunkId,
                   success: true,
                   loadTime,
-                  retryCount: 0
+                  retryCount: 0,
                 });
               })
               .catch((error: Error) => {
@@ -84,12 +86,12 @@ export class ChunkLoadMonitor {
                   success: false,
                   loadTime,
                   error: error.message,
-                  retryCount: 0
+                  retryCount: 0,
                 });
               });
           }
         }
-        
+
         return result;
       };
     }
@@ -99,41 +101,45 @@ export class ChunkLoadMonitor {
    * 设置全局错误处理
    */
   private setupGlobalErrorHandling(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     // 监听未处理的 Promise 拒绝
     window.addEventListener('unhandledrejection', (event) => {
       if (event.reason instanceof Error) {
         const error = event.reason;
-        
+
         if (this.isChunkLoadError(error)) {
-          
           this.recordChunkLoad({
             success: false,
             error: error.message,
-            retryCount: 0
+            retryCount: 0,
           });
         }
       }
     });
 
     // 监听脚本加载错误
-    window.addEventListener('error', (event) => {
-      if (event.target && (event.target as any).tagName === 'SCRIPT') {
-        const script = event.target as HTMLScriptElement;
-        const url = script.src;
-        
-        if (url && this.isWebpackChunk(url)) {
-          
-          this.recordChunkLoad({
-            url,
-            success: false,
-            error: `Script load failed: ${url}`,
-            retryCount: 0
-          });
+    window.addEventListener(
+      'error',
+      (event) => {
+        if (event.target && (event.target as any).tagName === 'SCRIPT') {
+          const script = event.target as HTMLScriptElement;
+          const url = script.src;
+
+          if (url && this.isWebpackChunk(url)) {
+            this.recordChunkLoad({
+              url,
+              success: false,
+              error: `Script load failed: ${url}`,
+              retryCount: 0,
+            });
+          }
         }
-      }
-    }, true);
+      },
+      true
+    );
   }
 
   /**
@@ -149,7 +155,7 @@ export class ChunkLoadMonitor {
       error: data.error,
       loadTime: data.loadTime,
       retryCount: data.retryCount || 0,
-      success: data.success || false
+      success: data.success || false,
     };
 
     this.loadHistory.unshift(event);
@@ -160,12 +166,10 @@ export class ChunkLoadMonitor {
     }
 
     // 通知监听器
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(event);
-      } catch (error) {
-        
-      }
+      } catch (error) {}
     });
   }
 
@@ -173,18 +177,22 @@ export class ChunkLoadMonitor {
    * 检查是否是 ChunkLoadError
    */
   private isChunkLoadError(error: Error): boolean {
-    return error.name === 'ChunkLoadError' ||
-           error.message.includes('Loading chunk') ||
-           error.message.includes('Loading CSS chunk') ||
-           error.message.includes('ChunkLoadError');
+    return (
+      error.name === 'ChunkLoadError' ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('Loading CSS chunk') ||
+      error.message.includes('ChunkLoadError')
+    );
   }
 
   /**
    * 检查是否是 webpack chunk URL
    */
   private isWebpackChunk(url: string): boolean {
-    return url.includes('/_next/static/chunks/') ||
-           url.includes('.js') && (url.includes('chunk') || url.includes('_next'));
+    return (
+      url.includes('/_next/static/chunks/') ||
+      (url.includes('.js') && (url.includes('chunk') || url.includes('_next')))
+    );
   }
 
   /**
@@ -206,22 +214,21 @@ export class ChunkLoadMonitor {
    */
   public getStats(): ChunkLoadStats {
     const totalAttempts = this.loadHistory.length;
-    const successfulLoads = this.loadHistory.filter(e => e.success).length;
+    const successfulLoads = this.loadHistory.filter((e) => e.success).length;
     const failedLoads = totalAttempts - successfulLoads;
 
     // 计算平均加载时间
     const loadTimes = this.loadHistory
-      .filter(e => e.loadTime !== undefined)
-      .map(e => e.loadTime!);
-    const averageLoadTime = loadTimes.length > 0
-      ? loadTimes.reduce((sum, time) => sum + time, 0) / loadTimes.length
-      : 0;
+      .filter((e) => e.loadTime !== undefined)
+      .map((e) => e.loadTime!);
+    const averageLoadTime =
+      loadTimes.length > 0 ? loadTimes.reduce((sum, time) => sum + time, 0) / loadTimes.length : 0;
 
     // 统计最有问题的 chunks
     const chunkFailures = new Map<string, number>();
     this.loadHistory
-      .filter(e => !e.success && (e.chunkId || e.chunkName))
-      .forEach(e => {
+      .filter((e) => !e.success && (e.chunkId || e.chunkName))
+      .forEach((e) => {
         const chunk = e.chunkId || e.chunkName || 'unknown';
         chunkFailures.set(chunk, (chunkFailures.get(chunk) || 0) + 1);
       });
@@ -234,8 +241,8 @@ export class ChunkLoadMonitor {
     // 按错误类型统计
     const errorsByType: Record<string, number> = {};
     this.loadHistory
-      .filter(e => !e.success && e.error)
-      .forEach(e => {
+      .filter((e) => !e.success && e.error)
+      .forEach((e) => {
         const errorType = this.categorizeError(e.error!);
         errorsByType[errorType] = (errorsByType[errorType] || 0) + 1;
       });
@@ -247,7 +254,7 @@ export class ChunkLoadMonitor {
       averageLoadTime,
       mostProblematicChunks,
       errorsByType,
-      lastError: this.loadHistory.find(e => !e.success)
+      lastError: this.loadHistory.find((e) => !e.success),
     };
   }
 
@@ -255,10 +262,18 @@ export class ChunkLoadMonitor {
    * 分类错误类型
    */
   private categorizeError(error: string): string {
-    if (error.includes('Loading chunk')) return 'ChunkLoadError';
-    if (error.includes('Script load failed')) return 'ScriptLoadError';
-    if (error.includes('Network')) return 'NetworkError';
-    if (error.includes('timeout')) return 'TimeoutError';
+    if (error.includes('Loading chunk')) {
+      return 'ChunkLoadError';
+    }
+    if (error.includes('Script load failed')) {
+      return 'ScriptLoadError';
+    }
+    if (error.includes('Network')) {
+      return 'NetworkError';
+    }
+    if (error.includes('timeout')) {
+      return 'TimeoutError';
+    }
     return 'OtherError';
   }
 
@@ -274,7 +289,6 @@ export class ChunkLoadMonitor {
    */
   public clearHistory(): void {
     this.loadHistory = [];
-    
   }
 
   /**
@@ -292,7 +306,9 @@ export class ChunkLoadMonitor {
     report.push(`总加载尝试: ${stats.totalAttempts}`);
     report.push(`成功加载: ${stats.successfulLoads}`);
     report.push(`失败加载: ${stats.failedLoads}`);
-    report.push(`成功率: ${stats.totalAttempts > 0 ? ((stats.successfulLoads / stats.totalAttempts) * 100).toFixed(2) : 0}%`);
+    report.push(
+      `成功率: ${stats.totalAttempts > 0 ? ((stats.successfulLoads / stats.totalAttempts) * 100).toFixed(2) : 0}%`
+    );
     report.push(`平均加载时间: ${stats.averageLoadTime.toFixed(2)}ms`);
     report.push('');
 
@@ -343,6 +359,6 @@ export const chunkLoadMonitor = ChunkLoadMonitor.getInstance();
 if (typeof window !== 'undefined') {
   // 延迟启动，确保 webpack 已经初始化
   setTimeout(() => {
-    chunkLoadMonitor; // 触发实例化
+    void chunkLoadMonitor;
   }, 100);
 }

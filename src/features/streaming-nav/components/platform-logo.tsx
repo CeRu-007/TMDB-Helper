@@ -16,7 +16,7 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
   logoUrl,
   fallbackEmoji,
   className,
-  size = 'md'
+  size = 'md',
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -24,7 +24,7 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
-    lg: 'w-16 h-16'
+    lg: 'w-16 h-16',
   };
 
   // Fallback: 显示 emoji 或首字母占位符
@@ -42,7 +42,9 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
         aria-label={`${name} logo`}
       >
         {isEmoji ? (
-          <span role="img" aria-label={name}>{displayContent}</span>
+          <span role="img" aria-label={name}>
+            {displayContent}
+          </span>
         ) : (
           displayContent
         )}
@@ -56,6 +58,7 @@ const PlatformLogo: React.FC<PlatformLogoProps> = ({
       {!imageLoaded && (
         <div className="absolute inset-0 rounded-lg bg-gray-100 dark:bg-slate-700 animate-pulse" />
       )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={logoUrl}
         alt={`${name} logo`}

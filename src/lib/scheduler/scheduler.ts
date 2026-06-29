@@ -113,7 +113,10 @@ class Scheduler {
       await Promise.race([
         this.runTask(task),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`任务执行超时 (${TASK_TIMEOUT_MS / 1000}秒)`)), TASK_TIMEOUT_MS)
+          setTimeout(
+            () => reject(new Error(`任务执行超时 (${TASK_TIMEOUT_MS / 1000}秒)`)),
+            TASK_TIMEOUT_MS
+          )
         ),
       ]);
     } catch (error) {
@@ -184,24 +187,26 @@ class Scheduler {
           });
         }
 
-        const hasIncompleteEpisodes = executeResult.incompleteEpisodes && executeResult.incompleteEpisodes.length > 0
+        const hasIncompleteEpisodes =
+          executeResult.incompleteEpisodes && executeResult.incompleteEpisodes.length > 0;
 
         if (processResult.completed) {
           this.removeTask(task.id);
           scheduleLogRepository.updateStatus(logId, 'success', processResult.message);
         } else {
-          scheduleLogRepository.updateStatus(logId, 'success', executeResult.message, executeResult.details ?? undefined);
-          scheduleRepository.updateLastRunAt(
-            task.id,
-            endAt,
-            this.calculateNextRunTime(task.cron)
+          scheduleLogRepository.updateStatus(
+            logId,
+            'success',
+            executeResult.message,
+            executeResult.details ?? undefined
           );
+          scheduleRepository.updateLastRunAt(task.id, endAt, this.calculateNextRunTime(task.cron));
           notifier.sendSuccessNotification(item.title, executeResult.episodeCount || 0);
         }
 
         const journalContent = hasIncompleteEpisodes
           ? `第${executeResult.episodeCount || 0}集维护完成（第${executeResult.incompleteEpisodes!.join(',')}集元数据不完整，待补充）`
-          : `第${executeResult.episodeCount || 0}集维护完成`
+          : `第${executeResult.episodeCount || 0}集维护完成`;
 
         taskJournalRepository.create({
           itemId: item.id,
@@ -212,12 +217,12 @@ class Scheduler {
           dataPreview: executeResult.details || null,
           startAt,
           endAt,
-        })
+        });
 
         notifyDataChangeFromServer({
           type: 'journal_updated',
           data: { itemId: item.id, status: 'success' },
-        })
+        });
 
         logger.info(`[Scheduler] 任务执行成功: ${task.id}`);
       } else {
@@ -233,12 +238,12 @@ class Scheduler {
           errorMessage: executeResult.message,
           startAt,
           endAt,
-        })
+        });
 
         notifyDataChangeFromServer({
           type: 'journal_updated',
           data: { itemId: item.id, status: 'failed' },
-        })
+        });
 
         logger.error(`[Scheduler] 任务执行失败: ${task.id}, ${executeResult.message}`);
       }
@@ -277,7 +282,10 @@ class Scheduler {
       }
 
       const next = new Date(now);
-      if (targetHour > now.getHours() || (targetHour === now.getHours() && targetMinute > now.getMinutes())) {
+      if (
+        targetHour > now.getHours() ||
+        (targetHour === now.getHours() && targetMinute > now.getMinutes())
+      ) {
         next.setHours(targetHour, targetMinute, 0, 0);
       } else {
         next.setDate(next.getDate() + 1);
@@ -290,7 +298,12 @@ class Scheduler {
     }
   }
 
-  private calculateNextRunTimeForDayOfWeek(now: Date, minute: string, hour: string, dayOfWeek: string): string {
+  private calculateNextRunTimeForDayOfWeek(
+    now: Date,
+    minute: string,
+    hour: string,
+    dayOfWeek: string
+  ): string {
     const targetHour = parseInt(hour, 10);
     const targetMinute = parseInt(minute, 10);
 
@@ -298,7 +311,10 @@ class Scheduler {
       return '';
     }
 
-    const targetDays = dayOfWeek.split(',').map(d => parseInt(d, 10)).filter(d => !isNaN(d));
+    const targetDays = dayOfWeek
+      .split(',')
+      .map((d) => parseInt(d, 10))
+      .filter((d) => !isNaN(d));
     if (targetDays.length === 0) {
       return '';
     }
@@ -309,16 +325,23 @@ class Scheduler {
     let minDiff = Infinity;
     for (const targetDay of sortedDays) {
       let diff = targetDay - currentDay;
-      if (diff < 0) diff += 7;
+      if (diff < 0) {
+        diff += 7;
+      }
       if (diff === 0) {
-        if (targetHour > now.getHours() || (targetHour === now.getHours() && targetMinute > now.getMinutes())) {
+        if (
+          targetHour > now.getHours() ||
+          (targetHour === now.getHours() && targetMinute > now.getMinutes())
+        ) {
           minDiff = 0;
           break;
         } else {
           diff = 7;
         }
       }
-      if (diff < minDiff) minDiff = diff;
+      if (diff < minDiff) {
+        minDiff = diff;
+      }
     }
 
     const next = new Date(now);

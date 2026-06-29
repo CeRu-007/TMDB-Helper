@@ -1,5 +1,5 @@
-declare module "@tanstack/react-virtual" {
-  import * as React from 'react'
+declare module '@tanstack/react-virtual' {
+  import * as React from 'react';
 
   interface VirtualizerOptions<T> {
     count: number;
@@ -20,4 +20,4 @@ declare module "@tanstack/react-virtual" {
   }
 
   export function useVirtualizer<T>(options: VirtualizerOptions<T>): Virtualizer<T>;
-} 
+}

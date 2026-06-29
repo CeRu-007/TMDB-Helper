@@ -6,7 +6,7 @@
  * 1. 检测是否为 Docker 环境
  * 2. 确保 /app/data, /app/logs 等目录存在
  * 3. 确保数据库文件存在（空文件，schema 由 schema.ts 管理）
- * 
+ *
  * 注意: 数据库表创建/迁移统一由 src/lib/database/schema.ts 管理
  *       管理员账户创建由 src/instrumentation.node.ts 在 schema 初始化后处理
  */
@@ -30,7 +30,7 @@ function detectDockerEnvironment() {
     dockerEnv: fs.existsSync('/.dockerenv'),
     containerEnv: process.env.DOCKER_CONTAINER === 'true',
     hostname: process.env.HOSTNAME && /^[a-f0-9]{12}$/.test(process.env.HOSTNAME),
-    cgroup: false
+    cgroup: false,
   };
 
   try {
@@ -38,8 +38,7 @@ function detectDockerEnvironment() {
       const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf8');
       indicators.cgroup = cgroup.includes('docker') || cgroup.includes('containerd');
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 
   return Object.values(indicators).some(Boolean);
 }
@@ -47,7 +46,7 @@ function detectDockerEnvironment() {
 function ensureDirectories() {
   const directories = [DATA_DIR, '/app/logs'];
 
-  directories.forEach(dir => {
+  directories.forEach((dir) => {
     try {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -59,7 +58,8 @@ function ensureDirectories() {
   });
 
   // 创建 Playwright 浏览器缓存目录
-  const playwrightCacheDir = process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/data/.cache/ms-playwright';
+  const playwrightCacheDir =
+    process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/data/.cache/ms-playwright';
   try {
     if (!fs.existsSync(playwrightCacheDir)) {
       fs.mkdirSync(playwrightCacheDir, { recursive: true });
@@ -112,7 +112,6 @@ async function main() {
     ensureDatabaseFile();
 
     log('Docker 启动脚本执行完成');
-
   } catch (error) {
     logError('启动脚本执行失败', error);
     process.exit(1);
@@ -120,7 +119,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     logError('未捕获的错误', error);
     process.exit(1);
   });
@@ -130,5 +129,5 @@ module.exports = {
   detectDockerEnvironment,
   ensureDirectories,
   ensureDatabaseFile,
-  main
+  main,
 };

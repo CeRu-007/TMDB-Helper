@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server"
-import { spawn } from "child_process"
-import fs from "fs"
-import os from "os"
-import { logger } from "@/lib/utils/logger"
+import { NextRequest } from 'next/server';
+import { spawn } from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import { logger } from '@/lib/utils/logger';
 
 // 声明全局activeProcesses类型
 declare global {
@@ -18,7 +18,7 @@ if (!global.activeProcesses) {
 const checkPythonExecutable = () => {
   const isPythonAvailable = (cmd: string): boolean => {
     try {
-      const result = require("child_process").spawnSync(cmd, ["--version"]);
+      const result = require('child_process').spawnSync(cmd, ['--version']);
       const isAvailable = result.status === 0;
 
       return isAvailable;
@@ -28,34 +28,44 @@ const checkPythonExecutable = () => {
   };
 
   // 检查不同平台和可能的Python命令
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     // Windows平台优先检查顺序: python -> py -> python3
-    if (isPythonAvailable("python")) return "python";
-    if (isPythonAvailable("py")) return "py";
-    if (isPythonAvailable("python3")) return "python3";
-    
+    if (isPythonAvailable('python')) {
+      return 'python';
+    }
+    if (isPythonAvailable('py')) {
+      return 'py';
+    }
+    if (isPythonAvailable('python3')) {
+      return 'python3';
+    }
+
     // 尝试检查常见的Python安装路径
     const commonPaths = [
-      "C:\\Python39\\python.exe",
-      "C:\\Python310\\python.exe",
-      "C:\\Python311\\python.exe",
-      "C:\\Program Files\\Python39\\python.exe",
-      "C:\\Program Files\\Python310\\python.exe",
-      "C:\\Program Files\\Python311\\python.exe",
-      "C:\\Program Files (x86)\\Python39\\python.exe",
-      "C:\\Program Files (x86)\\Python310\\python.exe",
-      "C:\\Program Files (x86)\\Python311\\python.exe"
+      'C:\\Python39\\python.exe',
+      'C:\\Python310\\python.exe',
+      'C:\\Python311\\python.exe',
+      'C:\\Program Files\\Python39\\python.exe',
+      'C:\\Program Files\\Python310\\python.exe',
+      'C:\\Program Files\\Python311\\python.exe',
+      'C:\\Program Files (x86)\\Python39\\python.exe',
+      'C:\\Program Files (x86)\\Python310\\python.exe',
+      'C:\\Program Files (x86)\\Python311\\python.exe',
     ];
-    
+
     for (const path of commonPaths) {
       if (fs.existsSync(path)) {
-        return `"${path}"`;  // 使用引号包裹路径，以防路径中有空格
+        return `"${path}"`; // 使用引号包裹路径，以防路径中有空格
       }
     }
   } else {
     // 非Windows平台优先检查顺序: python3 -> python
-    if (isPythonAvailable("python3")) return "python3";
-    if (isPythonAvailable("python")) return "python";
+    if (isPythonAvailable('python3')) {
+      return 'python3';
+    }
+    if (isPythonAvailable('python')) {
+      return 'python';
+    }
   }
 
   // 如果找不到可用的Python，返回null以便调用者知道需要处理这种情况
@@ -65,18 +75,18 @@ const checkPythonExecutable = () => {
 // 获取优化后的Python环境变量
 const getPythonEnv = () => {
   const env = { ...process.env };
-  
+
   // 设置Python相关环境变量
-  env.PYTHONIOENCODING = 'utf-8';     // 设置Python的IO编码为UTF-8
-  env.PYTHONUTF8 = '1';               // 强制Python使用UTF-8
-  env.LANG = 'zh_CN.UTF-8';           // 设置语言环境
-  env.LC_ALL = 'zh_CN.UTF-8';         // 设置所有本地化参数
-  
+  env.PYTHONIOENCODING = 'utf-8'; // 设置Python的IO编码为UTF-8
+  env.PYTHONUTF8 = '1'; // 强制Python使用UTF-8
+  env.LANG = 'zh_CN.UTF-8'; // 设置语言环境
+  env.LC_ALL = 'zh_CN.UTF-8'; // 设置所有本地化参数
+
   // Windows特定环境变量
   if (process.platform === 'win32') {
     env.PYTHONLEGACYWINDOWSSTDIO = '1'; // 解决Windows上的编码问题
   }
-  
+
   return env;
 };
 
@@ -85,7 +95,7 @@ const fixPythonCommand = (command: string): string => {
   // 如果命令以python、python3或py开头，替换为实际可用的Python可执行文件
   if (/^(python|python3|py)\s/.test(command)) {
     const pythonExecutable = checkPythonExecutable();
-    
+
     // 如果找不到可用的Python，保留原始命令
     if (!pythonExecutable) {
       return command;
@@ -102,7 +112,7 @@ const fixCdCommand = (command: string): string => {
   // 检查是否包含cd命令
   if (command.includes('cd ')) {
     const isWindows = process.platform === 'win32';
-    
+
     if (isWindows) {
       // 在Windows上，如果命令包含 cd "path" && 格式，需要改为 cd /D "path" &&
       // 这样可以确保能够切换到不同驱动器的目录
@@ -113,49 +123,48 @@ const fixCdCommand = (command: string): string => {
       // 移除可能存在的 /D 参数
       command = command.replace(/cd\s+\/D\s+/g, 'cd ');
     }
-
   }
-  
+
   return command;
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const { command, workingDirectory, timeout } = await request.json()
+    const { command, workingDirectory, timeout } = await request.json();
 
     if (!command || !workingDirectory) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "缺少必要参数",
+          error: '缺少必要参数',
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
     // 解析超时参数，默认为5分钟，最小为60秒，最大为30分钟
-    const commandTimeout = timeout ? Math.min(Math.max(Number(timeout), 60000), 1800000) : 300000
-    logger.debug(`命令超时设置: ${commandTimeout}毫秒 (${commandTimeout/1000}秒)`)
+    const commandTimeout = timeout ? Math.min(Math.max(Number(timeout), 60000), 1800000) : 300000;
+    logger.debug(`命令超时设置: ${commandTimeout}毫秒 (${commandTimeout / 1000}秒)`);
 
     // 验证工作目录是否存在
     if (!fs.existsSync(workingDirectory)) {
-      return new Response(`工作目录不存在: ${workingDirectory}`, { status: 400 })
+      return new Response(`工作目录不存在: ${workingDirectory}`, { status: 400 });
     }
 
     // 优化命令，替换Python可执行文件路径和修复cd命令
-    let optimizedCommand = fixPythonCommand(command)
-    optimizedCommand = fixCdCommand(optimizedCommand)
+    let optimizedCommand = fixPythonCommand(command);
+    optimizedCommand = fixCdCommand(optimizedCommand);
     if (optimizedCommand !== command) {
-      logger.debug(`命令已优化: ${command} -> ${optimizedCommand}`)
+      logger.debug(`命令已优化: ${command} -> ${optimizedCommand}`);
     }
 
     // 解析命令
-    const commandParts = optimizedCommand.split(" ")
-    const mainCommand = commandParts[0] || ''
-    const args = commandParts.slice(1)
+    const commandParts = optimizedCommand.split(' ');
+    const mainCommand = commandParts[0] || '';
+    const args = commandParts.slice(1);
 
     // 记录详细环境信息
     logger.debug(`操作系统: ${os.platform()} ${os.release()}`);
@@ -163,7 +172,7 @@ export async function POST(request: NextRequest) {
     logger.debug(`环境变量PATH: ${process.env.PATH?.substring(0, 100)}...`);
 
     // 创建一个新的 ReadableStream
-    const encoder = new TextEncoder()
+    const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
         // --- 安全封装，避免多次 enqueue/close 导致 "Invalid state: Controller is already closed" ---
@@ -174,7 +183,9 @@ export async function POST(request: NextRequest) {
         // 重写 enqueue: 若流已关闭则忽略
         // @ts-ignore
         controller.enqueue = (chunk: Uint8Array) => {
-          if (streamClosed) return;
+          if (streamClosed) {
+            return;
+          }
           try {
             originalEnqueue(chunk);
           } catch (err) {
@@ -185,7 +196,9 @@ export async function POST(request: NextRequest) {
         // 重写 close: 仅允许关闭一次
         // @ts-ignore
         controller.close = () => {
-          if (streamClosed) return;
+          if (streamClosed) {
+            return;
+          }
           streamClosed = true;
           try {
             originalClose();
@@ -207,222 +220,231 @@ export async function POST(request: NextRequest) {
           shell: true,
           stdio: ['pipe', 'pipe', 'pipe'],
           windowsHide: true,
-          env: optimizedEnv
-        }) as any
+          env: optimizedEnv,
+        }) as any;
 
         // 配置stdin为utf8编码
         if (childProcess.stdin) {
-          childProcess.stdin.setDefaultEncoding('utf8')
+          childProcess.stdin.setDefaultEncoding('utf8');
         }
 
         // 将进程添加到全局列表
         if (childProcess.pid) {
-          global.activeProcesses.set(childProcess.pid, childProcess)
+          global.activeProcesses.set(childProcess.pid, childProcess);
 
-          logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ')}`)
+          logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ')}`);
 
           // 立即发送进程启动事件，确保前端获取到进程ID
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "start",
+                type: 'start',
                 processId: childProcess.pid,
                 message: `进程已启动 (PID: ${childProcess.pid})`,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
-          
+              })}\n\n`
+            )
+          );
+
           // 发送额外的环境信息供调试
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "info",
+                type: 'info',
                 message: `环境信息: ${os.platform()} ${os.release()}, Node ${process.version}`,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
-          
+              })}\n\n`
+            )
+          );
+
           // 发送优化后的命令信息
           if (optimizedCommand !== command) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  type: "info",
+                  type: 'info',
                   message: `命令已优化: ${optimizedCommand}`,
                   timestamp: new Date().toISOString(),
-                })}\n\n`,
-              ),
-            )
-          
-}        } else {
+                })}\n\n`
+              )
+            );
+          }
+        } else {
           logger.warn(`进程启动成功但无法获取PID`);
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "error",
-                message: "无法获取进程ID，交互功能可能不可用",
+                type: 'error',
+                message: '无法获取进程ID，交互功能可能不可用',
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
+              })}\n\n`
+            )
+          );
         }
 
         // 处理标准输出
-        childProcess.stdout?.on("data", (data: Buffer) => {
+        childProcess.stdout?.on('data', (data: Buffer) => {
           // 使用utf-8解码，确保中文正确显示
-          const text = data.toString('utf8')
+          const text = data.toString('utf8');
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "stdout",
+                type: 'stdout',
                 message: text,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
-        })
+              })}\n\n`
+            )
+          );
+        });
 
         // 处理错误输出
-        childProcess.stderr?.on("data", (data: Buffer) => {
+        childProcess.stderr?.on('data', (data: Buffer) => {
           // 使用utf-8解码，确保中文正确显示
-          const text = data.toString('utf8')
-          
+          const text = data.toString('utf8');
+
           // 特殊处理Python模块导入错误
-          if (text.includes("ModuleNotFoundError") || text.includes("ImportError")) {
+          if (text.includes('ModuleNotFoundError') || text.includes('ImportError')) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  type: "warning",
-                  message: "检测到Python模块导入错误，可能需要安装依赖项",
+                  type: 'warning',
+                  message: '检测到Python模块导入错误，可能需要安装依赖项',
                   timestamp: new Date().toISOString(),
-                })}\n\n`,
-              ),
-            )
+                })}\n\n`
+              )
+            );
           }
-          
+
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "stderr",
+                type: 'stderr',
                 message: text,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
-        })
+              })}\n\n`
+            )
+          );
+        });
 
         // 处理进程关闭
-        childProcess.on("close", (code: number | null) => {
-
+        childProcess.on('close', (code: number | null) => {
           // 从活动进程列表中移除
           if (global.activeProcesses && childProcess.pid) {
             global.activeProcesses.delete(childProcess.pid);
 
-            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+            logger.debug(
+              `当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`
+            );
           }
 
           // 发送关闭消息
-          let closeStatus = "success";
-          let closeMessage = "";
+          let closeStatus = 'success';
+          let closeMessage = '';
 
           // 检查进程是否被终止
           if (code === null) {
-            closeStatus = "terminated";
-            closeMessage = "命令执行已被终止";
+            closeStatus = 'terminated';
+            closeMessage = '命令执行已被终止';
           } else if (code === 0) {
-            closeStatus = "success";
+            closeStatus = 'success';
             closeMessage = `命令执行成功完成，退出码: ${code}`;
           } else {
-            closeStatus = "error";
+            closeStatus = 'error';
             closeMessage = `命令执行失败，退出码: ${code}`;
           }
 
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "close",
+                type: 'close',
                 message: closeMessage,
                 exitCode: code,
                 status: closeStatus,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
+              })}\n\n`
+            )
+          );
 
           // 如果是被终止，不显示额外信息
-          if (closeStatus !== "terminated" && code !== 0) {
+          if (closeStatus !== 'terminated' && code !== 0) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  type: "info",
-                  message: "如果问题持续，请尝试检查Python环境和TMDB-Import工具安装",
+                  type: 'info',
+                  message: '如果问题持续，请尝试检查Python环境和TMDB-Import工具安装',
                   timestamp: new Date().toISOString(),
-                })}\n\n`,
-              ),
-            )
+                })}\n\n`
+              )
+            );
           }
 
-          controller.close()
-        })
+          controller.close();
+        });
 
         // 处理进程错误
-        childProcess.on("error", (error: Error) => {
+        childProcess.on('error', (error: Error) => {
           logger.error(`进程错误: ${error.message}`);
 
           // 从活动进程列表中移除
           if (global.activeProcesses && childProcess.pid) {
             global.activeProcesses.delete(childProcess.pid);
 
-            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+            logger.debug(
+              `当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`
+            );
           }
-          
+
           // 发送错误信息
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                type: "error",
+                type: 'error',
                 message: `执行错误: ${error.message}`,
                 timestamp: new Date().toISOString(),
-              })}\n\n`,
-            ),
-          )
-          
+              })}\n\n`
+            )
+          );
+
           // 针对常见错误提供更多信息
-          if (error.message.includes("ENOENT")) {
+          if (error.message.includes('ENOENT')) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  type: "info",
+                  type: 'info',
                   message: `错误原因: 找不到可执行文件 "${mainCommand}"，请确保它已安装并在PATH中`,
                   timestamp: new Date().toISOString(),
-                })}\n\n`,
-              ),
-            )
-          } else if (error.message.includes("EACCES")) {
+                })}\n\n`
+              )
+            );
+          } else if (error.message.includes('EACCES')) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
-                  type: "info",
+                  type: 'info',
                   message: `错误原因: 权限不足，无法执行 "${mainCommand}"`,
                   timestamp: new Date().toISOString(),
-                })}\n\n`,
-              ),
-            )
+                })}\n\n`
+              )
+            );
           }
-          
-          controller.close()
-        })
+
+          controller.close();
+        });
 
         // 设置超时
         setTimeout(() => {
           // 检查进程是否仍在运行
-          if (!childProcess.killed && childProcess.pid && global.activeProcesses.has(childProcess.pid)) {
+          if (
+            !childProcess.killed &&
+            childProcess.pid &&
+            global.activeProcesses.has(childProcess.pid)
+          ) {
             // 从活动进程列表中移除
             global.activeProcesses.delete(childProcess.pid);
 
-            logger.debug(`当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`);
+            logger.debug(
+              `当前活动进程: ${Array.from(global.activeProcesses.keys()).join(', ') || '无'}`
+            );
 
             // 尝试终止进程
             try {
@@ -430,40 +452,40 @@ export async function POST(request: NextRequest) {
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
-                    type: "timeout",
-                    message: `命令执行超时（${commandTimeout/1000}秒），已终止`,
+                    type: 'timeout',
+                    message: `命令执行超时（${commandTimeout / 1000}秒），已终止`,
                     timestamp: new Date().toISOString(),
-                  })}\n\n`,
-                ),
-              )
+                  })}\n\n`
+                )
+              );
             } catch (err) {
               logger.error(`终止超时进程失败: ${err}`);
             }
-            
+
             controller.close();
           }
-        }, commandTimeout) // 使用传入的超时时间
+        }, commandTimeout); // 使用传入的超时时间
       },
-    })
+    });
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
       },
-    })
+    });
   } catch (error) {
     logger.error(`命令执行异常: ${error instanceof Error ? error.message : '未知错误'}`);
     return new Response(
       JSON.stringify({
         success: false,
-        error: `服务器内部错误: ${error instanceof Error ? error.message : "未知错误"}`,
+        error: `服务器内部错误: ${error instanceof Error ? error.message : '未知错误'}`,
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    )
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 }

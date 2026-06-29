@@ -3,8 +3,8 @@
  * 丰富内容，增加细节描述
  */
 
-import { BaseEnhanceOperationPlugin } from './base-enhance-operation'
-import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types'
+import { BaseEnhanceOperationPlugin } from './base-enhance-operation';
+import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types';
 
 export class ExpandPlugin extends BaseEnhanceOperationPlugin {
   constructor() {
@@ -17,16 +17,16 @@ export class ExpandPlugin extends BaseEnhanceOperationPlugin {
       version: '1.0.0',
       author: 'TMDB-Helper',
       isBuiltin: true,
-      tags: ['enhance', 'expand']
-    })
+      tags: ['enhance', 'expand'],
+    });
   }
 
-  operationType: EnhanceOperationType = 'expand'
+  operationType: EnhanceOperationType = 'expand';
 
   defaultConfig: EnhanceConfig = {
     temperature: 0.8,
-    maxTokens: 1200
-  }
+    maxTokens: 1200,
+  };
 
   buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string {
     return `请将以下影视剧集标题和简介进行专业扩写，丰富内容层次和细节描述：
@@ -51,8 +51,8 @@ export class ExpandPlugin extends BaseEnhanceOperationPlugin {
 
 请严格按照以下格式输出：
 标题：[扩写后的标题]
-简介：[扩写后的简介]`
+简介：[扩写后的简介]`;
   }
 }
 
-export const expandPlugin = new ExpandPlugin()
+export const expandPlugin = new ExpandPlugin();

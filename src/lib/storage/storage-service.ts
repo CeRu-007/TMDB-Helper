@@ -10,7 +10,7 @@
  *   StorageService.remove('user-preferences')
  */
 
-import { logger } from '@/lib/utils/logger'
+import { logger } from '@/lib/utils/logger';
 
 class StorageService {
   private static instance: StorageService;
@@ -82,7 +82,9 @@ class StorageService {
    */
   public get<T>(key: string, defaultValue: T): T {
     if (!this.isAvailable) {
-      logger.warn(`[StorageService] Storage not available, returning default value for key: ${key}`);
+      logger.warn(
+        `[StorageService] Storage not available, returning default value for key: ${key}`
+      );
       return defaultValue;
     }
 
@@ -95,7 +97,9 @@ class StorageService {
 
       // Check if value is explicitly "undefined" string
       if (serialized === 'undefined' || serialized === '"undefined"') {
-        logger.warn(`[StorageService] Value for key ${key} is undefined string, returning default value`);
+        logger.warn(
+          `[StorageService] Value for key ${key} is undefined string, returning default value`
+        );
         return defaultValue;
       }
 
@@ -107,7 +111,9 @@ class StorageService {
       } catch (parseError) {
         // JSON parse failed - might be a plain string instead of JSON object
         // Try returning the raw string value (if type compatible)
-        logger.debug(`[StorageService] JSON parse failed for key ${key}, returning raw string value`);
+        logger.debug(
+          `[StorageService] JSON parse failed for key ${key}, returning raw string value`
+        );
 
         // If expected type is string, return raw value
         if (typeof defaultValue === 'string') {
@@ -115,7 +121,9 @@ class StorageService {
         }
 
         // Otherwise return default value
-        logger.debug(`[StorageService] Expected type is not string for key ${key}, returning default value`);
+        logger.debug(
+          `[StorageService] Expected type is not string for key ${key}, returning default value`
+        );
         return defaultValue;
       }
     } catch (error) {
@@ -131,7 +139,9 @@ class StorageService {
    */
   public remove(key: string): void {
     if (!this.isAvailable) {
-      logger.warn(`[StorageService] Storage not available, skipping remove operation for key: ${key}`);
+      logger.warn(
+        `[StorageService] Storage not available, skipping remove operation for key: ${key}`
+      );
       return;
     }
 
@@ -264,12 +274,14 @@ export const storageService = StorageService.getInstance();
 
 // Export convenience methods for direct usage
 export const setStorage = <T>(key: string, value: T): void => storageService.set(key, value);
-export const getStorage = <T>(key: string, defaultValue: T): T => storageService.get(key, defaultValue);
+export const getStorage = <T>(key: string, defaultValue: T): T =>
+  storageService.get(key, defaultValue);
 export const removeStorage = (key: string): void => storageService.remove(key);
 export const clearStorage = (): void => storageService.clear();
 export const hasStorage = (key: string): boolean => storageService.has(key);
 export const storageKeys = (): string[] => storageService.keys();
 export const storageSize = (): number => storageService.size();
-export const removeStorageByPattern = (pattern: RegExp): number => storageService.removeByPattern(pattern);
+export const removeStorageByPattern = (pattern: RegExp): number =>
+  storageService.removeByPattern(pattern);
 
 export default storageService;

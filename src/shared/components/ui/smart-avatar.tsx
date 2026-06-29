@@ -1,18 +1,18 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useRef } from 'react'
-import { cn } from '@/lib/utils'
+import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 interface SmartAvatarProps {
-  src?: string
-  alt: string
-  className?: string
-  fallbackClassName?: string
-  fallbackText?: string
-  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
-  onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
-  loading?: 'eager' | 'lazy'
-  decoding?: 'async' | 'sync' | 'auto'
+  src?: string;
+  alt: string;
+  className?: string;
+  fallbackClassName?: string;
+  fallbackText?: string;
+  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+  onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+  loading?: 'eager' | 'lazy';
+  decoding?: 'async' | 'sync' | 'auto';
 }
 
 // 头像缓存管理
@@ -45,9 +45,9 @@ export function SmartAvatar({
   decoding = 'async',
   ...props
 }: SmartAvatarProps) {
-  const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState(false)
-  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
 
   // 使用ref跟踪组件挂载状态，避免内存泄漏
   const isMounted = useRef(true);
@@ -61,11 +61,13 @@ export function SmartAvatar({
 
   // 检测是否需要使用代理
   const needsProxy = (url: string): boolean => {
-    if (!url) return false
+    if (!url) {
+      return false;
+    }
 
     // 直接使用TMDB图片URL，不需要代理
     if (url.includes('image.tmdb.org')) {
-      return false
+      return false;
     }
 
     // 检测其他可能需要代理的域名
@@ -79,34 +81,36 @@ export function SmartAvatar({
       'images.unsplash.com',
       'picsum.photos',
       // 可以在这里添加其他需要代理的域名
-    ]
+    ];
 
-    return proxyDomains.some(domain => url.includes(domain))
-  }
+    return proxyDomains.some((domain) => url.includes(domain));
+  };
 
   // 构建最终的图片URL
   const getFinalImageUrl = (originalUrl: string): string => {
-    if (!originalUrl) return ''
+    if (!originalUrl) {
+      return '';
+    }
 
     if (needsProxy(originalUrl)) {
       // 使用代理URL
-      return `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`
+      return `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
     }
 
     // 直接使用原始URL
-    return originalUrl
-  }
+    return originalUrl;
+  };
 
   // 处理图片源变化
   useEffect(() => {
     if (!src) {
-      setImageSrc(undefined)
-      setLoaded(false)
-      setError(false)
-      return
+      setImageSrc(undefined);
+      setLoaded(false);
+      setError(false);
+      return;
     }
 
-    const finalUrl = getFinalImageUrl(src)
+    const finalUrl = getFinalImageUrl(src);
 
     // 使用缓存键检查图片是否已经在缓存中
     const cacheKey = getAvatarCacheKey(finalUrl);
@@ -120,41 +124,54 @@ export function SmartAvatar({
     setImageSrc(finalUrl);
     setLoaded(false);
     setError(false);
-  }, [src])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
   // 预加载图片
   useEffect(() => {
-    if (!imageSrc) return;
+    if (!imageSrc) {
+      return;
+    }
 
     const cacheKey = getAvatarCacheKey(imageSrc);
+    let cancelled = false;
 
     // 检查图片是否已在缓存中
     if (avatarCache.has(cacheKey)) {
       // 使用setTimeout避免同步更新导致的渲染问题
       const timeoutId = setTimeout(() => {
-        if (isMounted.current) {
+        if (isMounted.current && !cancelled) {
           setLoaded(true);
         }
       }, 0);
-      return () => clearTimeout(timeoutId);
+      return () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      };
     }
 
     const img = new Image();
 
     img.onload = () => {
-      if (isMounted.current) {
+      if (isMounted.current && !cancelled) {
         setLoaded(true);
         avatarCache.set(cacheKey, true);
       }
     };
 
     img.onerror = () => {
-      if (isMounted.current) {
+      if (isMounted.current && !cancelled) {
         setError(true);
       }
     };
 
     img.src = imageSrc;
+
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+    };
   }, [imageSrc]);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -170,23 +187,26 @@ export function SmartAvatar({
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* 骨架加载层 */}
       {imageSrc && !loaded && !error && (
-        <div className={cn(
-          "absolute inset-0 bg-gray-200 dark:bg-muted animate-pulse rounded-full",
-          className
-        )} />
+        <div
+          className={cn(
+            'absolute inset-0 bg-gray-200 dark:bg-muted animate-pulse rounded-full',
+            className
+          )}
+        />
       )}
 
       {/* 头像图片 */}
       {imageSrc && !error && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageSrc}
           alt={alt}
           className={cn(
-            "transition-opacity duration-300 object-cover",
-            loaded ? "opacity-100" : "opacity-0",
+            'transition-opacity duration-300 object-cover',
+            loaded ? 'opacity-100' : 'opacity-0',
             className
           )}
           loading={loading}
@@ -201,7 +221,7 @@ export function SmartAvatar({
       {(!imageSrc || error) && (
         <div
           className={cn(
-            "bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium",
+            'bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium',
             className,
             fallbackClassName
           )}
@@ -210,7 +230,7 @@ export function SmartAvatar({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -220,18 +240,18 @@ export function SmartAvatar({
 export function UserAvatarImage({
   src,
   displayName,
-  className = "w-8 h-8 rounded-full shadow-sm ring-2 ring-white dark:ring-border",
+  className = 'w-8 h-8 rounded-full shadow-sm ring-2 ring-white dark:ring-border',
   fallbackClassName,
   onError,
   onLoad,
   ...props
 }: {
-  src?: string
-  displayName: string
-  className?: string
-  fallbackClassName?: string
-  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
-  onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
+  src?: string;
+  displayName: string;
+  className?: string;
+  fallbackClassName?: string;
+  onError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+  onLoad?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
 } & Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt' | 'onError' | 'onLoad'>) {
   return (
     <SmartAvatar
@@ -246,5 +266,5 @@ export function UserAvatarImage({
       decoding="async"
       {...props}
     />
-  )
+  );
 }

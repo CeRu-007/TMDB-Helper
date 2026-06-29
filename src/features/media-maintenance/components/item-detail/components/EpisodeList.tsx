@@ -1,19 +1,20 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Input } from "@/shared/components/ui/input"
-import { PlayCircle, Tv, Clock, Zap, Calendar, ChevronUp, ChevronDown } from "lucide-react"
-import type { Season, TMDBItem } from "@/lib/data/storage"
-import { useTranslation } from "react-i18next"
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import { PlayCircle, Tv, Clock, Zap, Calendar, ChevronUp, ChevronDown } from 'lucide-react';
+import type { Season } from '@/types/tmdb-item';
+import type { TMDBItem } from '@/lib/data/storage';
+import { useTranslation } from 'react-i18next';
 
 interface EpisodeListProps {
-  mediaType: "tv"
-  selectedSeason: number | undefined
-  currentSeason: Season | undefined
-  editing: boolean
-  item: TMDBItem
-  onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void
+  mediaType: 'tv';
+  selectedSeason: number | undefined;
+  currentSeason: Season | undefined;
+  editing: boolean;
+  item: TMDBItem;
+  onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void;
 }
 
 export function EpisodeList({
@@ -22,253 +23,273 @@ export function EpisodeList({
   currentSeason,
   editing,
   item,
-  onEpisodeProgressUpdate
+  onEpisodeProgressUpdate,
 }: EpisodeListProps) {
-  const { t, i18n } = useTranslation('media')
-  const [inputValue, setInputValue] = useState<string>("")
+  const { t, i18n } = useTranslation('media');
+  const [inputValue, setInputValue] = useState<string>('');
 
   // 当前维护到的集数
-  const currentEpisode = currentSeason?.currentEpisode || 0
-  const totalEpisodes = currentSeason?.totalEpisodes || 0
+  const currentEpisode = currentSeason?.currentEpisode || 0;
+  const totalEpisodes = currentSeason?.totalEpisodes || 0;
 
   // 计算统计信息
-  const progressPercentage = totalEpisodes > 0 ? Math.round((currentEpisode / totalEpisodes) * 100) : 0
-  const remainingEpisodes = Math.max(0, totalEpisodes - currentEpisode)
+  const progressPercentage =
+    totalEpisodes > 0 ? Math.round((currentEpisode / totalEpisodes) * 100) : 0;
+  const remainingEpisodes = Math.max(0, totalEpisodes - currentEpisode);
 
   // 上次更新时间
-  const lastUpdated = new Date(item.updatedAt)
-  const daysSinceUpdate = Math.floor((Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24))
+  const lastUpdated = new Date(item.updatedAt);
+  const daysSinceUpdate = Math.floor((Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24));
 
   // 创建时间
-  const createdAt = new Date(item.createdAt)
-  const daysSinceCreation = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)))
-  const weeksSinceCreation = Math.max(1, Math.floor(daysSinceCreation / 7))
+  const createdAt = new Date(item.createdAt);
+  const daysSinceCreation = Math.max(
+    1,
+    Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+  );
+  const weeksSinceCreation = Math.max(1, Math.floor(daysSinceCreation / 7));
 
   // 判断数据是否可靠（创建超过14天且有一定更新）
-  const isDataReliable = daysSinceCreation >= 14 && currentEpisode >= 3
+  const isDataReliable = daysSinceCreation >= 14 && currentEpisode >= 3;
 
   const getNextWeekdayDate = (fromDate: Date, targetWeekday: number): Date => {
-    const date = new Date(fromDate)
-    const currentWeekday = date.getDay()
-    let daysDiff = targetWeekday - currentWeekday
+    const date = new Date(fromDate);
+    const currentWeekday = date.getDay();
+    let daysDiff = targetWeekday - currentWeekday;
 
     if (daysDiff <= 0) {
-      daysDiff += 7
+      daysDiff += 7;
     }
 
-    date.setDate(date.getDate() + daysDiff)
-    return date
-  }
+    date.setDate(date.getDate() + daysDiff);
+    return date;
+  };
 
   // 计算预计完成日期和平均速度
-  let estimatedCompletionDate: Date | null = null
-  let averageSpeed = "0"
-  let speedUnit = t('episodeList.speedUnit.episodesPerWeek')
-  let isConservativeEstimate = false
+  let estimatedCompletionDate: Date | null = null;
+  let averageSpeed = '0';
+  let speedUnit = t('episodeList.speedUnit.episodesPerWeek');
+  let isConservativeEstimate = false;
 
   if (remainingEpisodes > 0) {
     // 每日更新词条
     if (item.isDailyUpdate) {
-      speedUnit = t('episodeList.speedUnit.episodesPerDay')
+      speedUnit = t('episodeList.speedUnit.episodesPerDay');
 
       if (isDataReliable) {
         // 数据可靠：计算实际每日平均，排除开播当天的一次性多集标记
         // 如果开播当天标记了超过3集，假设实际每日更新是剩余天数平均
-        let effectiveDays = daysSinceCreation
-        let effectiveEpisodes = currentEpisode
+        let effectiveDays = daysSinceCreation;
+        let effectiveEpisodes = currentEpisode;
 
         // 开播第一天如果标记超过3集，按1集计算（假设是补标记）
         if (currentEpisode > 3 && daysSinceCreation >= 1) {
-          effectiveEpisodes = currentEpisode - (currentEpisode - 1)
-          effectiveDays = daysSinceCreation
+          effectiveEpisodes = currentEpisode - (currentEpisode - 1);
+          effectiveDays = daysSinceCreation;
         }
 
-        const dailySpeed = effectiveEpisodes / effectiveDays
-        averageSpeed = dailySpeed.toFixed(1)
+        const dailySpeed = effectiveEpisodes / effectiveDays;
+        averageSpeed = dailySpeed.toFixed(1);
 
-        const daysToComplete = Math.ceil(remainingEpisodes / Math.max(dailySpeed, 0.5))
-        estimatedCompletionDate = new Date()
-        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + daysToComplete)
+        const daysToComplete = Math.ceil(remainingEpisodes / Math.max(dailySpeed, 0.5));
+        estimatedCompletionDate = new Date();
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + daysToComplete);
       } else {
         // 数据不可靠：保守估计每日1集
-        isConservativeEstimate = true
-        averageSpeed = "1.0"
-        estimatedCompletionDate = new Date()
-        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes)
+        isConservativeEstimate = true;
+        averageSpeed = '1.0';
+        estimatedCompletionDate = new Date();
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes);
       }
     }
     // 周双更词条（有第二播出日）
     else if (typeof item.secondWeekday === 'number' && typeof item.weekday === 'number') {
-      speedUnit = t('episodeList.speedUnit.twoEpisodesPerWeek')
+      speedUnit = t('episodeList.speedUnit.twoEpisodesPerWeek');
 
       if (isDataReliable) {
         // 数据可靠：对比实际速度和播出节奏，取更保守的
-        const actualWeeklySpeed = currentEpisode / weeksSinceCreation
-        const scheduledSpeed = 2 // 播出节奏是2集/周
+        const actualWeeklySpeed = currentEpisode / weeksSinceCreation;
+        const scheduledSpeed = 2; // 播出节奏是2集/周
 
         // 取较慢的速度（更保守的估计）
-        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed)
-        averageSpeed = effectiveSpeed.toFixed(1)
+        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed);
+        averageSpeed = effectiveSpeed.toFixed(1);
 
-        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed)
+        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed);
 
         // 从最近的播出日开始计算
-        const today = new Date()
-        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday)
-        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday)
-        const nextAirDate = nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate
+        const today = new Date();
+        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday);
+        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday);
+        const nextAirDate =
+          nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate;
 
-        estimatedCompletionDate = new Date(nextAirDate)
+        estimatedCompletionDate = new Date(nextAirDate);
         // 每周推进2集
         for (let i = 0; i < weeksToComplete - 1; i++) {
-          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7)
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7);
         }
       } else {
         // 数据不可靠：按播出设置2集/周
-        isConservativeEstimate = true
-        averageSpeed = "2.0"
+        isConservativeEstimate = true;
+        averageSpeed = '2.0';
 
-        const weeksToComplete = Math.ceil(remainingEpisodes / 2)
-        const today = new Date()
-        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday)
-        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday)
-        const nextAirDate = nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate
+        const weeksToComplete = Math.ceil(remainingEpisodes / 2);
+        const today = new Date();
+        const nextPrimaryAirDate = getNextWeekdayDate(today, item.weekday);
+        const nextSecondaryAirDate = getNextWeekdayDate(today, item.secondWeekday);
+        const nextAirDate =
+          nextPrimaryAirDate < nextSecondaryAirDate ? nextPrimaryAirDate : nextSecondaryAirDate;
 
-        estimatedCompletionDate = new Date(nextAirDate)
+        estimatedCompletionDate = new Date(nextAirDate);
         for (let i = 0; i < weeksToComplete - 1; i++) {
-          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7)
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 7);
         }
       }
     }
     // 周单更词条（只有主播出日）
     else if (typeof item.weekday === 'number') {
-      speedUnit = t('episodeList.speedUnit.oneEpisodePerWeek')
+      speedUnit = t('episodeList.speedUnit.oneEpisodePerWeek');
 
       if (isDataReliable) {
         // 数据可靠：对比实际速度和播出节奏
-        const actualWeeklySpeed = currentEpisode / weeksSinceCreation
-        const scheduledSpeed = 1 // 播出节奏是1集/周
+        const actualWeeklySpeed = currentEpisode / weeksSinceCreation;
+        const scheduledSpeed = 1; // 播出节奏是1集/周
 
         // 取较慢的速度
-        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed)
-        averageSpeed = effectiveSpeed.toFixed(1)
+        const effectiveSpeed = Math.min(actualWeeklySpeed, scheduledSpeed);
+        averageSpeed = effectiveSpeed.toFixed(1);
 
-        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed)
+        const weeksToComplete = Math.ceil(remainingEpisodes / effectiveSpeed);
 
         // 从下一个播出日开始，每周推进
-        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday)
-        estimatedCompletionDate = new Date(nextAirDate)
-        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + (weeksToComplete - 1) * 7)
+        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday);
+        estimatedCompletionDate = new Date(nextAirDate);
+        estimatedCompletionDate.setDate(
+          estimatedCompletionDate.getDate() + (weeksToComplete - 1) * 7
+        );
       } else {
         // 数据不可靠：按播出设置1集/周
-        isConservativeEstimate = true
-        averageSpeed = "1.0"
+        isConservativeEstimate = true;
+        averageSpeed = '1.0';
 
-        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday)
-        estimatedCompletionDate = new Date(nextAirDate)
-        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + (remainingEpisodes - 1) * 7)
+        const nextAirDate = getNextWeekdayDate(new Date(), item.weekday);
+        estimatedCompletionDate = new Date(nextAirDate);
+        estimatedCompletionDate.setDate(
+          estimatedCompletionDate.getDate() + (remainingEpisodes - 1) * 7
+        );
       }
     }
     // 无播出设置的词条
     else {
       // 数据可靠：使用历史平均
       if (isDataReliable) {
-        const weeklySpeed = currentEpisode / weeksSinceCreation
-        averageSpeed = weeklySpeed.toFixed(1)
+        const weeklySpeed = currentEpisode / weeksSinceCreation;
+        averageSpeed = weeklySpeed.toFixed(1);
 
         if (weeklySpeed > 0) {
-          const weeksToComplete = Math.ceil(remainingEpisodes / weeklySpeed)
-          estimatedCompletionDate = new Date()
-          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + weeksToComplete * 7)
+          const weeksToComplete = Math.ceil(remainingEpisodes / weeklySpeed);
+          estimatedCompletionDate = new Date();
+          estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + weeksToComplete * 7);
         }
       } else {
         // 数据不可靠：保守估计每周1集
-        isConservativeEstimate = true
-        averageSpeed = "1.0"
-        estimatedCompletionDate = new Date()
-        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes * 7)
+        isConservativeEstimate = true;
+        averageSpeed = '1.0';
+        estimatedCompletionDate = new Date();
+        estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + remainingEpisodes * 7);
       }
     }
   } else {
     // 已完成，显示历史速度
     if (item.isDailyUpdate) {
-      speedUnit = t('episodeList.speedUnit.episodesPerDay')
-      averageSpeed = daysSinceCreation > 0 ? (currentEpisode / daysSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
+      speedUnit = t('episodeList.speedUnit.episodesPerDay');
+      averageSpeed =
+        daysSinceCreation > 0
+          ? (currentEpisode / daysSinceCreation).toFixed(1)
+          : currentEpisode.toFixed(1);
     } else if (typeof item.weekday === 'number') {
-      speedUnit = typeof item.secondWeekday === 'number' ? t('episodeList.speedUnit.twoEpisodesPerWeek') : t('episodeList.speedUnit.oneEpisodePerWeek')
-      averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : currentEpisode.toFixed(1)
+      speedUnit =
+        typeof item.secondWeekday === 'number'
+          ? t('episodeList.speedUnit.twoEpisodesPerWeek')
+          : t('episodeList.speedUnit.oneEpisodePerWeek');
+      averageSpeed =
+        weeksSinceCreation > 0
+          ? (currentEpisode / weeksSinceCreation).toFixed(1)
+          : currentEpisode.toFixed(1);
     } else {
-      averageSpeed = weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : "0"
+      averageSpeed =
+        weeksSinceCreation > 0 ? (currentEpisode / weeksSinceCreation).toFixed(1) : '0';
     }
   }
-  
+
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString(i18n.language || 'zh-CN', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
-    })
-  }
+      day: '2-digit',
+    });
+  };
 
   // 更新输入框显示当前进度
   useEffect(() => {
-    setInputValue(currentEpisode.toString())
-  }, [currentEpisode])
+    setInputValue(currentEpisode.toString());
+  }, [currentEpisode]);
 
-  if (mediaType !== "tv") {
-    return null
+  if (mediaType !== 'tv') {
+    return null;
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    const value = e.target.value
-    if (value === "" || /^\d+$/.test(value)) {
-      setInputValue(value)
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      setInputValue(value);
     }
   }
 
   function updateProgress(): void {
     if (!selectedSeason || !currentSeason) {
-      return
+      return;
     }
 
-    const targetEpisode = parseInt(inputValue, 10)
+    const targetEpisode = parseInt(inputValue, 10);
     if (isNaN(targetEpisode) || targetEpisode < 0) {
-      return
+      return;
     }
 
-    const clampedEpisode = Math.min(Math.max(targetEpisode, 0), currentSeason.totalEpisodes)
-    onEpisodeProgressUpdate(clampedEpisode, selectedSeason)
-    setInputValue(clampedEpisode.toString())
+    const clampedEpisode = Math.min(Math.max(targetEpisode, 0), currentSeason.totalEpisodes);
+    onEpisodeProgressUpdate(clampedEpisode, selectedSeason);
+    setInputValue(clampedEpisode.toString());
   }
 
   function handleInputBlur(): void {
-    updateProgress()
+    updateProgress();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
-    if (e.key === "Enter") {
-      updateProgress()
+    if (e.key === 'Enter') {
+      updateProgress();
     }
   }
 
   function handleIncrement(): void {
     if (!selectedSeason || !currentSeason) {
-      return
+      return;
     }
 
-    const newEpisode = Math.min(currentEpisode + 1, currentSeason.totalEpisodes)
-    onEpisodeProgressUpdate(newEpisode, selectedSeason)
-    setInputValue(newEpisode.toString())
+    const newEpisode = Math.min(currentEpisode + 1, currentSeason.totalEpisodes);
+    onEpisodeProgressUpdate(newEpisode, selectedSeason);
+    setInputValue(newEpisode.toString());
   }
 
   function handleDecrement(): void {
     if (!selectedSeason || !currentSeason) {
-      return
+      return;
     }
 
-    const newEpisode = Math.max(currentEpisode - 1, 0)
-    onEpisodeProgressUpdate(newEpisode, selectedSeason)
-    setInputValue(newEpisode.toString())
+    const newEpisode = Math.max(currentEpisode - 1, 0);
+    onEpisodeProgressUpdate(newEpisode, selectedSeason);
+    setInputValue(newEpisode.toString());
   }
 
   return (
@@ -278,7 +299,11 @@ export function EpisodeList({
           <div className="flex items-center">
             <PlayCircle className="h-4 w-4 mr-2" />
             {t('episodeList.maintenanceProgress')}
-            {!selectedSeason && <span className="text-xs text-muted-foreground ml-2">{t('episodeList.selectOrAddSeason')}</span>}
+            {!selectedSeason && (
+              <span className="text-xs text-muted-foreground ml-2">
+                {t('episodeList.selectOrAddSeason')}
+              </span>
+            )}
           </div>
         </CardTitle>
       </CardHeader>
@@ -288,7 +313,9 @@ export function EpisodeList({
             {/* 简洁的输入框 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">{t('episodeList.maintenanceTo')}:</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('episodeList.maintenanceTo')}:
+                </span>
                 <div className="relative flex items-center">
                   <Input
                     type="number"
@@ -298,7 +325,7 @@ export function EpisodeList({
                     onChange={handleInputChange}
                     onBlur={handleInputBlur}
                     onKeyDown={handleKeyDown}
-                      placeholder={`0-${currentSeason.totalEpisodes}`}
+                    placeholder={`0-${currentSeason.totalEpisodes}`}
                     className="h-9 w-20 md:w-28 pr-9 focus:outline-none focus-visible:ring-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col">
@@ -323,7 +350,9 @@ export function EpisodeList({
                   </div>
                 </div>
               </div>
-              <span className="text-xs text-muted-foreground">/ {currentSeason.totalEpisodes} {t('episodeList.episodes')}</span>
+              <span className="text-xs text-muted-foreground">
+                / {currentSeason.totalEpisodes} {t('episodeList.episodes')}
+              </span>
             </div>
 
             {/* 简单的进度条 */}
@@ -342,7 +371,11 @@ export function EpisodeList({
                 <div className="min-w-0">
                   <div className="text-muted-foreground">{t('episodeList.lastUpdate')}</div>
                   <div className="font-medium truncate">
-                    {daysSinceUpdate === 0 ? t('episodeList.today') : daysSinceUpdate === 1 ? t('episodeList.yesterday') : t('episodeList.daysAgo', { count: daysSinceUpdate })}
+                    {daysSinceUpdate === 0
+                      ? t('episodeList.today')
+                      : daysSinceUpdate === 1
+                        ? t('episodeList.yesterday')
+                        : t('episodeList.daysAgo', { count: daysSinceUpdate })}
                   </div>
                 </div>
               </div>
@@ -353,7 +386,9 @@ export function EpisodeList({
                 <div className="min-w-0">
                   <div className="text-muted-foreground">{t('episodeList.averageSpeed')}</div>
                   <div className="font-medium">
-                    {item.isDailyUpdate || !item.weekday ? `${averageSpeed} ${speedUnit}` : speedUnit}
+                    {item.isDailyUpdate || !item.weekday
+                      ? `${averageSpeed} ${speedUnit}`
+                      : speedUnit}
                   </div>
                 </div>
               </div>
@@ -363,7 +398,9 @@ export function EpisodeList({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
                   <div className="text-muted-foreground">
-                    {isConservativeEstimate ? t('episodeList.estimatedCompletionConservative') : t('episodeList.estimatedCompletion')}
+                    {isConservativeEstimate
+                      ? t('episodeList.estimatedCompletionConservative')
+                      : t('episodeList.estimatedCompletion')}
                   </div>
                   <div className="font-medium truncate">
                     {estimatedCompletionDate ? formatDate(estimatedCompletionDate) : '-'}
@@ -375,9 +412,17 @@ export function EpisodeList({
             {/* 进度详情 */}
             <div className="flex items-center justify-between text-sm text-foreground/80">
               <div className="flex items-center space-x-3">
-                <span>{t('episodeList.maintained')}: <span className="font-semibold text-green-600">{currentEpisode}</span></span>
+                <span>
+                  {t('episodeList.maintained')}:{' '}
+                  <span className="font-semibold text-green-600">{currentEpisode}</span>
+                </span>
                 <span className="text-foreground/30">|</span>
-                <span>{t('episodeList.pending')}: <span className="font-semibold text-orange-600">{totalEpisodes - currentEpisode}</span></span>
+                <span>
+                  {t('episodeList.pending')}:{' '}
+                  <span className="font-semibold text-orange-600">
+                    {totalEpisodes - currentEpisode}
+                  </span>
+                </span>
               </div>
               <span className="text-foreground/70">{progressPercentage}%</span>
             </div>
@@ -398,5 +443,5 @@ export function EpisodeList({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

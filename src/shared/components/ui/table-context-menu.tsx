@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import React, { useState } from "react"
+import React, { useState } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,13 +10,13 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "@/shared/components/ui/context-menu"
-import { 
-  Calendar, 
-  Clock, 
-  Copy, 
-  Scissors, 
-  Trash, 
+} from '@/shared/components/ui/context-menu';
+import {
+  Calendar,
+  Clock,
+  Copy,
+  Scissors,
+  Trash,
   ClipboardPaste,
   ArrowDownUp,
   CalendarDays,
@@ -28,32 +28,38 @@ import {
   ArrowRight,
   Columns,
   Rows,
-  FileText
-} from "lucide-react"
-import DateIntervalDialog from "@/shared/components/ui/date-interval-dialog"
-import MinutesDialog from "@/shared/components/ui/minutes-dialog"
-import NumberRangeDialog from "@/shared/components/ui/number-range-dialog"
-import { isDateColumn, isTimeColumn, isNumericColumn, isValidDateString, generateNumberSequence } from "@/lib/utils/date-utils"
-import type { CSVData } from "@/types/csv-editor"
-import { useTranslation } from "react-i18next"
+  FileText,
+} from 'lucide-react';
+import DateIntervalDialog from '@/shared/components/ui/date-interval-dialog';
+import MinutesDialog from '@/shared/components/ui/minutes-dialog';
+import NumberRangeDialog from '@/shared/components/ui/number-range-dialog';
+import {
+  isDateColumn,
+  isTimeColumn,
+  isNumericColumn,
+  isValidDateString,
+  generateNumberSequence,
+} from '@/lib/utils/date-utils';
+import type { CSVData } from '@/types/csv-editor';
+import { useTranslation } from 'react-i18next';
 
 export interface TableContextMenuProps {
-  children: React.ReactNode
-  selectedCells: { row: number, col: number }[]
-  data: CSVData
-  onCellsUpdate: (cells: { row: number, col: number, value: string }[]) => void
-  onCopy: () => void
-  onCut: () => void
-  onPaste: () => void
-  onDelete: () => void
-  onInsertRow?: (index: number, position: 'before' | 'after') => void
-  onDeleteRow?: (index: number) => void
-  onInsertColumn?: (index: number, position: 'before' | 'after') => void
-  onDeleteColumn?: (index: number) => void
-  onDuplicateRow?: (index: number) => void
-  onDuplicateColumn?: (index: number) => void
-  onBatchInsertRow?: (index: number, position: 'before' | 'after', count: number) => void
-  onOpenOverviewEdit?: (row: number, col: number) => void
+  children: React.ReactNode;
+  selectedCells: { row: number; col: number }[];
+  data: CSVData;
+  onCellsUpdate: (cells: { row: number; col: number; value: string }[]) => void;
+  onCopy: () => void;
+  onCut: () => void;
+  onPaste: () => void;
+  onDelete: () => void;
+  onInsertRow?: (index: number, position: 'before' | 'after') => void;
+  onDeleteRow?: (index: number) => void;
+  onInsertColumn?: (index: number, position: 'before' | 'after') => void;
+  onDeleteColumn?: (index: number) => void;
+  onDuplicateRow?: (index: number) => void;
+  onDuplicateColumn?: (index: number) => void;
+  onBatchInsertRow?: (index: number, position: 'before' | 'after', count: number) => void;
+  onOpenOverviewEdit?: (row: number, col: number) => void;
 }
 
 export default function TableContextMenu({
@@ -72,172 +78,202 @@ export default function TableContextMenu({
   onDuplicateRow,
   onDuplicateColumn,
   onBatchInsertRow,
-  onOpenOverviewEdit
+  onOpenOverviewEdit,
 }: TableContextMenuProps) {
-  const { t } = useTranslation('media')
+  const { t } = useTranslation('media');
   // 日期间隔对话框状态
-  const [dateDialogOpen, setDateDialogOpen] = useState(false)
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
   // 分钟设置对话框状态
-  const [minutesDialogOpen, setMinutesDialogOpen] = useState(false)
+  const [minutesDialogOpen, setMinutesDialogOpen] = useState(false);
   // 数字范围填充对话框状态
-  const [numberDialogOpen, setNumberDialogOpen] = useState(false)
-  
+  const [numberDialogOpen, setNumberDialogOpen] = useState(false);
+
   // 检查选中的单元格是否在同一列
   const isSameColumn = () => {
-    if (selectedCells.length <= 1) return true // 单个单元格或空视为在同一列
-    
-    const firstCol = selectedCells[0].col
-    return selectedCells.every(cell => cell.col === firstCol)
-  }
-  
+    if (selectedCells.length <= 1) {
+      return true;
+    } // 单个单元格或空视为在同一列
+
+    const firstCol = selectedCells[0].col;
+    return selectedCells.every((cell) => cell.col === firstCol);
+  };
+
   // 检查选中的单元格是否在同一行
   const isSameRow = () => {
-    if (selectedCells.length <= 1) return true // 单个单元格或空视为在同一行
-    
-    const firstRow = selectedCells[0].row
-    return selectedCells.every(cell => cell.row === firstRow)
-  }
-  
+    if (selectedCells.length <= 1) {
+      return true;
+    } // 单个单元格或空视为在同一行
+
+    const firstRow = selectedCells[0].row;
+    return selectedCells.every((cell) => cell.row === firstRow);
+  };
+
   // 获取选中单元格的列索引
   const getSelectedColumn = () => {
-    if (selectedCells.length === 0) return -1
-    return selectedCells[0].col
-  }
-  
+    if (selectedCells.length === 0) {
+      return -1;
+    }
+    return selectedCells[0].col;
+  };
+
   // 获取选中单元格的行索引
   const getSelectedRow = () => {
-    if (selectedCells.length === 0) return -1
-    return selectedCells[0].row
-  }
-  
+    if (selectedCells.length === 0) {
+      return -1;
+    }
+    return selectedCells[0].row;
+  };
+
   // 获取选中单元格的值
   const getSelectedValues = () => {
-    if (selectedCells.length === 0) return []
-    
-    const colIndex = selectedCells[0].col
+    if (selectedCells.length === 0) {
+      return [];
+    }
+
+    const colIndex = selectedCells[0].col;
     return selectedCells
-      .map(cell => data.rows[cell.row][colIndex])
-      .filter(value => value !== undefined)
-  }
-  
+      .map((cell) => data.rows[cell.row][colIndex])
+      .filter((value) => value !== undefined);
+  };
+
   // 检查选中的列是否是支持批量编辑的列（overview或name）
   const isSelectedBatchEditColumn = () => {
-    if (selectedCells.length === 0) return false
+    if (selectedCells.length === 0) {
+      return false;
+    }
 
     // 多个单元格时必须确保在同一列
-    if (selectedCells.length > 1 && !isSameColumn()) return false
+    if (selectedCells.length > 1 && !isSameColumn()) {
+      return false;
+    }
 
-    const colIndex = selectedCells[0].col
-    const columnName = data.headers[colIndex]?.toLowerCase()
-    return columnName === 'overview' || columnName === 'name'
-  }
+    const colIndex = selectedCells[0].col;
+    const columnName = data.headers[colIndex]?.toLowerCase();
+    return columnName === 'overview' || columnName === 'name';
+  };
 
   // 获取选中列的显示名称
   const getSelectedColumnName = () => {
-    if (selectedCells.length === 0) return ''
-    return data.headers[selectedCells[0].col] || ''
-  }
-  
+    if (selectedCells.length === 0) {
+      return '';
+    }
+    return data.headers[selectedCells[0].col] || '';
+  };
+
   // 检查选中的列是否是日期列
   const isSelectedDateColumn = () => {
-    if (!isSameColumn()) return false
-    
-    const values = getSelectedValues()
-    return isDateColumn(values)
-  }
-  
+    if (!isSameColumn()) {
+      return false;
+    }
+
+    const values = getSelectedValues();
+    return isDateColumn(values);
+  };
+
   // 检查选中的列是否是时间列
   const isSelectedTimeColumn = () => {
-    if (!isSameColumn()) return false
-    
-    const values = getSelectedValues()
-    return isTimeColumn(values)
-  }
-  
+    if (!isSameColumn()) {
+      return false;
+    }
+
+    const values = getSelectedValues();
+    return isTimeColumn(values);
+  };
+
   // 获取选中单元格中的第一个有效日期
   const getFirstValidDate = () => {
-    if (!isSelectedDateColumn()) return ""
-    
-    const values = getSelectedValues()
+    if (!isSelectedDateColumn()) {
+      return '';
+    }
+
+    const values = getSelectedValues();
     for (const value of values) {
       if (isValidDateString(value)) {
-        return value
+        return value;
       }
     }
-    return ""
-  }
-  
+    return '';
+  };
+
   // 处理日期递进
   const handleDateSequence = (dates: string[]) => {
-    if (dates.length === 0 || !isSameColumn()) return
-    
-    const colIndex = selectedCells[0].col
-    const updates: { row: number, col: number, value: string }[] = []
-    
+    if (dates.length === 0 || !isSameColumn()) {
+      return;
+    }
+
+    const colIndex = selectedCells[0].col;
+    const updates: { row: number; col: number; value: string }[] = [];
+
     // 为每个选中的单元格应用递进日期
     selectedCells.forEach((cell, index) => {
       if (index < dates.length) {
         updates.push({
           row: cell.row,
           col: colIndex,
-          value: dates[index]
-        })
+          value: dates[index],
+        });
       }
-    })
-    
-    onCellsUpdate(updates)
-  }
-  
+    });
+
+    onCellsUpdate(updates);
+  };
+
   // 处理分钟设置
   const handleMinutesUpdate = (updatedTimes: string[]) => {
-    if (updatedTimes.length === 0 || !isSameColumn()) return
-    
-    const colIndex = selectedCells[0].col
-    const updates: { row: number, col: number, value: string }[] = []
-    
+    if (updatedTimes.length === 0 || !isSameColumn()) {
+      return;
+    }
+
+    const colIndex = selectedCells[0].col;
+    const updates: { row: number; col: number; value: string }[] = [];
+
     // 为每个选中的单元格应用更新后的时间
     selectedCells.forEach((cell, index) => {
       if (index < updatedTimes.length) {
         updates.push({
           row: cell.row,
           col: colIndex,
-          value: updatedTimes[index]
-        })
+          value: updatedTimes[index],
+        });
       }
-    })
-    
-    onCellsUpdate(updates)
-  }
-  
+    });
+
+    onCellsUpdate(updates);
+  };
+
   // 检查选中的列是否是数字列
   const isSelectedNumericColumn = () => {
-    if (!isSameColumn()) return false
-    
-    const values = getSelectedValues()
-    return isNumericColumn(values)
-  }
-  
+    if (!isSameColumn()) {
+      return false;
+    }
+
+    const values = getSelectedValues();
+    return isNumericColumn(values);
+  };
+
   // 处理数字范围填充
   const handleNumberSequence = (numbers: string[]) => {
-    if (numbers.length === 0 || !isSameColumn()) return
-    
-    const colIndex = selectedCells[0].col
-    const updates: { row: number, col: number, value: string }[] = []
-    
+    if (numbers.length === 0 || !isSameColumn()) {
+      return;
+    }
+
+    const colIndex = selectedCells[0].col;
+    const updates: { row: number; col: number; value: string }[] = [];
+
     // 为每个选中的单元格应用递进数字
     selectedCells.forEach((cell, index) => {
       if (index < numbers.length) {
         updates.push({
           row: cell.row,
           col: colIndex,
-          value: numbers[index]
-        })
+          value: numbers[index],
+        });
       }
-    })
-    
-    onCellsUpdate(updates)
-  }
-  
+    });
+
+    onCellsUpdate(updates);
+  };
+
   return (
     <>
       <ContextMenu>
@@ -260,9 +296,9 @@ export default function TableContextMenu({
             <Trash className="mr-2 h-4 w-4" />
             <span>{t('csvEditor.delete')}</span>
           </ContextMenuItem>
-          
+
           <ContextMenuSeparator />
-          
+
           {/* 行操作 */}
           <ContextMenuSub>
             <ContextMenuSubTrigger disabled={selectedCells.length === 0}>
@@ -286,9 +322,9 @@ export default function TableContextMenu({
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => {
-                  const rowIndex = getSelectedRow()
+                  const rowIndex = getSelectedRow();
                   if (rowIndex >= 0 && onBatchInsertRow) {
-                    onBatchInsertRow(rowIndex, 'after', 1)
+                    onBatchInsertRow(rowIndex, 'after', 1);
                   }
                 }}
                 disabled={selectedCells.length === 0 || !onBatchInsertRow}
@@ -356,14 +392,14 @@ export default function TableContextMenu({
           </ContextMenuSub>
 
           <ContextMenuSeparator />
-          
+
           {/* 特殊列操作 */}
           <ContextMenuItem
             onClick={() => {
-              const rowIndex = getSelectedRow()
-              const colIndex = getSelectedColumn()
+              const rowIndex = getSelectedRow();
+              const colIndex = getSelectedColumn();
               if (rowIndex >= 0 && colIndex >= 0 && onOpenOverviewEdit) {
-                onOpenOverviewEdit(rowIndex, colIndex)
+                onOpenOverviewEdit(rowIndex, colIndex);
               }
             }}
             disabled={!isSelectedBatchEditColumn() || selectedCells.length === 0}
@@ -371,9 +407,9 @@ export default function TableContextMenu({
             <FileText className="mr-2 h-4 w-4" />
             <span>{t('csvEditor.batchEdit')}</span>
           </ContextMenuItem>
-          
+
           <ContextMenuSeparator />
-          
+
           {/* 日期操作 */}
           <ContextMenuItem
             onClick={() => setDateDialogOpen(true)}
@@ -382,7 +418,7 @@ export default function TableContextMenu({
             <CalendarDays className="mr-2 h-4 w-4" />
             <span>{t('csvEditor.dateIncrement')}</span>
           </ContextMenuItem>
-          
+
           {/* 数字范围填充 */}
           <ContextMenuItem
             onClick={() => setNumberDialogOpen(true)}
@@ -391,7 +427,7 @@ export default function TableContextMenu({
             <ArrowDownUp className="mr-2 h-4 w-4" />
             <span>{t('csvEditor.numberRangeFill')}</span>
           </ContextMenuItem>
-          
+
           {/* 分钟操作 */}
           <ContextMenuItem
             onClick={() => setMinutesDialogOpen(true)}
@@ -402,7 +438,7 @@ export default function TableContextMenu({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-      
+
       {/* 日期间隔对话框 */}
       <DateIntervalDialog
         open={dateDialogOpen}
@@ -411,7 +447,7 @@ export default function TableContextMenu({
         count={selectedCells.length}
         onApply={handleDateSequence}
       />
-      
+
       {/* 数字范围填充对话框 */}
       <NumberRangeDialog
         open={numberDialogOpen}
@@ -419,7 +455,7 @@ export default function TableContextMenu({
         count={selectedCells.length}
         onApply={handleNumberSequence}
       />
-      
+
       {/* 分钟设置对话框 */}
       <MinutesDialog
         open={minutesDialogOpen}
@@ -428,5 +464,5 @@ export default function TableContextMenu({
         onApply={handleMinutesUpdate}
       />
     </>
-  )
-} 
+  );
+}

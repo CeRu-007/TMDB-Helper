@@ -1,9 +1,5 @@
-"use client"
+'use client';
 
-export default function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <>{children}</>
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

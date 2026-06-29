@@ -20,10 +20,14 @@ export interface PlatformCSVResult {
 }
 
 export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
-  if (results.length === 0) return '';
-  if (results.length === 1) return results[0].csvContent;
+  if (results.length === 0) {
+    return '';
+  }
+  if (results.length === 1) {
+    return results[0].csvContent;
+  }
 
-  const parsedResults = results.map(r => ({
+  const parsedResults = results.map((r) => ({
     url: r.url,
     data: parseCSV(r.csvContent),
     keptFields: r.keptFields,
@@ -33,7 +37,7 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
   const baseHeaders = base.data.headers;
 
   // Build episode index for all platforms
-  const platformsByEpisode = parsedResults.map(platform => {
+  const platformsByEpisode = parsedResults.map((platform) => {
     const byEpisode = new Map<number, CSVRow>();
     for (const row of platform.data.rows) {
       const epNum = parseInt(row['episode_number'], 10);
@@ -55,7 +59,7 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
 
     // For each field, find the first platform that keeps it and has a value
     for (const field of baseHeaders) {
-      if (!mergeFields.includes(field as typeof mergeFields[number])) {
+      if (!mergeFields.includes(field as (typeof mergeFields)[number])) {
         // Non-mergeable fields: always use base value
         mergedRow[field] = baseRow[field] || '';
         continue;
@@ -63,7 +67,9 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
 
       let value = '';
       for (const platform of platformsByEpisode) {
-        if (!platform.keptFields[field as typeof mergeFields[number]]) continue;
+        if (!platform.keptFields[field as (typeof mergeFields)[number]]) {
+          continue;
+        }
 
         const row = isNaN(epNum) ? baseRow : platform.byEpisode.get(epNum);
         if (row && row[field] && row[field].trim() !== '') {
@@ -79,9 +85,7 @@ export function mergeMultiPlatformCSVs(results: PlatformCSVResult[]): string {
 
   return [
     baseHeaders.join(','),
-    ...mergedRows.map(row =>
-      baseHeaders.map(h => escapeCSVValue(row[h] || '')).join(',')
-    )
+    ...mergedRows.map((row) => baseHeaders.map((h) => escapeCSVValue(row[h] || '')).join(',')),
   ].join('\n');
 }
 
@@ -96,7 +100,9 @@ export function parseCSV(content: string): CSVData {
   const rows: CSVRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
 
     const values = parseCSVLine(line);
     const row: CSVRow = {};
@@ -160,7 +166,7 @@ export function cleanCSV(
     return content;
   }
 
-  if (content.charCodeAt(0) === 0xFEFF) {
+  if (content.charCodeAt(0) === 0xfeff) {
     content = content.slice(1);
   }
 
@@ -169,22 +175,24 @@ export function cleanCSV(
     return content;
   }
 
-  const headers = parseCSVLine(rawLines[0]).map(h => h.toLowerCase().replace(/^"|"$/g, ''));
+  const headers = parseCSVLine(rawLines[0]).map((h) => h.toLowerCase().replace(/^"|"$/g, ''));
   const expectedCount = headers.length;
 
   const cleanedRows: string[][] = [];
 
   for (let i = 1; i < rawLines.length; i++) {
     let line = rawLines[i];
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
 
-    let values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''));
+    let values = parseCSVLine(line).map((v) => v.replace(/^"|"$/g, ''));
 
     while (values.length < expectedCount && i + 1 < rawLines.length) {
       i++;
       const nextLine = rawLines[i];
       line += ' ' + nextLine;
-      values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''));
+      values = parseCSVLine(line).map((v) => v.replace(/^"|"$/g, ''));
     }
 
     if (values.length > expectedCount) {
@@ -230,12 +238,12 @@ export function cleanCSV(
       }
     }
 
-    cleanedRows.push(headers.map(h => row[h]));
+    cleanedRows.push(headers.map((h) => row[h]));
   }
 
   return [
     headers.join(','),
-    ...cleanedRows.map(row => row.map(v => escapeCSVValue(v)).join(','))
+    ...cleanedRows.map((row) => row.map((v) => escapeCSVValue(v)).join(',')),
   ].join('\n');
 }
 
@@ -286,14 +294,22 @@ function splitCSVLines(content: string): string[] {
 }
 
 function mergeCSVLines(line1: string, line2: string): string {
-  if (!line1.trim()) return line2;
-  if (!line2.trim()) return line1;
+  if (!line1.trim()) {
+    return line2;
+  }
+  if (!line2.trim()) {
+    return line1;
+  }
 
   const values1 = parseCSVLine(line1);
   const values2 = parseCSVLine(line2);
 
-  if (values1.length === 0) return line2;
-  if (values2.length === 0) return line1;
+  if (values1.length === 0) {
+    return line2;
+  }
+  if (values2.length === 0) {
+    return line1;
+  }
 
   const lastValue1 = values1[values1.length - 1];
   const firstValue2 = values2[0];
@@ -310,64 +326,67 @@ function mergeCSVLines(line1: string, line2: string): string {
 }
 
 export interface MetadataAnalysisResult {
-  rawEpisodeCount: number
-  effectiveEpisodeCount: number
-  incompleteEpisodes: number[]
+  rawEpisodeCount: number;
+  effectiveEpisodeCount: number;
+  incompleteEpisodes: number[];
 }
 
 export function analyzeCSVMetadata(csvContent: string): MetadataAnalysisResult {
-  const lines = csvContent.trim().split(/\r?\n/)
+  const lines = csvContent.trim().split(/\r?\n/);
   if (lines.length < 2) {
-    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] };
   }
 
-  let content = csvContent
-  if (content.charCodeAt(0) === 0xFEFF) {
-    content = content.slice(1)
+  let content = csvContent;
+  if (content.charCodeAt(0) === 0xfeff) {
+    content = content.slice(1);
   }
 
-  const contentLines = content.split(/\r?\n/)
+  const contentLines = content.split(/\r?\n/);
   if (contentLines.length < 2) {
-    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] };
   }
 
-  const headers = parseCSVLine(contentLines[0]).map(h => h.toLowerCase().replace(/^"|"$/g, ''))
-  const episodeIdx = headers.indexOf('episode_number')
-  const nameIdx = headers.indexOf('name')
-  const overviewIdx = headers.indexOf('overview')
+  const headers = parseCSVLine(contentLines[0]).map((h) => h.toLowerCase().replace(/^"|"$/g, ''));
+  const episodeIdx = headers.indexOf('episode_number');
+  const nameIdx = headers.indexOf('name');
+  const overviewIdx = headers.indexOf('overview');
 
   if (episodeIdx === -1) {
-    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] }
+    return { rawEpisodeCount: 0, effectiveEpisodeCount: 0, incompleteEpisodes: [] };
   }
 
-  let rawEpisodeCount = 0
-  const incompleteEpisodes: number[] = []
+  let rawEpisodeCount = 0;
+  const incompleteEpisodes: number[] = [];
 
   for (let i = 1; i < contentLines.length; i++) {
-    let line = contentLines[i]
-    if (!line.trim()) continue
-
-    const values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, ''))
-    const episodeNum = parseInt(values[episodeIdx], 10)
-    if (isNaN(episodeNum)) continue
-
-    if (episodeNum > rawEpisodeCount) {
-      rawEpisodeCount = episodeNum
+    const line = contentLines[i];
+    if (!line.trim()) {
+      continue;
     }
 
-    const name = nameIdx !== -1 ? (values[nameIdx] || '').trim() : ''
-    const overview = overviewIdx !== -1 ? (values[overviewIdx] || '').trim() : ''
+    const values = parseCSVLine(line).map((v) => v.replace(/^"|"$/g, ''));
+    const episodeNum = parseInt(values[episodeIdx], 10);
+    if (isNaN(episodeNum)) {
+      continue;
+    }
+
+    if (episodeNum > rawEpisodeCount) {
+      rawEpisodeCount = episodeNum;
+    }
+
+    const name = nameIdx !== -1 ? (values[nameIdx] || '').trim() : '';
+    const overview = overviewIdx !== -1 ? (values[overviewIdx] || '').trim() : '';
 
     if (!name || !overview) {
-      incompleteEpisodes.push(episodeNum)
+      incompleteEpisodes.push(episodeNum);
     }
   }
 
-  const effectiveEpisodeCount = incompleteEpisodes.length > 0
-    ? Math.min(...incompleteEpisodes) - 1
-    : rawEpisodeCount
+  const effectiveEpisodeCount =
+    incompleteEpisodes.length > 0 ? Math.min(...incompleteEpisodes) - 1 : rawEpisodeCount;
 
-  return { rawEpisodeCount, effectiveEpisodeCount, incompleteEpisodes }
+  return { rawEpisodeCount, effectiveEpisodeCount, incompleteEpisodes };
 }
 
 export function extractEpisodeCount(csvContent: string): number {
@@ -376,7 +395,7 @@ export function extractEpisodeCount(csvContent: string): number {
     return 0;
   }
 
-  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+  const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
   const episodeIdx = headers.indexOf('episode_number');
 
   if (episodeIdx === -1) {
@@ -387,7 +406,9 @@ export function extractEpisodeCount(csvContent: string): number {
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
 
     const values = parseCSVLine(line);
     if (values.length > episodeIdx) {

@@ -13,14 +13,16 @@ interface SmartTooltipProps {
 }
 
 const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disabled = false }) => {
-  const { t } = useTranslation('nav.platforms')
+  const { t } = useTranslation('nav.platforms');
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const calculatePosition = () => {
-    if (!triggerRef.current || !tooltipRef.current) return;
+    if (!triggerRef.current || !tooltipRef.current) {
+      return;
+    }
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -45,15 +47,22 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
     } else {
       // 默认显示在空间最大的一侧
       const maxSpace = Math.max(spaceAbove, spaceBelow, spaceLeft, spaceRight);
-      if (maxSpace === spaceAbove) setPosition('top');
-      else if (maxSpace === spaceBelow) setPosition('bottom');
-      else if (maxSpace === spaceRight) setPosition('right');
-      else setPosition('left');
+      if (maxSpace === spaceAbove) {
+        setPosition('top');
+      } else if (maxSpace === spaceBelow) {
+        setPosition('bottom');
+      } else if (maxSpace === spaceRight) {
+        setPosition('right');
+      } else {
+        setPosition('left');
+      }
     }
   };
 
   const handleMouseEnter = () => {
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
     setIsVisible(true);
     // 延迟计算位置，确保tooltip已渲染
     setTimeout(calculatePosition, 10);
@@ -64,52 +73,52 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
   };
 
   const getTooltipClasses = () => {
-    const baseClasses = "absolute px-4 py-3 bg-gray-900/95 dark:bg-card/95 backdrop-blur-sm text-white text-sm rounded-xl shadow-2xl transition-all duration-300 pointer-events-none w-80 whitespace-normal border border-gray-700/50 dark:border-border/50 z-50";
-    
+    const baseClasses =
+      'absolute px-4 py-3 bg-gray-900/95 dark:bg-card/95 backdrop-blur-sm text-white text-sm rounded-xl shadow-2xl transition-all duration-300 pointer-events-none w-80 whitespace-normal border border-gray-700/50 dark:border-border/50 z-50';
+
     const positionClasses = {
-      top: "bottom-full left-1/2 transform -translate-x-1/2 mb-3",
-      bottom: "top-full left-1/2 transform -translate-x-1/2 mt-3",
-      left: "right-full top-1/2 transform -translate-y-1/2 mr-3",
-      right: "left-full top-1/2 transform -translate-y-1/2 ml-3"
+      top: 'bottom-full left-1/2 transform -translate-x-1/2 mb-3',
+      bottom: 'top-full left-1/2 transform -translate-x-1/2 mt-3',
+      left: 'right-full top-1/2 transform -translate-y-1/2 mr-3',
+      right: 'left-full top-1/2 transform -translate-y-1/2 ml-3',
     };
 
-    const visibilityClasses = isVisible ? "opacity-100 visible" : "opacity-0 invisible";
+    const visibilityClasses = isVisible ? 'opacity-100 visible' : 'opacity-0 invisible';
 
     return cn(baseClasses, positionClasses[position], visibilityClasses);
   };
 
   const getArrowClasses = () => {
     const arrowPositions = {
-      top: "absolute top-full left-1/2 transform -translate-x-1/2",
-      bottom: "absolute bottom-full left-1/2 transform -translate-x-1/2",
-      left: "absolute left-full top-1/2 transform -translate-y-1/2",
-      right: "absolute right-full top-1/2 transform -translate-y-1/2"
+      top: 'absolute top-full left-1/2 transform -translate-x-1/2',
+      bottom: 'absolute bottom-full left-1/2 transform -translate-x-1/2',
+      left: 'absolute left-full top-1/2 transform -translate-y-1/2',
+      right: 'absolute right-full top-1/2 transform -translate-y-1/2',
     };
 
     const arrowStyles = {
-      top: "w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-transparent border-t-gray-900/95 dark:border-t-card/95",
-      bottom: "w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-transparent border-b-gray-900/95 dark:border-b-card/95",
-      left: "w-0 h-0 border-t-[8px] border-b-[8px] border-l-[8px] border-transparent border-l-gray-900/95 dark:border-l-card/95",
-      right: "w-0 h-0 border-t-[8px] border-b-[8px] border-r-[8px] border-transparent border-r-gray-900/95 dark:border-r-card/95"
+      top: 'w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-transparent border-t-gray-900/95 dark:border-t-card/95',
+      bottom:
+        'w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-transparent border-b-gray-900/95 dark:border-b-card/95',
+      left: 'w-0 h-0 border-t-[8px] border-b-[8px] border-l-[8px] border-transparent border-l-gray-900/95 dark:border-l-card/95',
+      right:
+        'w-0 h-0 border-t-[8px] border-b-[8px] border-r-[8px] border-transparent border-r-gray-900/95 dark:border-r-card/95',
     };
 
     return cn(arrowPositions[position], arrowStyles[position]);
   };
 
   return (
-    <div 
+    <div
       ref={triggerRef}
       className="relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {children}
-      
+
       {/* 智能定位的tooltip */}
-      <div 
-        ref={tooltipRef}
-        className={getTooltipClasses()}
-      >
+      <div ref={tooltipRef} className={getTooltipClasses()}>
         {/* 平台名称 */}
         <div className="font-semibold text-white mb-2 flex items-center justify-between">
           <span>{platform.name}</span>
@@ -118,25 +127,29 @@ const SmartTooltip: React.FC<SmartTooltipProps> = ({ platform, children, disable
             <span className="text-yellow-400">{platform.rating}</span>
           </div>
         </div>
-        
+
         {/* 平台描述 */}
         <div className="text-muted-foreground text-xs leading-relaxed mb-3">
           {platform.description}
         </div>
-        
+
         {/* 平台信息 */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-700/30">
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-gray-400">{t("region")}: <span className="text-gray-300">{platform.region}</span></span>
-            <span className="text-gray-400">{t("category")}: <span className="text-gray-300">{platform.category}</span></span>
+            <span className="text-gray-400">
+              {t('region')}: <span className="text-gray-300">{platform.region}</span>
+            </span>
+            <span className="text-gray-400">
+              {t('category')}: <span className="text-gray-300">{platform.category}</span>
+            </span>
           </div>
           {platform.popular && (
             <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full">
-              <span className="text-xs text-orange-400 font-medium">{t("hot")}</span>
+              <span className="text-xs text-orange-400 font-medium">{t('hot')}</span>
             </div>
           )}
         </div>
-        
+
         {/* 箭头 */}
         <div className={getArrowClasses()}></div>
       </div>

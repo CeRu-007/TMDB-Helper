@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   AlertDialogAction,
@@ -10,15 +10,15 @@ import {
   AlertDialogTitle,
   AlertDialogNoOverlay,
   AlertDialogNoOverlayContent,
-} from "@/shared/components/ui/alert-dialog"
-import { useTranslation } from "react-i18next"
+} from '@/shared/components/ui/alert-dialog';
+import { useTranslation } from 'react-i18next';
 
 interface DeleteSeasonDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  seasonToDelete: number | null
-  onCancel: () => void
-  onConfirm: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  seasonToDelete: number | null;
+  onCancel: () => void;
+  onConfirm: () => void;
 }
 
 export function DeleteSeasonDialog({
@@ -26,17 +26,17 @@ export function DeleteSeasonDialog({
   onOpenChange,
   seasonToDelete,
   onCancel,
-  onConfirm
+  onConfirm,
 }: DeleteSeasonDialogProps) {
-  const { t } = useTranslation('media')
+  const { t } = useTranslation('media');
 
   const handleCancel = () => {
-    onCancel()
-  }
+    onCancel();
+  };
 
   const handleConfirm = () => {
-    onConfirm()
-  }
+    onConfirm();
+  };
 
   return (
     <AlertDialogNoOverlay open={open} onOpenChange={onOpenChange}>
@@ -55,5 +55,5 @@ export function DeleteSeasonDialog({
         </AlertDialogFooter>
       </AlertDialogNoOverlayContent>
     </AlertDialogNoOverlay>
-  )
+  );
 }

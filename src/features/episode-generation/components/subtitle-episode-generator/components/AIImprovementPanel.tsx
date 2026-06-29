@@ -1,16 +1,16 @@
-import React from 'react'
-import { X, Wand2, Loader2, Send } from 'lucide-react'
-import { Button } from '@/shared/components/ui/button'
-import { cn } from '@/lib/utils'
-import { useAIImprovement } from '../hooks/useAIImprovement'
-import { GenerationResult } from '../types'
+import React from 'react';
+import { X, Wand2, Loader2, Send } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAIImprovement } from '../hooks/useAIImprovement';
+import { GenerationResult } from '../types';
 
 interface AIImprovementPanelProps {
-  result: GenerationResult
-  resultIndex: number
-  onUpdateResult: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void
-  onClose: () => void
-  onAIImprovement: (resultIndex: number, prompt: string) => Promise<void>
+  result: GenerationResult;
+  resultIndex: number;
+  onUpdateResult: (resultIndex: number, updatedResult: Partial<GenerationResult>) => void;
+  onClose: () => void;
+  onAIImprovement: (resultIndex: number, prompt: string) => Promise<void>;
 }
 
 export function AIImprovementPanel({
@@ -18,27 +18,22 @@ export function AIImprovementPanel({
   resultIndex,
   onUpdateResult,
   onClose,
-  onAIImprovement
+  onAIImprovement,
 }: AIImprovementPanelProps) {
-  const {
-    inputMessage,
-    setInputMessage,
-    isSending,
-    error,
-    handleSend,
-    handleKeyDown,
-    clearError
-  } = useAIImprovement({
-    onSendImprovement: async (prompt) => {
-      await onAIImprovement(resultIndex, prompt)
-    },
-    onClose
-  })
+  const { inputMessage, setInputMessage, isSending, error, handleSend, handleKeyDown, clearError } =
+    useAIImprovement({
+      onSendImprovement: async (prompt) => {
+        await onAIImprovement(resultIndex, prompt);
+      },
+      onClose,
+    });
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputMessage(e.target.value)
-    if (error) clearError()
-  }
+    setInputMessage(e.target.value);
+    if (error) {
+      clearError();
+    }
+  };
 
   return (
     <div className="mt-4 pt-4 border-t border-border">
@@ -47,13 +42,7 @@ export function AIImprovementPanel({
           <Wand2 className="h-4 w-4 mr-2 text-blue-500" />
           与AI改进简介
         </h4>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0"
-          onClick={onClose}
-          title="关闭"
-        >
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onClose} title="关闭">
           <X className="h-3 w-3" />
         </Button>
       </div>
@@ -73,9 +62,9 @@ export function AIImprovementPanel({
             placeholder="输入改进建议，例如：剧情不对重新梳理、禁止广告式、无信息套话、评价式结尾、必须以具体情节收尾..."
             disabled={isSending}
             className={cn(
-              "min-h-[80px] max-h-[200px] w-full resize-none text-sm pr-12 border-0 bg-transparent rounded-lg py-2 px-3",
-              "focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0",
-              "disabled:cursor-not-allowed disabled:opacity-50"
+              'min-h-[80px] max-h-[200px] w-full resize-none text-sm pr-12 border-0 bg-transparent rounded-lg py-2 px-3',
+              'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
+              'disabled:cursor-not-allowed disabled:opacity-50'
             )}
             rows={3}
           />
@@ -83,11 +72,11 @@ export function AIImprovementPanel({
             onClick={handleSend}
             disabled={isSending || !inputMessage.trim()}
             className={cn(
-              "absolute bottom-2 right-2 h-8 w-8 p-0 rounded-full",
-              "bg-blue-500 hover:bg-blue-600 text-white",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              "shadow-sm hover:shadow-md",
-              "flex items-center justify-center"
+              'absolute bottom-2 right-2 h-8 w-8 p-0 rounded-full',
+              'bg-blue-500 hover:bg-blue-600 text-white',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'shadow-sm hover:shadow-md',
+              'flex items-center justify-center'
             )}
           >
             {isSending ? (
@@ -103,5 +92,5 @@ export function AIImprovementPanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

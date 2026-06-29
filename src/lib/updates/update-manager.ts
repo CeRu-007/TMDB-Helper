@@ -27,7 +27,10 @@ export class UpdateManager {
     this.ensureCacheDirectory();
   }
 
-  async checkForUpdates(currentVersion: string, force: boolean = false): Promise<UpdateCheckResult> {
+  async checkForUpdates(
+    currentVersion: string,
+    force: boolean = false
+  ): Promise<UpdateCheckResult> {
     if (!force && this.memoryCache && !this.isCacheExpired(this.memoryCache.lastChecked)) {
       return this.memoryCache;
     }
@@ -42,7 +45,7 @@ export class UpdateManager {
 
     try {
       const release = await this.getLatestRelease();
-      
+
       if (!release) {
         throw new Error('无法获取最新版本信息');
       }
@@ -93,10 +96,10 @@ export class UpdateManager {
 
   private async getLatestRelease(): Promise<GitHubRelease | null> {
     const url = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases/latest`;
-    
+
     const headers: Record<string, string> = {
       'User-Agent': 'TMDB-Helper/1.0',
-      'Accept': 'application/vnd.github.v3+json',
+      Accept: 'application/vnd.github.v3+json',
     };
 
     if (this.config.githubToken) {
@@ -141,7 +144,9 @@ export class UpdateManager {
 
   private getMajorMinor(version: string): string {
     const parsed = semver.parse(version);
-    if (!parsed) return version;
+    if (!parsed) {
+      return version;
+    }
 
     return `${parsed.major}.${parsed.minor}.0`;
   }

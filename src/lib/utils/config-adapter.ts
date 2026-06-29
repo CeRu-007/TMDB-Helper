@@ -35,8 +35,8 @@ export class ConfigAdapter {
         body: JSON.stringify({
           action: 'set',
           key,
-          value
-        })
+          value,
+        }),
       });
 
       if (response.ok) {
@@ -75,7 +75,7 @@ export class ConfigAdapter {
 
     try {
       const localStorageData: { [key: string]: string } = {};
-      
+
       // 收集所有localStorage数据
       const keysToMigrate = [
         'tmdb_api_key',
@@ -84,10 +84,10 @@ export class ConfigAdapter {
         'siliconflow_api_settings',
         'general_settings',
         'appearance_settings',
-        'video_thumbnail_settings'
+        'video_thumbnail_settings',
       ];
 
-      keysToMigrate.forEach(key => {
+      keysToMigrate.forEach((key) => {
         const value = localStorage.getItem(key);
         if (value) {
           localStorageData[key] = value;
@@ -103,13 +103,13 @@ export class ConfigAdapter {
           },
           body: JSON.stringify({
             action: 'migrate',
-            localStorageData
-          })
+            localStorageData,
+          }),
         });
 
         if (response.ok) {
           // 清除已迁移的localStorage数据
-          keysToMigrate.forEach(key => {
+          keysToMigrate.forEach((key) => {
             if (localStorageData[key]) {
               localStorage.removeItem(key);
             }

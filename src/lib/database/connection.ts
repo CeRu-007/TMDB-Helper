@@ -48,7 +48,10 @@ async function loadDatabaseModuleAsync(): Promise<void> {
       moduleLoaded = true;
       return;
     } catch (e) {
-      logger.warn('[Database] better-sqlite3 加载失败:', e instanceof Error ? e.message : String(e));
+      logger.warn(
+        '[Database] better-sqlite3 加载失败:',
+        e instanceof Error ? e.message : String(e)
+      );
     }
   }
 
@@ -79,7 +82,7 @@ function ensureModuleLoaded(): void {
   if (moduleLoaded && DatabaseSync) {
     return;
   }
-  
+
   if (loadError) {
     throw loadError;
   }
@@ -225,9 +228,7 @@ export function closeDatabase(): void {
 export async function isDatabaseInitializedAsync(): Promise<boolean> {
   const database = await getDatabaseAsync();
   const result = database
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='items'",
-    )
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='items'")
     .get() as { name: string } | undefined;
   return !!result;
 }
@@ -238,9 +239,7 @@ export async function isDatabaseInitializedAsync(): Promise<boolean> {
 export function isDatabaseInitialized(): boolean {
   const database = getDatabase();
   const result = database
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='items'",
-    )
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='items'")
     .get() as { name: string } | undefined;
   return !!result;
 }
@@ -264,10 +263,7 @@ export function transaction<T>(fn: () => T): T {
 /**
  * 批量插入事务包装器
  */
-export function batchInsert<T>(
-  items: T[],
-  insertFn: (item: T) => void,
-): number {
+export function batchInsert<T>(items: T[], insertFn: (item: T) => void): number {
   const database = getDatabase();
   database.exec('BEGIN');
   try {

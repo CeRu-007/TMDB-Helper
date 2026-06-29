@@ -1,95 +1,95 @@
 import { TMDB_API_KEY_FALLBACK } from '@/lib/constants/constants';
 
 interface TMDBTVResponse {
-  id: number
-  name: string
-  poster_path: string | null
-  backdrop_path: string | null
-  homepage: string | null
-  number_of_episodes: number | null
-  number_of_seasons: number | null
-  first_air_date: string | null
-  vote_average: number | null
-  overview: string | null
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  homepage: string | null;
+  number_of_episodes: number | null;
+  number_of_seasons: number | null;
+  first_air_date: string | null;
+  vote_average: number | null;
+  overview: string | null;
   seasons: Array<{
-    season_number: number
-    name: string
-    episode_count: number
-    poster_path: string | null
-  }>
+    season_number: number;
+    name: string;
+    episode_count: number;
+    poster_path: string | null;
+  }>;
   networks: Array<{
-    id: number
-    name: string
-    logo_path: string | null
-    homepage: string | null
-  }>
+    id: number;
+    name: string;
+    logo_path: string | null;
+    homepage: string | null;
+  }>;
   genres: Array<{
-    id: number
-    name: string
-  }>
+    id: number;
+    name: string;
+  }>;
 }
 
 // 添加获取电视剧图片的响应接口
 interface TMDBTVImagesResponse {
-  id: number
+  id: number;
   backdrops: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
+    aspect_ratio: number;
+    height: number;
+    iso_639_1: string | null;
+    file_path: string;
+    vote_average: number;
+    vote_count: number;
+    width: number;
+  }>;
   logos: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    file_type: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
+    aspect_ratio: number;
+    height: number;
+    iso_639_1: string | null;
+    file_path: string;
+    file_type: string;
+    vote_average: number;
+    vote_count: number;
+    width: number;
+  }>;
   posters: Array<{
-    aspect_ratio: number
-    height: number
-    iso_639_1: string | null
-    file_path: string
-    vote_average: number
-    vote_count: number
-    width: number
-  }>
+    aspect_ratio: number;
+    height: number;
+    iso_639_1: string | null;
+    file_path: string;
+    vote_average: number;
+    vote_count: number;
+    width: number;
+  }>;
 }
 
 export interface TMDBSeasonData {
-  seasonNumber: number
-  name: string
-  totalEpisodes: number
-  posterUrl?: string | undefined
+  seasonNumber: number;
+  name: string;
+  totalEpisodes: number;
+  posterUrl?: string | undefined;
 }
 
 export interface TMDBItemData {
-  tmdbId: string
-  title: string
-  mediaType: "tv"
-  posterUrl?: string | undefined
-  backdropUrl?: string | undefined
-  backdropPath?: string | null | undefined
-  logoUrl?: string | undefined  // 添加标志URL字段
-  logoPath?: string | null | undefined  // 添加标志路径字段
-  networkId?: number | undefined        // 添加网络ID
-  networkName?: string | undefined      // 添加网络名称
-  networkLogoUrl?: string | undefined   // 添加网络Logo URL
-  totalEpisodes?: number | undefined
-  platformUrl?: string | undefined
-  platformUrls?: string[] | undefined
-  networks?: { id: number; name: string; logoPath?: string; logoUrl?: string }[] | undefined
-  weekday?: number | undefined
-  seasons?: TMDBSeasonData[] | undefined
-  recommendedCategory?: "anime" | "tv" | "kids" | "variety" | "short" | undefined
-  voteAverage?: number | null | undefined
-  overview?: string | null | undefined
+  tmdbId: string;
+  title: string;
+  mediaType: 'tv';
+  posterUrl?: string | undefined;
+  backdropUrl?: string | undefined;
+  backdropPath?: string | null | undefined;
+  logoUrl?: string | undefined; // 添加标志URL字段
+  logoPath?: string | null | undefined; // 添加标志路径字段
+  networkId?: number | undefined; // 添加网络ID
+  networkName?: string | undefined; // 添加网络名称
+  networkLogoUrl?: string | undefined; // 添加网络Logo URL
+  totalEpisodes?: number | undefined;
+  platformUrl?: string | undefined;
+  platformUrls?: string[] | undefined;
+  networks?: { id: number; name: string; logoPath?: string; logoUrl?: string }[] | undefined;
+  weekday?: number | undefined;
+  seasons?: TMDBSeasonData[] | undefined;
+  recommendedCategory?: 'anime' | 'tv' | 'kids' | 'variety' | 'short' | undefined;
+  voteAverage?: number | null | undefined;
+  overview?: string | null | undefined;
 }
 
 export type BackdropSize = 'w300' | 'w780' | 'w1280' | 'original';
@@ -97,20 +97,23 @@ export type LogoSize = 'w45' | 'w92' | 'w154' | 'w185' | 'w300' | 'w500' | 'orig
 
 export class TMDBService {
   // 双域名配置：主域名和备用域名
-  private static readonly PRIMARY_BASE_URL = "https://api.themoviedb.org/3"
-  private static readonly FALLBACK_BASE_URL = "https://api.tmdb.org/3"
+  private static readonly PRIMARY_BASE_URL = 'https://api.themoviedb.org/3';
+  private static readonly FALLBACK_BASE_URL = 'https://api.tmdb.org/3';
   // 直接使用TMDB的原始URL，不再使用代理
-  private static readonly IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
-  private static readonly BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
-  
-  private static readonly LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300"  // 添加标志基础URL
-  private static readonly NETWORK_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w300" // 网络Logo基础URL
+  private static readonly IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+  private static readonly BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
+
+  private static readonly LOGO_BASE_URL = 'https://image.tmdb.org/t/p/w300'; // 添加标志基础URL
+  private static readonly NETWORK_LOGO_BASE_URL = 'https://image.tmdb.org/t/p/w300'; // 网络Logo基础URL
 
   private static async getApiKey(): Promise<string> {
     return process.env.TMDB_API_KEY || TMDB_API_KEY_FALLBACK;
   }
 
-  private static async fetchWithFallback(urlPath: string, options?: RequestInit): Promise<Response> {
+  private static async fetchWithFallback(
+    urlPath: string,
+    options?: RequestInit
+  ): Promise<Response> {
     const apiKey = await this.getApiKey();
     const fullUrlPath = `${urlPath}${urlPath.includes('?') ? '&' : '?'}api_key=${apiKey}`;
     const primaryUrl = `${this.PRIMARY_BASE_URL}${fullUrlPath}`;
@@ -126,9 +129,9 @@ export class TMDBService {
       signal: controller.signal,
       headers: {
         'User-Agent': 'TMDB-Helper/1.0',
-        'Accept': 'application/json',
+        Accept: 'application/json',
         ...options?.headers,
-      }
+      },
     });
 
     const fallbackPromise = fetch(fallbackUrl, {
@@ -136,17 +139,14 @@ export class TMDBService {
       signal: controller.signal,
       headers: {
         'User-Agent': 'TMDB-Helper/1.0',
-        'Accept': 'application/json',
+        Accept: 'application/json',
         ...options?.headers,
-      }
+      },
     });
 
     try {
       // 使用 Promise.race 获取最快响应的请求
-      const response = await Promise.race([
-        primaryPromise,
-        fallbackPromise
-      ]);
+      const response = await Promise.race([primaryPromise, fallbackPromise]);
 
       clearTimeout(timeoutId);
 
@@ -170,7 +170,7 @@ export class TMDBService {
    * 注意：缓存逻辑已迁移到 imageCacheService，此方法仅返回原始路径
    */
   static async getItemLogoFromId(
-    mediaType: "movie" | "tv",
+    mediaType: 'movie' | 'tv',
     id: string
   ): Promise<{ url: string | null; path: string | null }> {
     try {
@@ -217,25 +217,28 @@ export class TMDBService {
       );
 
       if (!response.ok) {
-        throw new Error(`TMDB搜索请求失败: ${response.status} ${response.statusText}`)
+        throw new Error(`TMDB搜索请求失败: ${response.status} ${response.statusText}`);
       }
 
-      return response.json()
+      return response.json();
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 
-  static async getItemFromUrl(url: string, forceRefresh: boolean = false): Promise<TMDBItemData | null> {
+  static async getItemFromUrl(
+    url: string,
+    forceRefresh: boolean = false
+  ): Promise<TMDBItemData | null> {
     const startTime = performance.now();
-    
+
     try {
-      const { mediaType, id } = this.parseUrl(url)
+      const { mediaType, id } = this.parseUrl(url);
       if (!mediaType || !id) {
-        throw new Error("无效的TMDB URL")
+        throw new Error('无效的TMDB URL');
       }
 
-      const endpoint = "tv"
+      const endpoint = 'tv';
 
       // 创建AbortController用于超时控制
       const controller = new AbortController();
@@ -249,7 +252,7 @@ export class TMDBService {
       });
 
       clearTimeout(timeout);
-      
+
       // 记录API响应时间
       const endTime = performance.now();
       try {
@@ -263,73 +266,79 @@ export class TMDBService {
         return null;
       }
 
-      const data = await response.json()
-      
-      let platformUrl = ""
-      let platformUrls: string[] = []
-      let networks: Array<{ id: number; name: string; logoPath?: string; logoUrl?: string }> = []
-      let totalEpisodes = undefined
-      let seasons: TMDBSeasonData[] = []
-      let recommendedCategory: "anime" | "tv" | "kids" | "variety" | "short" | undefined = undefined
+      const data = await response.json();
+
+      let platformUrl = '';
+      let platformUrls: string[] = [];
+      let networks: Array<{ id: number; name: string; logoPath?: string; logoUrl?: string }> = [];
+      let totalEpisodes = undefined;
+      let seasons: TMDBSeasonData[] = [];
+      let recommendedCategory: 'anime' | 'tv' | 'kids' | 'variety' | 'short' | undefined =
+        undefined;
 
       // 获取标志，传入forceRefresh参数
-      const logoData = await this.getItemLogoFromId(mediaType, id)
+      const logoData = await this.getItemLogoFromId(mediaType, id);
 
       // 只支持电视剧类型
-      if (mediaType !== "tv") {
-        return null
+      if (mediaType !== 'tv') {
+        return null;
       }
-      
-      const tvData = data as TMDBTVResponse
-      platformUrl = tvData.homepage || ""
+
+      const tvData = data as TMDBTVResponse;
+      platformUrl = tvData.homepage || '';
 
       // 收集所有播出平台URL（去重）
-      const urlSet = new Set<string>()
-      if (tvData.homepage) urlSet.add(tvData.homepage)
-      platformUrls = Array.from(urlSet)
+      const urlSet = new Set<string>();
+      if (tvData.homepage) {
+        urlSet.add(tvData.homepage);
+      }
+      platformUrls = Array.from(urlSet);
 
       // 收集所有网络信息
       if (tvData.networks && tvData.networks.length > 0) {
-        networks = tvData.networks.map(n => ({
+        networks = tvData.networks.map((n) => ({
           id: n.id,
           name: n.name,
           logoPath: n.logo_path ?? undefined,
           logoUrl: n.logo_path ? `${this.NETWORK_LOGO_BASE_URL}${n.logo_path}` : undefined,
-        }))
+        }));
       }
 
-      totalEpisodes = tvData.number_of_episodes || undefined
+      totalEpisodes = tvData.number_of_episodes || undefined;
 
       // 处理多季数据
       if (tvData.seasons && tvData.seasons.length > 0) {
         // 过滤掉无效季（没有剧集的季）
-        const validSeasons = tvData.seasons.filter((season) => season.episode_count > 0)
+        const validSeasons = tvData.seasons.filter((season) => season.episode_count > 0);
 
         seasons = validSeasons.map((season) => ({
           seasonNumber: season.season_number,
           name: season.name || `第${season.season_number}季`,
           totalEpisodes: season.episode_count,
           posterUrl: season.poster_path ? `${this.IMAGE_BASE_URL}${season.poster_path}` : undefined,
-        }))
+        }));
 
         // 重新计算总集数
-        totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0)
+        totalEpisodes = seasons.reduce((total, season) => total + season.totalEpisodes, 0);
       }
 
       // 提取网络信息
-      const primaryNetwork = tvData.networks && tvData.networks.length > 0 ? tvData.networks[0] : null
-      const networkId = primaryNetwork?.id
-      const networkName = primaryNetwork?.name
-      const networkLogoPath = primaryNetwork?.logo_path
-      const networkLogoUrl = networkLogoPath ? `${this.NETWORK_LOGO_BASE_URL}${networkLogoPath}` : undefined
+      const primaryNetwork =
+        tvData.networks && tvData.networks.length > 0 ? tvData.networks[0] : null;
+      const networkId = primaryNetwork?.id;
+      const networkName = primaryNetwork?.name;
+      const networkLogoPath = primaryNetwork?.logo_path;
+      const networkLogoUrl = networkLogoPath
+        ? `${this.NETWORK_LOGO_BASE_URL}${networkLogoPath}`
+        : undefined;
 
       // 计算首播日期的星期几
-      let weekday = undefined
-      const airDate = tvData.first_air_date
+      let weekday = undefined;
+      const airDate = tvData.first_air_date;
       if (airDate) {
-        const date = new Date(airDate)
+        const date = new Date(airDate);
         // 保持 JS 原生的星期值格式（0=周日，1=周一）
-        weekday = date.getDay()
+        weekday = date.getDay();
       }
 
       // 初始化分类标志
@@ -340,38 +349,44 @@ export class TMDBService {
       // 检查各种类型标签
       if (tvData.genres && tvData.genres.length > 0) {
         // 检查是否是动画
-        isAnime = tvData.genres.some(genre =>
-          genre.name.toLowerCase().includes('animation') ||
-          genre.name.toLowerCase().includes('anime') ||
-          genre.name.toLowerCase().includes('动画'));
+        isAnime = tvData.genres.some(
+          (genre) =>
+            genre.name.toLowerCase().includes('animation') ||
+            genre.name.toLowerCase().includes('anime') ||
+            genre.name.toLowerCase().includes('动画')
+        );
 
         // 检查是否是儿童节目
-        isKids = tvData.genres.some(genre =>
-          genre.name.toLowerCase().includes('family') ||
-          genre.name.toLowerCase().includes('children') ||
-          genre.name.toLowerCase().includes('kids') ||
-          genre.name.toLowerCase().includes('儿童') ||
-          genre.name.toLowerCase().includes('家庭'));
+        isKids = tvData.genres.some(
+          (genre) =>
+            genre.name.toLowerCase().includes('family') ||
+            genre.name.toLowerCase().includes('children') ||
+            genre.name.toLowerCase().includes('kids') ||
+            genre.name.toLowerCase().includes('儿童') ||
+            genre.name.toLowerCase().includes('家庭')
+        );
 
         // 检查是否是综艺节目
-        isVariety = tvData.genres.some(genre =>
-          genre.name.toLowerCase().includes('reality') ||
-          genre.name.toLowerCase().includes('talk') ||
-          genre.name.toLowerCase().includes('variety') ||
-          genre.name.toLowerCase().includes('综艺') ||
-          genre.name.toLowerCase().includes('脱口秀'));
+        isVariety = tvData.genres.some(
+          (genre) =>
+            genre.name.toLowerCase().includes('reality') ||
+            genre.name.toLowerCase().includes('talk') ||
+            genre.name.toLowerCase().includes('variety') ||
+            genre.name.toLowerCase().includes('综艺') ||
+            genre.name.toLowerCase().includes('脱口秀')
+        );
       }
 
       // 按照优先级确定分类
       if (isAnime) {
-        recommendedCategory = "anime";
+        recommendedCategory = 'anime';
       } else if (isKids) {
-        recommendedCategory = "kids";
+        recommendedCategory = 'kids';
       } else if (isVariety) {
-        recommendedCategory = "variety";
+        recommendedCategory = 'variety';
       } else {
         // 默认为普通电视剧
-        recommendedCategory = "tv";
+        recommendedCategory = 'tv';
       }
 
       return {
@@ -379,10 +394,12 @@ export class TMDBService {
         title: tvData.name,
         mediaType,
         posterUrl: tvData.poster_path ? `${this.IMAGE_BASE_URL}${tvData.poster_path}` : undefined,
-        backdropUrl: tvData.backdrop_path ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}` : undefined,
+        backdropUrl: tvData.backdrop_path
+          ? `${this.BACKDROP_BASE_URL}${tvData.backdrop_path}`
+          : undefined,
         backdropPath: tvData.backdrop_path,
-        logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined,  // 添加标志URL
-        logoPath: logoData.path || undefined,  // 添加标志路径
+        logoUrl: logoData.path ? `${this.LOGO_BASE_URL}${logoData.path}` : undefined, // 添加标志URL
+        logoPath: logoData.path || undefined, // 添加标志路径
         platformUrl,
         platformUrls: platformUrls.length > 0 ? platformUrls : undefined,
         networks: networks.length > 0 ? networks : undefined,
@@ -394,36 +411,43 @@ export class TMDBService {
         networkName,
         networkLogoUrl,
         voteAverage: tvData.vote_average === null ? undefined : tvData.vote_average,
-        overview: tvData.overview === null ? undefined : tvData.overview
-      }
+        overview: tvData.overview === null ? undefined : tvData.overview,
+      };
     } catch (error) {
       return null;
     }
   }
 
-  private static parseUrl(url: string): { mediaType: "tv" | null; id: string | null } {
+  private static parseUrl(url: string): { mediaType: 'tv' | null; id: string | null } {
     try {
-      const urlObj = new URL(url)
-      const pathParts = urlObj.pathname.split("/").filter(Boolean)
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
 
       if (pathParts.length >= 2) {
-        const mediaType: "tv" | null = pathParts[0] === "tv" ? "tv" : null
-        const second = pathParts[1]
-        if (!second) return { mediaType: null, id: null }
-        const id = (second.split("-")[0] ?? null)
-        return { mediaType, id }
+        const mediaType: 'tv' | null = pathParts[0] === 'tv' ? 'tv' : null;
+        const second = pathParts[1];
+        if (!second) {
+          return { mediaType: null, id: null };
+        }
+        const id = second.split('-')[0] ?? null;
+        return { mediaType, id };
       }
 
-      return { mediaType: null, id: null }
+      return { mediaType: null, id: null };
     } catch (error) {
-      return { mediaType: null, id: null }
+      return { mediaType: null, id: null };
     }
   }
 
   // 预加载背景图
-  static preloadBackdrop(backdropPath: string | null | undefined, size: BackdropSize = 'w1280'): void {
-    if (!backdropPath) return;
-    
+  static preloadBackdrop(
+    backdropPath: string | null | undefined,
+    size: BackdropSize = 'w1280'
+  ): void {
+    if (!backdropPath) {
+      return;
+    }
+
     const url = this.getBackdropUrl(backdropPath, size);
     if (url) {
       const img = new Image();
@@ -432,9 +456,15 @@ export class TMDBService {
   }
 
   // 获取不同尺寸的背景图URL
-  static getBackdropUrl(backdropPath: string | null | undefined, size: BackdropSize | 'small' | 'large' | 'original' = 'large', forceRefresh: boolean = false): string | undefined {
-    if (!backdropPath) return undefined;
-    
+  static getBackdropUrl(
+    backdropPath: string | null | undefined,
+    size: BackdropSize | 'small' | 'large' | 'original' = 'large',
+    forceRefresh: boolean = false
+  ): string | undefined {
+    if (!backdropPath) {
+      return undefined;
+    }
+
     // 处理旧的size枚举
     let sizeValue: BackdropSize;
     switch (size) {
@@ -450,7 +480,7 @@ export class TMDBService {
       default:
         sizeValue = size as BackdropSize;
     }
-    
+
     // 使用类中定义的基础URL
     let baseUrl;
     switch (sizeValue) {
@@ -467,13 +497,13 @@ export class TMDBService {
       default:
         baseUrl = `${this.BACKDROP_BASE_URL}${backdropPath}`;
     }
-    
+
     // 如果强制刷新，添加时间戳参数
     if (forceRefresh) {
       const timestamp = Date.now();
       return `${baseUrl}?t=${timestamp}`;
     }
-    
+
     return baseUrl;
   }
 

@@ -256,4 +256,4 @@ Full length movies are set to adult:true if they have a minimum of two hardcore 
 Short films are set to adult:true if they have one hardcore scene.
 
 Notable exceptions: movies originally released as regular movies and reviewed as movies by critics.
-`
+`;

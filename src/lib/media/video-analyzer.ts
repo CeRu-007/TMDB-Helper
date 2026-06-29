@@ -3,11 +3,11 @@
  * 提供视频下载、音频提取、语音识别等功能
  */
 
-import { mediaLogger } from '@/lib/utils/logger'
-import i18n from '@/lib/i18n'
+import { mediaLogger } from '@/lib/utils/logger';
+import i18n from '@/lib/i18n';
 
 export interface VideoAnalysisOptions {
-  apiKey: string;
+  apiKey?: string;
   maxDuration?: number; // 最大视频时长（秒）
   maxFrames?: number; // 最大提取帧数
   frameInterval?: number; // 帧提取间隔（秒）
@@ -56,7 +56,7 @@ export class VideoAnalyzer {
       maxDuration: 3600, // 1小时
       maxFrames: 20,
       frameInterval: 30,
-      ...options
+      ...options,
     };
   }
 
@@ -74,8 +74,8 @@ export class VideoAnalyzer {
           videoUrl,
           apiKey: this.apiKey,
           speechRecognitionModel: this.options.speechRecognitionModel,
-          options: this.options
-        })
+          options: this.options,
+        }),
       });
 
       if (!response.ok) {
@@ -91,7 +91,10 @@ export class VideoAnalyzer {
 
       return result.data;
     } catch (error) {
-      mediaLogger.error(`[VideoAnalyzer] 视频分析失败: ${videoUrl}`, error instanceof Error ? error : String(error));
+      mediaLogger.error(
+        `[VideoAnalyzer] 视频分析失败: ${videoUrl}`,
+        error instanceof Error ? error : String(error)
+      );
       throw error;
     }
   }
@@ -110,18 +113,24 @@ export class VideoAnalyzer {
 
       // 支持的视频平台域名
       const supportedDomains = [
-        'youtube.com', 'youtu.be', 'www.youtube.com',
-        'bilibili.com', 'www.bilibili.com', 'b23.tv',
-        'vimeo.com', 'www.vimeo.com',
-        'dailymotion.com', 'www.dailymotion.com'
+        'youtube.com',
+        'youtu.be',
+        'www.youtube.com',
+        'bilibili.com',
+        'www.bilibili.com',
+        'b23.tv',
+        'vimeo.com',
+        'www.vimeo.com',
+        'dailymotion.com',
+        'www.dailymotion.com',
       ];
 
       // 支持的视频文件扩展名
       const supportedExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.m4v'];
 
       // 检查是否为支持的平台
-      const isPlatformSupported = supportedDomains.some(domain =>
-        urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
+      const isPlatformSupported = supportedDomains.some(
+        (domain) => urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
       );
 
       // 检查是否为媒体服务器URL（优先级高于直链检查）
@@ -131,9 +140,9 @@ export class VideoAnalyzer {
       const isMediaServerPath = this.isMediaServerPath(urlObj);
 
       // 检查是否为直链视频文件（仅当不是媒体服务器路径时）
-      const isDirectVideoLink = !isMediaServerPath && supportedExtensions.some(ext =>
-        urlObj.pathname.toLowerCase().includes(ext)
-      );
+      const isDirectVideoLink =
+        !isMediaServerPath &&
+        supportedExtensions.some((ext) => urlObj.pathname.toLowerCase().includes(ext));
 
       return isPlatformSupported || isDirectVideoLink || isMediaServerUrl;
     } catch {
@@ -165,20 +174,23 @@ export class VideoAnalyzer {
 
     // 通用媒体服务器特征：包含stream关键字且有认证参数
     if (path.includes('stream')) {
-      return searchParams.has('api_key') ||
-             searchParams.has('ApiKey') ||
-             searchParams.has('token') ||
-             searchParams.has('X-Plex-Token');
+      return (
+        searchParams.has('api_key') ||
+        searchParams.has('ApiKey') ||
+        searchParams.has('token') ||
+        searchParams.has('X-Plex-Token')
+      );
     }
 
     // 检查是否为常见的媒体服务器端口和路径模式（需要有认证参数）
     const commonMediaServerPorts = ['8096', '8920', '32400', '8080', '9096'];
     const isCommonPort = commonMediaServerPorts.includes(urlObj.port);
     const hasMediaPath = /\/(videos?|media|stream|download)\//.test(path);
-    const hasAuthParam = searchParams.has('api_key') ||
-                        searchParams.has('ApiKey') ||
-                        searchParams.has('token') ||
-                        searchParams.has('X-Plex-Token');
+    const hasAuthParam =
+      searchParams.has('api_key') ||
+      searchParams.has('ApiKey') ||
+      searchParams.has('token') ||
+      searchParams.has('X-Plex-Token');
 
     return isCommonPort && hasMediaPath && hasAuthParam;
   }
@@ -205,51 +217,54 @@ export class VideoAnalyzer {
   /**
    * 获取支持的视频平台列表
    */
-  static getSupportedPlatforms(): Array<{name: string, domains: string[], example: string}> {
-    const t = i18n.t.bind(i18n)
+  static getSupportedPlatforms(): Array<{ name: string; domains: string[]; example: string }> {
+    const t = i18n.t.bind(i18n);
     return [
       {
         name: 'YouTube',
         domains: ['youtube.com', 'youtu.be'],
-        example: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        example: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       },
       {
         name: 'Bilibili',
         domains: ['bilibili.com', 'b23.tv'],
-        example: 'https://www.bilibili.com/video/BV1xx411c7mu'
+        example: 'https://www.bilibili.com/video/BV1xx411c7mu',
       },
       {
         name: 'Vimeo',
         domains: ['vimeo.com'],
-        example: 'https://vimeo.com/123456789'
+        example: 'https://vimeo.com/123456789',
       },
       {
         name: t('videoAnalysisTab.platformEmby', { ns: 'episode-generation' }),
         domains: ['任意域名:8096', '任意域名:9096'],
-        example: 'http://server:8096/emby/videos/123/stream.mkv?api_key=xxx'
+        example: 'http://server:8096/emby/videos/123/stream.mkv?api_key=xxx',
       },
       {
         name: t('videoAnalysisTab.platformJellyfin', { ns: 'episode-generation' }),
         domains: ['任意域名:8096', '任意域名:8920'],
-        example: 'http://server:8096/jellyfin/videos/123/stream.mp4?api_key=xxx'
+        example: 'http://server:8096/jellyfin/videos/123/stream.mp4?api_key=xxx',
       },
       {
         name: t('videoAnalysisTab.platformPlex', { ns: 'episode-generation' }),
         domains: ['任意域名:32400'],
-        example: 'http://server:32400/library/parts/123/file.mp4?X-Plex-Token=xxx'
+        example: 'http://server:32400/library/parts/123/file.mp4?X-Plex-Token=xxx',
       },
       {
         name: t('videoAnalysisTab.platformDirectLink', { ns: 'episode-generation' }),
         domains: ['任意域名'],
-        example: 'https://example.com/video.mp4'
-      }
+        example: 'https://example.com/video.mp4',
+      },
     ];
   }
 
   /**
    * 将音频转写结果转换为简介生成所需的格式
    */
-  static convertToEpisodeContent(analysis: VideoAnalysisResult, format: 'markdown' | 'srt' | 'text' = 'text'): string {
+  static convertToEpisodeContent(
+    analysis: VideoAnalysisResult,
+    format: 'markdown' | 'srt' | 'text' = 'text'
+  ): string {
     // 根据格式返回相应的结构化内容
     if (typeof analysis.structuredContent === 'object') {
       switch (format) {
@@ -272,14 +287,14 @@ export class VideoAnalyzer {
   static estimateAnalysisTime(duration: number): number {
     // 基础时间：下载 + 处理
     const baseTime = 60; // 1分钟基础时间
-    
+
     // 视频时长影响（每分钟视频增加10秒处理时间）
-    const durationFactor = Math.min(duration / 60 * 10, 300); // 最多5分钟
-    
+    const durationFactor = Math.min((duration / 60) * 10, 300); // 最多5分钟
+
     // AI分析时间（每帧2秒）
     const frameCount = Math.min(20, Math.floor(duration / 30));
     const aiTime = frameCount * 2;
-    
+
     return Math.ceil(baseTime + durationFactor + aiTime);
   }
 
@@ -290,7 +305,7 @@ export class VideoAnalyzer {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else {
@@ -331,7 +346,7 @@ export const VIDEO_ANALYSIS_ERRORS = {
   AI_ANALYSIS_FAILED: 'AI_ANALYSIS_FAILED',
   API_KEY_MISSING: 'API_KEY_MISSING',
   DURATION_TOO_LONG: 'DURATION_TOO_LONG',
-  NETWORK_ERROR: 'NETWORK_ERROR'
+  NETWORK_ERROR: 'NETWORK_ERROR',
 } as const;
 
 /**
@@ -360,6 +375,6 @@ export function getErrorMessage(error: VideoAnalysisError | Error): string {
         return error.message;
     }
   }
-  
+
   return error.message || '未知错误';
 }

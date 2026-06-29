@@ -1,61 +1,69 @@
-import { useTranslation } from "react-i18next"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import { Switch } from "@/shared/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Globe, Settings, Image, ExternalLink } from "lucide-react"
-import type { GeneralSettings } from "./types"
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Switch } from '@/shared/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Globe, Settings, Image, ExternalLink } from 'lucide-react';
+import type { GeneralSettings } from './types';
 
 interface GeneralSettingsPanelProps {
-  generalSettings: GeneralSettings
-  setGeneralSettings: (settings: GeneralSettings) => void
-  saveGeneralSettings: () => Promise<void>
+  generalSettings: GeneralSettings;
+  setGeneralSettings: (settings: GeneralSettings) => void;
+  saveGeneralSettings: () => Promise<void>;
 }
 
 export default function GeneralSettingsPanel({
   generalSettings,
   setGeneralSettings,
-  saveGeneralSettings
+  saveGeneralSettings,
 }: GeneralSettingsPanelProps) {
-  const { t } = useTranslation("settings")
+  const { t } = useTranslation('settings');
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">{t("generalSettings")}</h3>
-        <p className="text-sm text-muted-foreground mb-6">
-          {t("generalSettingsDesc")}
-        </p>
+        <h3 className="text-lg font-semibold mb-2">{t('generalSettings')}</h3>
+        <p className="text-sm text-muted-foreground mb-6">{t('generalSettingsDesc')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <Globe className="h-4 w-4 mr-2" />
-            {t("network")}
+            {t('network')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">{t("useProxy")}</Label>
-              <p className="text-xs text-muted-foreground">{t("useProxyDesc")}</p>
+              <Label className="text-sm font-medium">{t('useProxy')}</Label>
+              <p className="text-xs text-muted-foreground">{t('useProxyDesc')}</p>
             </div>
             <Switch
               checked={generalSettings.useProxy}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, useProxy: checked })}
+              onCheckedChange={(checked) =>
+                setGeneralSettings({ ...generalSettings, useProxy: checked })
+              }
             />
           </div>
 
           {generalSettings.useProxy && (
             <div>
-              <Label className="text-sm font-medium">{t("proxyAddress")}</Label>
+              <Label className="text-sm font-medium">{t('proxyAddress')}</Label>
               <Input
                 value={generalSettings.proxyUrl}
-                onChange={(e) => setGeneralSettings({ ...generalSettings, proxyUrl: e.target.value })}
-                placeholder={t("proxyAddressPlaceholder")}
+                onChange={(e) =>
+                  setGeneralSettings({ ...generalSettings, proxyUrl: e.target.value })
+                }
+                placeholder={t('proxyAddressPlaceholder')}
                 className="mt-1"
               />
             </div>
@@ -66,36 +74,44 @@ export default function GeneralSettingsPanel({
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center">
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image className="h-4 w-4 mr-2" />
-            {t("detailBackdrop")}
+            {t('detailBackdrop')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">{t("enableBlur")}</Label>
-              <p className="text-xs text-muted-foreground">{t("enableBlurDesc")}</p>
+              <Label className="text-sm font-medium">{t('enableBlur')}</Label>
+              <p className="text-xs text-muted-foreground">{t('enableBlurDesc')}</p>
             </div>
             <Switch
               checked={generalSettings.detailBackdropBlurEnabled}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, detailBackdropBlurEnabled: checked })}
+              onCheckedChange={(checked) =>
+                setGeneralSettings({ ...generalSettings, detailBackdropBlurEnabled: checked })
+              }
             />
           </div>
 
           {generalSettings.detailBackdropBlurEnabled && (
             <div>
-              <Label className="text-sm font-medium">{t("blurIntensity")}</Label>
+              <Label className="text-sm font-medium">{t('blurIntensity')}</Label>
               <Select
                 value={generalSettings.detailBackdropBlurIntensity}
-                onValueChange={(value) => setGeneralSettings({ ...generalSettings, detailBackdropBlurIntensity: value as 'light' | 'medium' | 'heavy' })}
+                onValueChange={(value) =>
+                  setGeneralSettings({
+                    ...generalSettings,
+                    detailBackdropBlurIntensity: value as 'light' | 'medium' | 'heavy',
+                  })
+                }
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">{t("blurLight")}</SelectItem>
-                  <SelectItem value="medium">{t("blurMedium")}</SelectItem>
-                  <SelectItem value="heavy">{t("blurHeavy")}</SelectItem>
+                  <SelectItem value="light">{t('blurLight')}</SelectItem>
+                  <SelectItem value="medium">{t('blurMedium')}</SelectItem>
+                  <SelectItem value="heavy">{t('blurHeavy')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -107,23 +123,28 @@ export default function GeneralSettingsPanel({
         <CardHeader>
           <CardTitle className="text-base flex items-center">
             <ExternalLink className="h-4 w-4 mr-2" />
-            {t("tmdbHoverButton")}
+            {t('tmdbHoverButton')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">{t("tmdbHoverButtonAction")}</Label>
-            <p className="text-xs text-muted-foreground mb-2">{t("tmdbHoverButtonActionDesc")}</p>
+            <Label className="text-sm font-medium">{t('tmdbHoverButtonAction')}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t('tmdbHoverButtonActionDesc')}</p>
             <Select
               value={generalSettings.tmdbButtonBehavior}
-              onValueChange={(value) => setGeneralSettings({ ...generalSettings, tmdbButtonBehavior: value as 'detail' | 'search' })}
+              onValueChange={(value) =>
+                setGeneralSettings({
+                  ...generalSettings,
+                  tmdbButtonBehavior: value as 'detail' | 'search',
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="detail">{t("tmdbHoverButtonActionDetail")}</SelectItem>
-                <SelectItem value="search">{t("tmdbHoverButtonActionSearch")}</SelectItem>
+                <SelectItem value="detail">{t('tmdbHoverButtonActionDetail')}</SelectItem>
+                <SelectItem value="search">{t('tmdbHoverButtonActionSearch')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -133,9 +154,9 @@ export default function GeneralSettingsPanel({
       <div className="flex justify-end">
         <Button onClick={saveGeneralSettings}>
           <Settings className="h-4 w-4 mr-2" />
-          {t("saveGeneralSettings")}
+          {t('saveGeneralSettings')}
         </Button>
       </div>
     </div>
-  )
+  );
 }

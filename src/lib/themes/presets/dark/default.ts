@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const defaultDarkTheme: ThemeConfig = {
   id: 'default-dark',
@@ -39,4 +39,4 @@ export const defaultDarkTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

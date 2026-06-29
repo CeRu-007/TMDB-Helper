@@ -1,54 +1,49 @@
-import React from "react"
-import { GenerationConfig } from '../types'
-import { TITLE_STYLES } from '../constants'
-import { logger } from '@/lib/utils/logger'
-import { useTranslation } from "react-i18next"
+import React from 'react';
+import { GenerationConfig } from '../types';
+import { TITLE_STYLES } from '../constants';
+import { logger } from '@/lib/utils/logger';
+import { useTranslation } from 'react-i18next';
 
 interface TitleStyleTabProps {
-  config: GenerationConfig
-  onConfigChange: (config: GenerationConfig) => void
+  config: GenerationConfig;
+  onConfigChange: (config: GenerationConfig) => void;
 }
 
-export function TitleStyleTab({
-  config,
-  onConfigChange
-}: TitleStyleTabProps) {
-  const { t } = useTranslation("episode-generation")
+export function TitleStyleTab({ config, onConfigChange }: TitleStyleTabProps) {
+  const { t } = useTranslation('episode-generation');
 
   const handleTitleStyleToggle = (styleId: string) => {
     if (typeof onConfigChange !== 'function') {
-      logger.error('onConfigChange is not a function')
-      return
+      logger.error('onConfigChange is not a function');
+      return;
     }
 
-    const newStyle = config.selectedTitleStyle === styleId ? "" : styleId
+    const newStyle = config.selectedTitleStyle === styleId ? '' : styleId;
 
     onConfigChange({
       ...config,
-      selectedTitleStyle: newStyle
-    })
-  }
+      selectedTitleStyle: newStyle,
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium mb-3">{t("titleStyle.selectTitleStyle")}</h3>
+        <h3 className="text-sm font-medium mb-3">{t('titleStyle.selectTitleStyle')}</h3>
         <div className="space-y-2 mb-4">
-          <p className="text-xs text-muted-foreground">
-            {t("titleStyle.selectTitleStyleDesc")}
-          </p>
+          <p className="text-xs text-muted-foreground">{t('titleStyle.selectTitleStyleDesc')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {TITLE_STYLES.map((style) => {
-            const isSelected = config.selectedTitleStyle === style.id
+            const isSelected = config.selectedTitleStyle === style.id;
             return (
               <div
                 key={style.id}
                 className={`group relative rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden ${
                   isSelected
-                    ? "border-green-500 bg-green-50 dark:bg-green-950/20 shadow-lg ring-2 ring-green-500/20"
-                    : "border-border bg-card hover:border-green-300 dark:hover:border-green-600 hover:shadow-md hover:bg-green-50/50 dark:hover:bg-green-950/10"
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/20 shadow-lg ring-2 ring-green-500/20'
+                    : 'border-border bg-card hover:border-green-300 dark:hover:border-green-600 hover:shadow-md hover:bg-green-50/50 dark:hover:bg-green-950/10'
                 }`}
                 onClick={() => handleTitleStyleToggle(style.id)}
               >
@@ -56,7 +51,11 @@ export function TitleStyleTab({
                 {isSelected && (
                   <div className="absolute top-3 right-3 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                 )}
@@ -64,38 +63,40 @@ export function TitleStyleTab({
                 <div className="p-5">
                   {/* 头部：图标和标题 */}
                   <div className="flex items-start space-x-3 mb-3">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
-                      isSelected
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                        : "bg-muted text-muted-foreground"
-                    }`}>
+                    <div
+                      className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
+                        isSelected
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
                       {style.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-semibold text-sm leading-tight ${
-                        isSelected
-                          ? "text-green-900 dark:text-green-100"
-                          : "text-foreground"
-                      }`}>
+                      <h4
+                        className={`font-semibold text-sm leading-tight ${
+                          isSelected ? 'text-green-900 dark:text-green-100' : 'text-foreground'
+                        }`}
+                      >
                         {style.name}
                       </h4>
                     </div>
                   </div>
 
                   {/* 描述文字 */}
-                  <p className={`text-xs leading-relaxed ${
-                    isSelected
-                      ? "text-green-700 dark:text-green-300"
-                      : "text-muted-foreground"
-                  }`}>
+                  <p
+                    className={`text-xs leading-relaxed ${
+                      isSelected ? 'text-green-700 dark:text-green-300' : 'text-muted-foreground'
+                    }`}
+                  >
                     {style.description}
                   </p>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }

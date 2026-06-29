@@ -3,7 +3,7 @@
  * 用于分集简介AI生成功能的插件化架构
  */
 
-import { GenerationConfig } from '../../types'
+import { GenerationConfig } from '../../components/subtitle-episode-generator/types';
 
 /**
  * 插件类型枚举
@@ -11,38 +11,38 @@ import { GenerationConfig } from '../../types'
 export enum PluginType {
   TitleStyle = 'title-style',
   SummaryStyle = 'summary-style',
-  EnhanceOperation = 'enhance-operation'
+  EnhanceOperation = 'enhance-operation',
 }
 
 /**
  * 增强操作类型
  */
-export type EnhanceOperationType = 'polish' | 'shorten' | 'expand' | 'proofread' | 'rewrite'
+export type EnhanceOperationType = 'polish' | 'shorten' | 'expand' | 'proofread' | 'rewrite';
 
 /**
  * 增强操作输入
  */
 export interface EnhanceInput {
-  title: string
-  summary: string
-  selectedText?: string
+  title: string;
+  summary: string;
+  selectedText?: string;
 }
 
 /**
  * 增强操作输出
  */
 export interface EnhanceOutput {
-  title: string
-  summary: string
-  confidence: number
+  title: string;
+  summary: string;
+  confidence: number;
 }
 
 /**
  * 增强操作配置
  */
 export interface EnhanceConfig {
-  temperature: number
-  maxTokens: number
+  temperature: number;
+  maxTokens: number;
 }
 
 /**
@@ -51,40 +51,40 @@ export interface EnhanceConfig {
  */
 export interface IPlugin {
   /** 插件唯一标识 */
-  id: string
-  
+  id: string;
+
   /** 插件类型 */
-  type: PluginType
-  
+  type: PluginType;
+
   /** 插件名称 */
-  name: string
-  
+  name: string;
+
   /** 插件描述 */
-  description: string
-  
+  description: string;
+
   /** 插件图标 */
-  icon: string
-  
+  icon: string;
+
   /** 插件版本 */
-  version: string
-  
+  version: string;
+
   /** 插件作者 */
-  author?: string
-  
+  author?: string;
+
   /** 插件标签（用于分类和搜索） */
-  tags?: string[]
-  
+  tags?: string[];
+
   /** 是否为内置插件 */
-  isBuiltin: boolean
-  
+  isBuiltin: boolean;
+
   /** 插件元数据 */
-  metadata?: Record<string, any>
-  
+  metadata?: Record<string, any>;
+
   /** 初始化插件 */
-  initialize?(context: PluginContext): void | Promise<void>
-  
+  initialize?(context: PluginContext): void | Promise<void>;
+
   /** 销毁插件 */
-  destroy?(): void | Promise<void>
+  destroy?(): void | Promise<void>;
 }
 
 /**
@@ -92,31 +92,31 @@ export interface IPlugin {
  */
 export interface EpisodeContent {
   /** 文件名 */
-  fileName: string
-  
+  fileName: string;
+
   /** 集数编号 */
-  episodeNumber: number
-  
+  episodeNumber: number;
+
   /** 原始标题 */
-  originalTitle?: string
-  
+  originalTitle?: string;
+
   /** 字幕内容 */
-  subtitleContent: string
-  
+  subtitleContent: string;
+
   /** 持续时间（秒） */
-  duration?: number
-  
+  duration?: number;
+
   /** 视频URL */
-  videoUrl?: string
-  
+  videoUrl?: string;
+
   /** 字数 */
-  wordCount: number
-  
+  wordCount: number;
+
   /** 最后时间戳 */
-  lastTimestamp?: string
-  
+  lastTimestamp?: string;
+
   /** 其他元数据 */
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -124,13 +124,13 @@ export interface EpisodeContent {
  */
 export interface ParsedTitle {
   /** 生成的标题 */
-  title: string
-  
+  title: string;
+
   /** 置信度（0-1） */
-  confidence?: number
-  
+  confidence?: number;
+
   /** 元数据 */
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -138,16 +138,16 @@ export interface ParsedTitle {
  */
 export interface ParsedSummary {
   /** 生成的简介 */
-  summary: string
-  
+  summary: string;
+
   /** 字数 */
-  wordCount: number
-  
+  wordCount: number;
+
   /** 置信度（0-1） */
-  confidence?: number
-  
+  confidence?: number;
+
   /** 元数据 */
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -155,19 +155,19 @@ export interface ParsedSummary {
  */
 export interface TitleStyleConfig {
   /** 最大长度 */
-  maxLength?: number
-  
+  maxLength?: number;
+
   /** 最小长度 */
-  minLength?: number
-  
+  minLength?: number;
+
   /** 关键词（优先使用） */
-  keywords?: string[]
-  
+  keywords?: string[];
+
   /** 排除关键词 */
-  excludeKeywords?: string[]
-  
+  excludeKeywords?: string[];
+
   /** 标点符号处理 */
-  punctuationHandling?: 'keep' | 'remove' | 'simplify'
+  punctuationHandling?: 'keep' | 'remove' | 'simplify';
 }
 
 /**
@@ -175,25 +175,25 @@ export interface TitleStyleConfig {
  */
 export interface SummaryStyleConfig {
   /** 最小字数 */
-  minWordCount: number
-  
+  minWordCount: number;
+
   /** 最大字数 */
-  maxWordCount: number
-  
+  maxWordCount: number;
+
   /** 温度参数 */
-  temperature?: number
-  
+  temperature?: number;
+
   /** 最大token数 */
-  maxTokens?: number
-  
+  maxTokens?: number;
+
   /** 输出格式 */
-  format?: 'plain' | 'markdown' | 'html'
-  
+  format?: 'plain' | 'markdown' | 'html';
+
   /** 是否允许疑问句 */
-  allowQuestions?: boolean
-  
+  allowQuestions?: boolean;
+
   /** 是否使用陈述句 */
-  requireDeclarative?: boolean
+  requireDeclarative?: boolean;
 }
 
 /**
@@ -201,16 +201,16 @@ export interface SummaryStyleConfig {
  */
 export interface SummaryConstraints {
   /** 最小字数 */
-  minWordCount?: number
-  
+  minWordCount?: number;
+
   /** 最大字数 */
-  maxWordCount?: number
-  
+  maxWordCount?: number;
+
   /** 必须包含的内容 */
-  mustInclude?: string[]
-  
+  mustInclude?: string[];
+
   /** 必须排除的内容 */
-  mustExclude?: string[]
+  mustExclude?: string[];
 }
 
 /**
@@ -218,76 +218,76 @@ export interface SummaryConstraints {
  */
 export interface ValidationResult {
   /** 是否有效 */
-  valid: boolean
-  
+  valid: boolean;
+
   /** 错误信息 */
-  errors?: string[]
-  
+  errors?: string[];
+
   /** 警告信息 */
-  warnings?: string[]
+  warnings?: string[];
 }
 
 /**
  * 标题风格插件接口
  */
 export interface ITitleStylePlugin extends IPlugin {
-  type: PluginType.TitleStyle
-  
+  type: PluginType.TitleStyle;
+
   /** 构建标题生成提示词 */
-  buildPrompt(content: EpisodeContent, options?: Record<string, any>): string
-  
+  buildPrompt(content: EpisodeContent, options?: Record<string, any>): string;
+
   /** 解析生成的标题 */
-  parseResult(generated: string, options?: Record<string, any>): ParsedTitle
-  
+  parseResult(generated: string, options?: Record<string, any>): ParsedTitle;
+
   /** 验证生成的标题 */
-  validate?(title: string): ValidationResult
-  
+  validate?(title: string): ValidationResult;
+
   /** 默认配置 */
-  defaultConfig?: TitleStyleConfig
+  defaultConfig?: TitleStyleConfig;
 }
 
 /**
  * 简介风格插件接口
  */
 export interface ISummaryStylePlugin extends IPlugin {
-  type: PluginType.SummaryStyle
-  
+  type: PluginType.SummaryStyle;
+
   /** 是否为互斥风格（如模仿风格） */
-  isExclusive?: boolean
-  
+  isExclusive?: boolean;
+
   /** 构建简介生成提示词 */
-  buildPrompt(content: EpisodeContent, options?: Record<string, any>): string
-  
+  buildPrompt(content: EpisodeContent, options?: Record<string, any>): string;
+
   /** 解析生成的简介 */
-  parseResult(generated: string, options?: Record<string, any>): ParsedSummary
-  
+  parseResult(generated: string, options?: Record<string, any>): ParsedSummary;
+
   /** 验证生成的简介 */
-  validate?(summary: string, constraints?: SummaryConstraints): ValidationResult
-  
+  validate?(summary: string, constraints?: SummaryConstraints): ValidationResult;
+
   /** 后处理（如格式化、清理） */
-  postProcess?(summary: string): string
-  
+  postProcess?(summary: string): string;
+
   /** 默认配置 */
-  defaultConfig?: SummaryStyleConfig
+  defaultConfig?: SummaryStyleConfig;
 }
 
 /**
  * 增强操作插件接口
  */
 export interface IEnhanceOperationPlugin extends IPlugin {
-  type: PluginType.EnhanceOperation
-  
+  type: PluginType.EnhanceOperation;
+
   /** 操作类型 */
-  operationType: EnhanceOperationType
-  
+  operationType: EnhanceOperationType;
+
   /** 构建增强提示词 */
-  buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string
-  
+  buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string;
+
   /** 解析增强结果 */
-  parseResult(content: string): EnhanceOutput
-  
+  parseResult(content: string): EnhanceOutput;
+
   /** 默认配置 */
-  defaultConfig: EnhanceConfig
+  defaultConfig: EnhanceConfig;
 }
 
 /**
@@ -297,35 +297,38 @@ export interface IEnhanceOperationPlugin extends IPlugin {
 export interface PluginContext {
   /** 模型服务API */
   modelService: {
-    generate: (prompt: string, config: { temperature?: number; maxTokens?: number }) => Promise<string>
-  }
-  
+    generate: (
+      prompt: string,
+      config: { temperature?: number; maxTokens?: number }
+    ) => Promise<string>;
+  };
+
   /** 配置管理器 */
   configManager: {
-    get: (key: string) => any
-    set: (key: string, value: any) => void
-  }
-  
+    get: (key: string) => any;
+    set: (key: string, value: any) => void;
+  };
+
   /** 日志记录器 */
   logger: {
-    info: (message: string, ...args: any[]) => void
-    warn: (message: string, ...args: any[]) => void
-    error: (message: string, ...args: any[]) => void
-    debug: (message: string, ...args: any[]) => void
-  }
-  
+    info: (message: string, ...args: any[]) => void;
+    warn: (message: string, ...args: any[]) => void;
+    error: (message: string, ...args: any[]) => void;
+    debug: (message: string, ...args: any[]) => void;
+  };
+
   /** 共享数据存储 */
-  store: Map<string, any>
-  
+  store: Map<string, any>;
+
   /** 插件间通信 */
   eventBus: {
-    emit: (event: string, data?: any) => void
-    on: (event: string, handler: (data?: any) => void) => void
-    off: (event: string, handler: (data?: any) => void) => void
-  }
+    emit: (event: string, data?: any) => void;
+    on: (event: string, handler: (data?: any) => void) => void;
+    off: (event: string, handler: (data?: any) => void) => void;
+  };
 
   /** 清理资源 */
-  destroy(): void
+  destroy(): void;
 }
 
 /**
@@ -333,10 +336,10 @@ export interface PluginContext {
  */
 export interface PluginRegistrationOptions {
   /** 是否自动初始化 */
-  autoInitialize?: boolean
-  
+  autoInitialize?: boolean;
+
   /** 是否覆盖已存在的插件 */
-  overwrite?: boolean
+  overwrite?: boolean;
 }
 
 /**
@@ -346,7 +349,7 @@ export enum PluginStatus {
   Unregistered = 'unregistered',
   Registered = 'registered',
   Initialized = 'initialized',
-  Error = 'error'
+  Error = 'error',
 }
 
 /**
@@ -354,17 +357,17 @@ export enum PluginStatus {
  */
 export interface PluginInfo {
   /** 插件实例 */
-  plugin: IPlugin
-  
+  plugin: IPlugin;
+
   /** 插件状态 */
-  status: PluginStatus
-  
+  status: PluginStatus;
+
   /** 错误信息 */
-  error?: string
-  
+  error?: string;
+
   /** 注册时间 */
-  registeredAt: number
-  
+  registeredAt: number;
+
   /** 初始化时间 */
-  initializedAt?: number
+  initializedAt?: number;
 }

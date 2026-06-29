@@ -1,34 +1,42 @@
-import React, { useRef } from 'react'
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { ChatMessageItem } from "./chat-message-item"
-import { Message } from "@/types/ai-chat"
+import React, { useRef } from 'react';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { ChatMessageItem } from './chat-message-item';
+import { Message } from '@/types/ai-chat';
 
 // User info type
 interface UserInfo {
-  avatarUrl?: string
-  displayName?: string
+  avatarUrl?: string;
+  displayName?: string;
 }
 
 interface ChatMessagesProps {
-  messages: Message[]
-  editingMessageId: string | null
-  editingContent: string
-  userInfo: UserInfo | null
-  isLoading: boolean
-  currentChatId: string | null
-  selectedModel: string
-  onStartEdit: (messageId: string, content: string) => void
-  onCancelEdit: () => void
-  onSaveEdit: (messageId: string, callback?: (content: string, index: number) => Promise<void>) => void
-  onSetEditingContent: (content: string) => void
-  onCopyMessage: (content: string) => void
-  onDeleteMessage: (messageId: string) => void
-  onRegenerateResponse: (messageId: string) => void
-  onContinueGeneration: (messageId: string) => void
-  onRateMessage: (messageId: string, rating: 'like' | 'dislike' | null, chatId: string | null, model: string) => void
-  onQuickReply: (content: string) => void
-  scrollAreaRef: React.RefObject<HTMLDivElement>
-  messagesEndRef: React.RefObject<HTMLDivElement>
+  messages: Message[];
+  editingMessageId: string | null;
+  editingContent: string;
+  userInfo: UserInfo | null;
+  isLoading: boolean;
+  currentChatId: string | null;
+  selectedModel: string;
+  onStartEdit: (messageId: string, content: string) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (
+    messageId: string,
+    callback?: (content: string, index: number) => Promise<void>
+  ) => void;
+  onSetEditingContent: (content: string) => void;
+  onCopyMessage: (content: string) => void;
+  onDeleteMessage: (messageId: string) => void;
+  onRegenerateResponse: (messageId: string) => void;
+  onContinueGeneration: (messageId: string) => void;
+  onRateMessage: (
+    messageId: string,
+    rating: 'like' | 'dislike' | null,
+    chatId: string | null,
+    model: string
+  ) => void;
+  onQuickReply: (content: string) => void;
+  scrollAreaRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
 export function ChatMessages({
@@ -50,7 +58,7 @@ export function ChatMessages({
   onRateMessage,
   onQuickReply,
   scrollAreaRef,
-  messagesEndRef
+  messagesEndRef,
 }: ChatMessagesProps) {
   return (
     <ScrollArea className="h-full" ref={scrollAreaRef}>
@@ -81,5 +89,5 @@ export function ChatMessages({
         <div ref={messagesEndRef} />
       </div>
     </ScrollArea>
-  )
+  );
 }

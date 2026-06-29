@@ -1,22 +1,22 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import type { DashboardData } from '../types/dashboard'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import type { DashboardData } from '../types/dashboard';
 import {
   Database,
   CheckCircle,
   Clock,
   ArrowsClockwise,
   CalendarCheck,
-} from '@phosphor-icons/react'
+} from '@phosphor-icons/react';
 
 interface StatsCardsProps {
-  data: DashboardData['stats']
+  data: DashboardData['stats'];
 }
 
 export function StatsCards({ data }: StatsCardsProps) {
-  const { t } = useTranslation('dashboard')
+  const { t } = useTranslation('dashboard');
 
   const cards = [
     {
@@ -60,12 +60,12 @@ export function StatsCards({ data }: StatsCardsProps) {
       bgColor: 'bg-teal-50 dark:bg-teal-900/20',
       textColor: 'text-teal-600 dark:text-teal-400',
     },
-  ]
+  ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {cards.map((card) => {
-        const IconComp = card.icon
+        const IconComp = card.icon;
         return (
           <div
             key={card.label}
@@ -85,10 +85,12 @@ export function StatsCards({ data }: StatsCardsProps) {
                 <IconComp className={card.textColor} size={18} weight="duotone" />
               </div>
             </div>
-            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.color}`} />
+            <div
+              className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.color}`}
+            />
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

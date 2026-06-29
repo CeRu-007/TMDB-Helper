@@ -124,7 +124,7 @@ export async function batchCacheImages(
  */
 export async function refreshImageCache(
   tmdbId: string,
-  type: 'poster' | 'backdrop' | 'logo',
+  type: 'poster' | 'backdrop' | 'logo' | 'network_logo',
   mediaType?: 'movie' | 'tv',
   size?: 'w500' | 'w780' | 'w1280' | 'original'
 ): Promise<CacheImageResult> {
@@ -171,8 +171,12 @@ export async function invalidateCache(
 ): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
   try {
     let url = `${API_BASE}?tmdbId=${tmdbId}`;
-    if (type) url += `&type=${type}`;
-    if (size) url += `&size=${size}`;
+    if (type) {
+      url += `&type=${type}`;
+    }
+    if (size) {
+      url += `&size=${size}`;
+    }
 
     const response = await fetch(url, {
       method: 'DELETE',
@@ -206,10 +210,14 @@ export function buildTMDBImageUrl(
   path: string | null | undefined,
   size: 'w500' | 'w780' | 'w1280' | 'original' = 'original'
 ): string | null {
-  if (!path) return null;
+  if (!path) {
+    return null;
+  }
 
   // 如果已经是完整 URL，直接返回
-  if (path.startsWith('http')) return path;
+  if (path.startsWith('http')) {
+    return path;
+  }
 
   // 确保 path 以 / 开头
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -221,12 +229,20 @@ export function buildTMDBImageUrl(
  * 从 TMDBItem 提取并缓存所有图片
  * 这是便捷函数，用于在获取 item 详情后缓存其所有图片
  */
-export async function cacheImagesFromItem(item: TMDBItem): Promise<{ success: boolean; cachedCount: number }> {
+export async function cacheImagesFromItem(
+  item: TMDBItem
+): Promise<{ success: boolean; cachedCount: number }> {
   if (!item.tmdbId) {
     return { success: true, cachedCount: 0 };
   }
 
-  const images: Array<{ tmdbId: string; itemId: string; posterPath?: string; backdropPath?: string; logoPath?: string }> = [
+  const images: Array<{
+    tmdbId: string;
+    itemId: string;
+    posterPath?: string;
+    backdropPath?: string;
+    logoPath?: string;
+  }> = [
     {
       tmdbId: item.tmdbId,
       itemId: item.id,

@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const rosePineTheme: ThemeConfig = {
   id: 'rose-pine',
@@ -40,4 +40,4 @@ export const rosePineTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

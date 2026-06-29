@@ -42,17 +42,50 @@
     "peakWeekday": "Peak Day",
     "firstItem": "It all started with \"{{title}}\" ({{date}})",
     "types": {
-      "anime_guardian": { "name": "Anime Guardian", "desc": "Your list is dominated by anime — you protect the 2D world" },
-      "drama_hunter": { "name": "Drama Hunter", "desc": "TV series is your battlefield — no good show escapes your eye" },
-      "kids_protector": { "name": "Kids Protector", "desc": "You maintain a pure world for kids, treating every item with care" },
-      "variety_master": { "name": "Variety Master", "desc": "You know variety shows inside out, spreading joy through maintenance" },
-      "short_runner": { "name": "Short Runner", "desc": "Short series may be short, but your maintenance never cuts corners" },
-      "specialist": { "name": "Specialist", "desc": "You focus on one domain and master it to the extreme" },
-      "perfectionist": { "name": "Perfectionist", "desc": "All items completed — \"half-done\" is not in your vocabulary" },
-      "automator": { "name": "Automator", "desc": "You leverage scheduled tasks to keep maintenance running automatically" },
-      "night_owl": { "name": "Night Owl", "desc": "Late night is your domain — silently maintaining while the world sleeps" },
-      "veteran": { "name": "Veteran", "desc": "You've been maintaining for over 90 days — time witnesses your dedication" },
-      "explorer": { "name": "Explorer", "desc": "Your maintenance journey has just begun — the future is full of possibilities" }
+      "anime_guardian": {
+        "name": "Anime Guardian",
+        "desc": "Your list is dominated by anime — you protect the 2D world"
+      },
+      "drama_hunter": {
+        "name": "Drama Hunter",
+        "desc": "TV series is your battlefield — no good show escapes your eye"
+      },
+      "kids_protector": {
+        "name": "Kids Protector",
+        "desc": "You maintain a pure world for kids, treating every item with care"
+      },
+      "variety_master": {
+        "name": "Variety Master",
+        "desc": "You know variety shows inside out, spreading joy through maintenance"
+      },
+      "short_runner": {
+        "name": "Short Runner",
+        "desc": "Short series may be short, but your maintenance never cuts corners"
+      },
+      "specialist": {
+        "name": "Specialist",
+        "desc": "You focus on one domain and master it to the extreme"
+      },
+      "perfectionist": {
+        "name": "Perfectionist",
+        "desc": "All items completed — \"half-done\" is not in your vocabulary"
+      },
+      "automator": {
+        "name": "Automator",
+        "desc": "You leverage scheduled tasks to keep maintenance running automatically"
+      },
+      "night_owl": {
+        "name": "Night Owl",
+        "desc": "Late night is your domain — silently maintaining while the world sleeps"
+      },
+      "veteran": {
+        "name": "Veteran",
+        "desc": "You've been maintaining for over 90 days — time witnesses your dedication"
+      },
+      "explorer": {
+        "name": "Explorer",
+        "desc": "Your maintenance journey has just begun — the future is full of possibilities"
+      }
     }
   },
   "milestones": {

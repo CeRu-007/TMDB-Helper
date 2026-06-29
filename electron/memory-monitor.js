@@ -12,7 +12,6 @@ function startMemoryMonitoring() {
     if (heapUsed > 200) {
       if (global.gc) {
         global.gc();
-        
       }
     }
   }, 60000); // 每分钟检查一次
@@ -26,5 +25,5 @@ function stopMemoryMonitoring() {
 
 module.exports = {
   startMemoryMonitoring,
-  stopMemoryMonitoring
+  stopMemoryMonitoring,
 };

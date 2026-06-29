@@ -8,8 +8,8 @@ export type {
   EnhanceInput,
   EnhanceOutput,
   EnhanceConfig,
-  IEnhanceOperationPlugin
-} from '../core/types'
+  IEnhanceOperationPlugin,
+} from '../core/types';
 
 // 导出增强操作专用类型
-export { BaseEnhanceOperationPlugin } from './base-enhance-operation'
+export { BaseEnhanceOperationPlugin } from './base-enhance-operation';

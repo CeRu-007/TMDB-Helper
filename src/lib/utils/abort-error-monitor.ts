@@ -67,7 +67,7 @@ export class AbortErrorMonitor {
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
       isTimeout,
       duration,
-      retryCount
+      retryCount,
     };
 
     this.errorHistory.unshift(event);
@@ -78,12 +78,10 @@ export class AbortErrorMonitor {
     }
 
     // 通知监听器
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(event);
-      } catch (error) {
-        
-      }
+      } catch (error) {}
     });
 
     // 如果错误频率过高，发出警告
@@ -110,11 +108,11 @@ export class AbortErrorMonitor {
   public getStats(): AbortErrorStats {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
-    const recentErrors = this.errorHistory.filter(e => now - e.timestamp < oneHour);
+    const recentErrors = this.errorHistory.filter((e) => now - e.timestamp < oneHour);
 
     // 统计最频繁的URL
     const urlCounts = new Map<string, number>();
-    this.errorHistory.forEach(event => {
+    this.errorHistory.forEach((event) => {
       const count = urlCounts.get(event.url) || 0;
       urlCounts.set(event.url, count + 1);
     });
@@ -126,27 +124,28 @@ export class AbortErrorMonitor {
 
     // 按小时统计错误
     const errorsByHour: Record<string, number> = {};
-    this.errorHistory.forEach(event => {
+    this.errorHistory.forEach((event) => {
       const hour = new Date(event.timestamp).getHours().toString();
       errorsByHour[hour] = (errorsByHour[hour] || 0) + 1;
     });
 
     // 计算平均持续时间
     const durationsWithValue = this.errorHistory
-      .filter(e => e.duration !== undefined)
-      .map(e => e.duration!);
-    const averageDuration = durationsWithValue.length > 0
-      ? durationsWithValue.reduce((sum, d) => sum + d, 0) / durationsWithValue.length
-      : 0;
+      .filter((e) => e.duration !== undefined)
+      .map((e) => e.duration!);
+    const averageDuration =
+      durationsWithValue.length > 0
+        ? durationsWithValue.reduce((sum, d) => sum + d, 0) / durationsWithValue.length
+        : 0;
 
     return {
       totalErrors: this.errorHistory.length,
-      timeoutErrors: this.errorHistory.filter(e => e.isTimeout).length,
-      unexpectedAborts: this.errorHistory.filter(e => !e.isTimeout).length,
+      timeoutErrors: this.errorHistory.filter((e) => e.isTimeout).length,
+      unexpectedAborts: this.errorHistory.filter((e) => !e.isTimeout).length,
       mostFrequentUrls,
       averageDuration,
       errorsByHour,
-      lastError: this.errorHistory[0]
+      lastError: this.errorHistory[0],
     };
   }
 
@@ -162,7 +161,6 @@ export class AbortErrorMonitor {
    */
   public clearHistory(): void {
     this.errorHistory = [];
-    
   }
 
   /**
@@ -171,18 +169,15 @@ export class AbortErrorMonitor {
   private checkErrorFrequency(): void {
     const now = Date.now();
     const fiveMinutes = 5 * 60 * 1000;
-    const recentErrors = this.errorHistory.filter(e => now - e.timestamp < fiveMinutes);
+    const recentErrors = this.errorHistory.filter((e) => now - e.timestamp < fiveMinutes);
 
     if (recentErrors.length >= 10) {
-      
       // 分析错误模式
-      const timeoutCount = recentErrors.filter(e => e.isTimeout).length;
+      const timeoutCount = recentErrors.filter((e) => e.isTimeout).length;
       const unexpectedCount = recentErrors.length - timeoutCount;
-      
+
       if (timeoutCount > unexpectedCount) {
-        
       } else {
-        
       }
     }
   }
@@ -247,7 +242,7 @@ export class AbortErrorMonitor {
       stats: this.getStats(),
       history: this.errorHistory,
       exportTime: new Date().toISOString(),
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown'
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
     };
 
     return JSON.stringify(exportData, null, 2);
@@ -288,7 +283,7 @@ export class AbortErrorMonitor {
     return {
       supported: issues.length === 0,
       issues,
-      recommendations
+      recommendations,
     };
   }
 }
@@ -299,8 +294,10 @@ export const abortErrorMonitor = AbortErrorMonitor.getInstance();
 // 自动设置全局错误监听（如果在浏览器环境中）
 if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
-    if (event.reason instanceof Error && 
-        (event.reason.name === 'AbortError' || event.reason.message.includes('aborted'))) {
+    if (
+      event.reason instanceof Error &&
+      (event.reason.name === 'AbortError' || event.reason.message.includes('aborted'))
+    ) {
       abortErrorMonitor.recordAbortError(
         window.location.href,
         'unknown',

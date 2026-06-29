@@ -10,21 +10,24 @@ export async function GET(request: NextRequest) {
   try {
     // 确保数据库已初始化
     await ServerStorageManager.init();
-    
+
     // 从数据库读取管理员的项目数据
     const items = await ServerStorageManager.getItems();
 
-    return NextResponse.json({
-      items,
-      userId: ADMIN_USER_ID,
-      count: items.length
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        items,
+        userId: ADMIN_USER_ID,
+        count: items.length,
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    logger.error('获取项目失败', error)
+    logger.error('获取项目失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),
-        items: []
+        items: [],
       },
       { status: ErrorHandler.getStatusCode(error) }
     );

@@ -1,15 +1,11 @@
-import React from "react"
-import {
-  Film,
-  Settings,
-  Sparkles
-} from "lucide-react"
-import { Button } from "@/shared/components/ui/button"
-import { Progress } from "@/shared/components/ui/progress"
-import { WorkAreaProps } from './types'
-import { truncateFileName } from './utils'
-import { ResultsDisplay } from './ResultsDisplay'
-import { useTranslation } from "react-i18next"
+import React from 'react';
+import { Film, Settings, Sparkles } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
+import { Progress } from '@/shared/components/ui/progress';
+import { WorkAreaProps } from './types';
+import { truncateFileName } from './utils';
+import { ResultsDisplay } from './ResultsDisplay';
+import { useTranslation } from 'react-i18next';
 
 export function WorkArea({
   file,
@@ -23,9 +19,9 @@ export function WorkArea({
   onMoveToTop,
   onEnhanceContent,
   onAIImprovement,
-  aiImprovingIndex
+  aiImprovingIndex,
 }: WorkAreaProps): JSX.Element {
-  const { t } = useTranslation("episode-generation")
+  const { t } = useTranslation('episode-generation');
 
   return (
     <div className="h-full flex flex-col">
@@ -36,22 +32,22 @@ export function WorkArea({
             <Film className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-foreground text-sm md:text-base">
-                <span className="block">
-                  {truncateFileName(file.name, 30)}
-                </span>
+                <span className="block">{truncateFileName(file.name, 30)}</span>
               </h3>
               <p className="text-xs md:text-sm text-muted-foreground">
-                {t("workArea.episodeCount", { count: file.episodes.length })} · {t("workArea.totalWords", { count: file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString() })}
+                {t('workArea.episodeCount', { count: file.episodes.length })} ·{' '}
+                {t('workArea.totalWords', {
+                  count: file.episodes.reduce((sum, ep) => sum + ep.wordCount, 0).toLocaleString(),
+                })}
               </p>
             </div>
           </div>
-
         </div>
 
         {isGenerating && (
           <div className="mt-2 md:mt-3">
             <div className="flex items-center justify-between text-xs md:text-sm text-muted-foreground mb-1">
-              <span>{t("workArea.generationProgress")}</span>
+              <span>{t('workArea.generationProgress')}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-1.5 md:h-2" />
@@ -75,21 +71,19 @@ export function WorkArea({
             <div className="text-center">
               <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                {t("workArea.configureApiFirst")}
+                {t('workArea.configureApiFirst')}
               </h3>
-              <p className="text-muted-foreground mb-4">
-                {t("workArea.configureApiDesc")}
-              </p>
+              <p className="text-muted-foreground mb-4">{t('workArea.configureApiDesc')}</p>
               <Button
                 onClick={() => {
                   if (onOpenGlobalSettings) {
-                    onOpenGlobalSettings('api')
+                    onOpenGlobalSettings('api');
                   }
                 }}
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                {t("workArea.configureApi")}
+                {t('workArea.configureApi')}
               </Button>
             </div>
           </div>
@@ -98,15 +92,13 @@ export function WorkArea({
             <div className="text-center">
               <Sparkles className="h-12 w-12 text-blue-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                {t("workArea.ready")}
+                {t('workArea.ready')}
               </h3>
-              <p className="text-muted-foreground">
-                {t("workArea.readyHint")}
-              </p>
+              <p className="text-muted-foreground">{t('workArea.readyHint')}</p>
             </div>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

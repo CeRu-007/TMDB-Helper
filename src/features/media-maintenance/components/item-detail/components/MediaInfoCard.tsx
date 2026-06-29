@@ -1,27 +1,25 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Link2, Info, ExternalLink, FrameIcon, ChevronDown } from "lucide-react"
-import { CachedImage } from "@/shared/components/ui/cached-image"
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover"
-import { getPlatformInfo } from "@/lib/utils"
-import { PlatformLogo } from "@/shared/components/ui/platform-icon"
-import type { TMDBItem } from "@/lib/data/storage"
-import { useTranslation } from "react-i18next"
+import { useState } from 'react';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Link2, Info, ExternalLink, FrameIcon, ChevronDown } from 'lucide-react';
+import { CachedImage } from '@/shared/components/ui/cached-image';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { getPlatformInfo } from '@/lib/utils';
+import { PlatformLogo } from '@/shared/components/ui/platform-icon';
+import type { TMDBItem } from '@/lib/data/storage';
+import { useTranslation } from 'react-i18next';
 
 interface MediaInfoCardProps {
-  item: TMDBItem
+  item: TMDBItem;
 }
 
-export function MediaInfoCard({
-  item
-}: MediaInfoCardProps) {
-  const { t } = useTranslation('media')
-  const [platformOpen, setPlatformOpen] = useState(false)
+export function MediaInfoCard({ item }: MediaInfoCardProps) {
+  const { t } = useTranslation('media');
+  const [platformOpen, setPlatformOpen] = useState(false);
 
-  const totalDropdownItems = (item.networks?.length ?? 0) + (item.platformUrls?.length ?? 0)
-  const showPlatformDropdown = totalDropdownItems > 1
+  const totalDropdownItems = (item.networks?.length ?? 0) + (item.platformUrls?.length ?? 0);
+  const showPlatformDropdown = totalDropdownItems > 1;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -59,12 +57,12 @@ export function MediaInfoCard({
                       </div>
                     ))}
                     {item.platformUrls?.map((url, idx) => {
-                      const info = getPlatformInfo(url)
+                      const info = getPlatformInfo(url);
                       return info ? (
                         <div key={`url-${idx}`} className="h-8 flex items-center" title={info.name}>
                           <PlatformLogo platform={info.name} size={24} />
                         </div>
-                      ) : null
+                      ) : null;
                     })}
                   </div>
                 )}
@@ -96,7 +94,7 @@ export function MediaInfoCard({
 
         {/* 平台URL图标列表 - 每个可点击跳转 */}
         {item.platformUrls?.map((url, idx) => {
-          const info = getPlatformInfo(url)
+          const info = getPlatformInfo(url);
           return (
             <div
               key={idx}
@@ -114,7 +112,7 @@ export function MediaInfoCard({
                 <ExternalLink className="h-5 w-5 text-foreground/70 hover:text-foreground transition-colors" />
               )}
             </div>
-          )
+          );
         })}
 
         {/* 无任何平台数据时显示占位 */}
@@ -144,5 +142,5 @@ export function MediaInfoCard({
         </ScrollArea>
       </div>
     </div>
-  )
+  );
 }

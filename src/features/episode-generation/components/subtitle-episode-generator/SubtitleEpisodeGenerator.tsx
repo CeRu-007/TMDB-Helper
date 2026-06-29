@@ -1,25 +1,31 @@
-"use client"
+'use client';
 
-import React, { useState, useRef, useEffect } from "react"
-import { useTranslation } from "react-i18next"
-import { TooltipProvider } from "@/shared/components/ui/tooltip"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
-import { Button } from "@/shared/components/ui/button"
-import { Upload, Sparkles, AlertCircle } from "lucide-react"
-import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
-import { useToast } from "@/shared/components/ui/use-toast"
-import { logger } from '@/lib/utils/logger'
+import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TooltipProvider } from '@/shared/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Upload, Sparkles, AlertCircle } from 'lucide-react';
+import { useScenarioModels } from '@/lib/hooks/useScenarioModels';
+import { useToast } from '@/shared/components/ui/use-toast';
+import { logger } from '@/lib/utils/logger';
 
 // 导入类型和常量
-import { ExportConfig } from './types'
+import { ExportConfig } from './types';
 
 // 导入hooks
 import {
   useConfigManagement,
   useFileManagement,
   useContentGeneration,
-  useVideoAnalysis
-} from './hooks'
+  useVideoAnalysis,
+} from './hooks';
 
 // 导入子组件
 import {
@@ -28,33 +34,35 @@ import {
   EmptyState,
   GenerationSettingsDialog,
   ExportConfigDialog,
-  VideoAnalysisResultDialog
-} from './index'
+  VideoAnalysisResultDialog,
+} from './index';
 
 export function SubtitleEpisodeGenerator({
-  onOpenGlobalSettings
+  onOpenGlobalSettings,
 }: {
-  onOpenGlobalSettings?: (section: string) => void
+  onOpenGlobalSettings?: (section: string) => void;
 } = {}): JSX.Element {
-  const { t } = useTranslation("episode-generation")
-  
+  const { t } = useTranslation('episode-generation');
+
   // 文件输入引用
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Toast hook
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   // 导出配置状态
   const [exportConfig, setExportConfig] = useState<ExportConfig>({
     includeTitle: true,
     includeOverview: true,
-    includeRuntime: true
-  })
+    includeRuntime: true,
+  });
 
   // 对话框状态
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
-  const [shouldReopenSettingsDialog, setShouldReopenSettingsDialog] = useState(false)
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [shouldReopenSettingsDialog, setShouldReopenSettingsDialog] = useState(false);
+  const [localIsGenerating, setLocalIsGenerating] = useState(false);
+  const [localGenerationProgress, setLocalGenerationProgress] = useState(0);
 
   // 使用配置管理hook
   const {
@@ -67,8 +75,8 @@ export function SubtitleEpisodeGenerator({
     setSiliconFlowApiKey,
     modelScopeApiKey,
     setModelScopeApiKey,
-    loadGlobalSettings
-  } = useConfigManagement()
+    loadGlobalSettings,
+  } = useConfigManagement();
 
   // 使用文件管理hook
   const {
@@ -85,8 +93,8 @@ export function SubtitleEpisodeGenerator({
     handleDragOver,
     handleDrop,
     handleDeleteFile,
-    handleSelectFile
-  } = useFileManagement()
+    handleSelectFile,
+  } = useFileManagement();
 
   // 使用内容生成hook
   const {
@@ -103,8 +111,8 @@ export function SubtitleEpisodeGenerator({
     handleMoveToTop,
     handleBatchExportToTMDB,
     handleAIImprovement,
-    aiImprovingIndex
-  } = useContentGeneration(config, subtitleFiles, selectedFile)
+    aiImprovingIndex,
+  } = useContentGeneration(config, subtitleFiles, selectedFile);
 
   // 使用视频分析hook
   const {
@@ -118,64 +126,64 @@ export function SubtitleEpisodeGenerator({
     setMovieTitle,
     handleVideoAnalysis,
     regenerateStructuredContent,
-    handleGenerateEpisodeFromVideo
+    handleGenerateEpisodeFromVideo,
   } = useVideoAnalysis(
     { speechRecognitionModel: config.speechRecognitionModel },
     siliconFlowApiKey
-  )
+  );
 
   // 使用场景模型配置
-  const scenarioModels = useScenarioModels('episode_generation')
+  const scenarioModels = useScenarioModels('episode_generation');
 
   // 处理全局设置对话框关闭事件
   useEffect(() => {
     const handleGlobalSettingsClose = (event: unknown) => {
       if (shouldReopenSettingsDialog) {
-        setShouldReopenSettingsDialog(false)
+        setShouldReopenSettingsDialog(false);
         // 延迟一点时间确保全局设置对话框完全关闭
         setTimeout(() => {
-          setShowSettingsDialog(true)
-        }, 100)
+          setShowSettingsDialog(true);
+        }, 100);
       }
-    }
+    };
 
-    window.addEventListener('global-settings-closed', handleGlobalSettingsClose)
+    window.addEventListener('global-settings-closed', handleGlobalSettingsClose);
 
     return () => {
-      window.removeEventListener('global-settings-closed', handleGlobalSettingsClose)
-    }
-  }, [shouldReopenSettingsDialog])
+      window.removeEventListener('global-settings-closed', handleGlobalSettingsClose);
+    };
+  }, [shouldReopenSettingsDialog]);
 
   // 检查是否有待导入的字幕数据（从硬字幕提取页面跳转过来）
   useEffect(() => {
     try {
-      const pendingImport = localStorage.getItem('pending-subtitle-import')
+      const pendingImport = localStorage.getItem('pending-subtitle-import');
       if (pendingImport) {
-        const { content, fileName } = JSON.parse(pendingImport)
+        const { content, fileName } = JSON.parse(pendingImport);
 
         // 创建一个 File 对象
-        const file = new File([content], fileName, { type: 'text/plain' })
+        const file = new File([content], fileName, { type: 'text/plain' });
 
         // 自动处理文件上传
-        processFiles([file])
+        processFiles([file]);
 
         // 清除 localStorage 中的待导入数据
-        localStorage.removeItem('pending-subtitle-import')
+        localStorage.removeItem('pending-subtitle-import');
 
         toast({
-          title: t("subtitleGenerator.subtitleAutoImported"),
-          description: t("subtitleGenerator.subtitleAutoImportedDesc", { fileName: fileName }),
-        })
+          title: t('subtitleGenerator.subtitleAutoImported'),
+          description: t('subtitleGenerator.subtitleAutoImportedDesc', { fileName: fileName }),
+        });
       }
     } catch (error) {
-      logger.error('自动导入字幕失败:', error)
+      logger.error('自动导入字幕失败:', error);
     }
-  }, [processFiles, toast])
+  }, [processFiles, toast, t]);
 
   // 显示导出对话框
   const handleExportResults = () => {
-    setShowExportDialog(true)
-  }
+    setShowExportDialog(true);
+  };
 
   return (
     <TooltipProvider>
@@ -188,178 +196,174 @@ export function SubtitleEpisodeGenerator({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-      {/* 拖拽覆盖层 */}
-      {isDragOver && (
-        <div className="absolute inset-0 z-50 bg-blue-500/20 dark:bg-blue-600/30 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-card/90 rounded-2xl p-8 shadow-2xl border-2 border-dashed border-primary text-center max-w-md mx-4">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-blue-500 blur-xl opacity-30 rounded-full"></div>
-              <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-full text-white">
-                <Upload className="h-12 w-12" />
+        {/* 拖拽覆盖层 */}
+        {isDragOver && (
+          <div className="absolute inset-0 z-50 bg-blue-500/20 dark:bg-blue-600/30 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-card/90 rounded-2xl p-8 shadow-2xl border-2 border-dashed border-primary text-center max-w-md mx-4">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-blue-500 blur-xl opacity-30 rounded-full"></div>
+                <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-full text-white">
+                  <Upload className="h-12 w-12" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                {t('subtitleGenerator.dropFileHint')}
+              </h3>
+              <p className="text-muted-foreground">{t('subtitleGenerator.supportedFormats')}</p>
+            </div>
+          </div>
+        )}
+
+        {/* 文件输入 */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".srt,.vtt,.ass,.ssa"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        {/* 主要内容区域 */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* 左侧文件列表 */}
+          <div className="w-full md:w-72 max-h-48 md:max-h-full border-b md:border-b-0 md:border-r border-border bg-muted/30 backdrop-blur-sm">
+            <FileList
+              files={subtitleFiles}
+              selectedFile={selectedFile}
+              onSelectFile={handleSelectFile}
+              onDeleteFile={handleDeleteFile}
+              onUpload={() => fileInputRef.current?.click()}
+              onOpenGlobalSettings={onOpenGlobalSettings}
+              onOpenSettings={() => setShowSettingsDialog(true)}
+              onBatchGenerate={() => handleBatchGenerateAll(setSubtitleFiles, setSelectedFile)}
+              onBatchExport={handleExportResults}
+              isGenerating={isGenerating}
+              apiConfigured={scenarioModels.availableModels.length > 0}
+              hasResults={Object.values(generationResults).some((results) => results.length > 0)}
+              videoAnalysisResult={videoAnalysisResult as any}
+              onShowAnalysisResult={() => setShowAnalysisResult(true)}
+            />
+          </div>
+
+          {/* 右侧主要工作区 */}
+          <div className="flex-1 flex flex-col">
+            {selectedFile ? (
+              <WorkArea
+                file={selectedFile}
+                results={generationResults[selectedFile.id] || []}
+                isGenerating={isGenerating}
+                progress={generationProgress}
+                onGenerate={handleBatchGenerate}
+                apiConfigured={scenarioModels.availableModels.length > 0}
+                onOpenGlobalSettings={onOpenGlobalSettings}
+                onUpdateResult={(resultIndex, updatedResult) =>
+                  handleUpdateResult(selectedFile.id, resultIndex, updatedResult)
+                }
+                onMoveToTop={(resultIndex) => handleMoveToTop(selectedFile.id, resultIndex)}
+                onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
+                  handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
+                }
+                onAIImprovement={(resultIndex, prompt) =>
+                  handleAIImprovement(selectedFile.id, resultIndex, prompt)
+                }
+                aiImprovingIndex={aiImprovingIndex}
+              />
+            ) : (
+              <EmptyState
+                onUpload={() => fileInputRef.current?.click()}
+                onVideoAnalysis={handleVideoAnalysis}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* 生成设置对话框 */}
+        <GenerationSettingsDialog
+          open={showSettingsDialog}
+          onOpenChange={setShowSettingsDialog}
+          config={config}
+          onConfigChange={setConfig}
+          onOpenGlobalSettings={onOpenGlobalSettings}
+          setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
+          scenarioModels={scenarioModels as any}
+        />
+
+        {/* 导出配置对话框 */}
+        <ExportConfigDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+          config={exportConfig}
+          onConfigChange={setExportConfig}
+          onExport={() => handleBatchExportToTMDB(exportConfig)}
+        />
+
+        {/* 视频分析结果对话框 */}
+        <VideoAnalysisResultDialog
+          open={showAnalysisResult}
+          onOpenChange={setShowAnalysisResult}
+          result={videoAnalysisResult as any}
+          movieTitle={movieTitle}
+          onMovieTitleChange={setMovieTitle}
+          onGenerateEpisode={() => {
+            if (videoAnalysisResult) {
+              handleGenerateEpisodeFromVideo(
+                videoAnalysisResult,
+                setSubtitleFiles,
+                setSelectedFile,
+                setLocalIsGenerating,
+                setLocalGenerationProgress,
+                setGenerationResults
+              );
+            }
+          }}
+        />
+
+        {/* 余额不足弹窗 */}
+        <Dialog
+          open={showInsufficientBalanceDialog}
+          onOpenChange={setShowInsufficientBalanceDialog}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                {t('subtitleGenerator.insufficientBalance')}
+              </DialogTitle>
+              <DialogDescription>
+                {t('subtitleGenerator.insufficientBalanceDesc')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <div className="text-sm text-muted-foreground">
+                <p>{t('subtitleGenerator.visitToRecharge')}</p>
+                <a
+                  href="https://cloud.siliconflow.cn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-600 underline"
+                >
+                  https://cloud.siliconflow.cn
+                </a>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowInsufficientBalanceDialog(false)}>
+                  {t('subtitleGenerator.gotIt')}
+                </Button>
+                <Button
+                  onClick={() => {
+                    window.open('https://cloud.siliconflow.cn', '_blank');
+                    setShowInsufficientBalanceDialog(false);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  {t('subtitleGenerator.goToRecharge')}
+                </Button>
               </div>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              {t("subtitleGenerator.dropFileHint")}
-            </h3>
-            <p className="text-muted-foreground">
-              {t("subtitleGenerator.supportedFormats")}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 文件输入 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept=".srt,.vtt,.ass,.ssa"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-
-      {/* 主要内容区域 */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* 左侧文件列表 */}
-        <div className="w-full md:w-72 max-h-48 md:max-h-full border-b md:border-b-0 md:border-r border-border bg-muted/30 backdrop-blur-sm">
-          <FileList
-            files={subtitleFiles}
-            selectedFile={selectedFile}
-            onSelectFile={handleSelectFile}
-            onDeleteFile={handleDeleteFile}
-            onUpload={() => fileInputRef.current?.click()}
-            onOpenGlobalSettings={onOpenGlobalSettings}
-            onOpenSettings={() => setShowSettingsDialog(true)}
-            onBatchGenerate={() => handleBatchGenerateAll(setSubtitleFiles, setSelectedFile)}
-            onBatchExport={handleExportResults}
-            isGenerating={isGenerating}
-            apiConfigured={scenarioModels.availableModels.length > 0}
-            hasResults={Object.values(generationResults).some(results => results.length > 0)}
-            videoAnalysisResult={videoAnalysisResult}
-            onShowAnalysisResult={() => setShowAnalysisResult(true)}
-          />
-        </div>
-
-        {/* 右侧主要工作区 */}
-        <div className="flex-1 flex flex-col">
-          {selectedFile ? (
-            <WorkArea
-              file={selectedFile}
-              results={generationResults[selectedFile.id] || []}
-              isGenerating={isGenerating}
-              progress={generationProgress}
-              onGenerate={handleBatchGenerate}
-              apiConfigured={scenarioModels.availableModels.length > 0}
-              onOpenGlobalSettings={onOpenGlobalSettings}
-              onUpdateResult={(resultIndex, updatedResult) =>
-                handleUpdateResult(selectedFile.id, resultIndex, updatedResult)
-              }
-              onMoveToTop={(resultIndex) =>
-                handleMoveToTop(selectedFile.id, resultIndex)
-              }
-              onEnhanceContent={(resultIndex, operation, selectedTextInfo) =>
-                handleEnhanceContent(selectedFile.id, resultIndex, operation, selectedTextInfo)
-              }
-              onAIImprovement={(resultIndex, prompt) =>
-                handleAIImprovement(selectedFile.id, resultIndex, prompt)
-              }
-              aiImprovingIndex={aiImprovingIndex}
-            />
-          ) : (
-            <EmptyState
-              onUpload={() => fileInputRef.current?.click()}
-              onVideoAnalysis={handleVideoAnalysis}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* 生成设置对话框 */}
-      <GenerationSettingsDialog
-        open={showSettingsDialog}
-        onOpenChange={setShowSettingsDialog}
-        config={config}
-        onConfigChange={setConfig}
-        onOpenGlobalSettings={onOpenGlobalSettings}
-        setShouldReopenSettingsDialog={setShouldReopenSettingsDialog}
-        scenarioModels={scenarioModels}
-      />
-
-      {/* 导出配置对话框 */}
-      <ExportConfigDialog
-        open={showExportDialog}
-        onOpenChange={setShowExportDialog}
-        config={exportConfig}
-        onConfigChange={setExportConfig}
-        onExport={handleBatchExportToTMDB}
-      />
-
-      {/* 视频分析结果对话框 */}
-      <VideoAnalysisResultDialog
-        open={showAnalysisResult}
-        onOpenChange={setShowAnalysisResult}
-        result={videoAnalysisResult}
-        movieTitle={movieTitle}
-        onMovieTitleChange={setMovieTitle}
-        onGenerateEpisode={() => {
-          if (videoAnalysisResult) {
-            handleGenerateEpisodeFromVideo(
-              videoAnalysisResult,
-              setSubtitleFiles,
-              setSelectedFile,
-              setIsGenerating,
-              setGenerationProgress,
-              setGenerationResults
-            )
-          }
-        }}
-      />
-
-      {/* 余额不足弹窗 */}
-      <Dialog open={showInsufficientBalanceDialog} onOpenChange={setShowInsufficientBalanceDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              {t("subtitleGenerator.insufficientBalance")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("subtitleGenerator.insufficientBalanceDesc")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div className="text-sm text-muted-foreground">
-              <p>{t("subtitleGenerator.visitToRecharge")}</p>
-              <a
-                href="https://cloud.siliconflow.cn"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-600 underline"
-              >
-                https://cloud.siliconflow.cn
-              </a>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowInsufficientBalanceDialog(false)}
-              >
-                {t("subtitleGenerator.gotIt")}
-              </Button>
-              <Button
-                onClick={() => {
-                  window.open('https://cloud.siliconflow.cn', '_blank')
-                  setShowInsufficientBalanceDialog(false)
-                }}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                {t("subtitleGenerator.goToRecharge")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
-  )
+  );
 }

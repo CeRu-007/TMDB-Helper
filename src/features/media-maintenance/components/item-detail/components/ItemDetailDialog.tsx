@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useRef, memo } from "react"
-import { logger } from '@/lib/utils/logger'
-import { useTranslation } from "react-i18next"
-import { DELAY_1S, DELAY_2S } from "@/lib/constants/constants"
-import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
+import React, { useState, useEffect, useRef, memo } from 'react';
+import { logger } from '@/lib/utils/logger';
+import { useTranslation } from 'react-i18next';
+import { DELAY_1S, DELAY_2S } from '@/lib/constants/constants';
+import { realtimeSyncManager } from '@/lib/data/realtime-sync-manager';
 import {
   Sparkles,
   Tv,
@@ -27,22 +27,28 @@ import {
   ChevronDown,
   Plus,
   Star,
-} from "lucide-react"
-import type { TMDBItem, Episode, Season } from "@/types/tmdb-item"
-import { cn } from "@/lib/utils"
-import { ClientConfigManager } from "@/lib/utils/client-config-manager"
+} from 'lucide-react';
+import type { TMDBItem, Episode, Season } from '@/types/tmdb-item';
+import { cn } from '@/lib/utils';
+import { ClientConfigManager } from '@/lib/utils/client-config-manager';
 
 // UI 组件
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
-import { Badge } from "@/shared/components/ui/badge"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Button } from "@/shared/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
-import { BackgroundImage } from "@/shared/components/ui/background-image"
-import { CachedImage } from "@/shared/components/ui/cached-image"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { Badge } from '@/shared/components/ui/badge';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Button } from '@/shared/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { BackgroundImage } from '@/shared/components/ui/background-image';
+import { CachedImage } from '@/shared/components/ui/cached-image';
 
 // 导入重构后的组件
 import {
@@ -53,45 +59,74 @@ import {
   DeleteSeasonDialog,
   DeleteItemDialog,
   ScheduleTab,
-} from "./index"
+} from './index';
 
 // 导入自定义 Hooks
-import {
-  useItemDetailState
-} from "../hooks"
-import { useItemImagesPreloader } from "@/lib/hooks/useItemImagesPreloader"
+import { useItemDetailState } from '../hooks';
+import { useItemImagesPreloader } from '@/lib/hooks/useItemImagesPreloader';
 
 // 导入对话框组件
-import FixTMDBImportBugDialog from "@/features/tmdb-import/components/fix-tmdb-import-bug-dialog"
+import FixTMDBImportBugDialog from '@/features/tmdb-import/components/fix-tmdb-import-bug-dialog';
 
-const WEEKDAYS_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const
-type WeekdayKey = typeof WEEKDAYS_KEYS[number]
+const WEEKDAYS_KEYS = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+] as const;
+type WeekdayKey = (typeof WEEKDAYS_KEYS)[number];
 
-type CategoryType = "anime" | "tv" | "kids" | "variety" | "short";
+type CategoryType = 'anime' | 'tv' | 'kids' | 'variety' | 'short';
 
 interface ItemDetailDialogProps {
-  item: TMDBItem
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUpdate: (item: TMDBItem) => void
-  onDelete: (id: string) => void
-  displayMode?: "dialog" | "inline"
+  item: TMDBItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: (item: TMDBItem) => void;
+  onDelete: (id: string) => void;
+  displayMode?: 'dialog' | 'inline';
 }
 
-const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, onOpenChange, onUpdate, onDelete, displayMode = "dialog" }: ItemDetailDialogProps) {
-  const { t } = useTranslation("media")
-  const { t: tSchedule } = useTranslation("schedule")
-  const contentRef = useRef<HTMLDivElement>(null)
+const ItemDetailDialogComponent = memo(function ItemDetailDialog({
+  item,
+  open,
+  onOpenChange,
+  onUpdate,
+  onDelete,
+  displayMode = 'dialog',
+}: ItemDetailDialogProps) {
+  const { t } = useTranslation('media');
+  const { t: tSchedule } = useTranslation('schedule');
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const CATEGORIES = [
-    { id: "anime", name: t("categoryAnime"), icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "tv", name: t("categoryTv"), icon: <Tv className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "kids", name: t("categoryKids"), icon: <Baby className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "variety", name: t("categoryVariety"), icon: <Popcorn className="h-4 w-4 mr-2" strokeWidth={2} /> },
-    { id: "short", name: t("categoryShort"), icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} /> },
-  ]
+    {
+      id: 'anime',
+      name: t('categoryAnime'),
+      icon: <Sparkles className="h-4 w-4 mr-2" strokeWidth={2} />,
+    },
+    { id: 'tv', name: t('categoryTv'), icon: <Tv className="h-4 w-4 mr-2" strokeWidth={2} /> },
+    {
+      id: 'kids',
+      name: t('categoryKids'),
+      icon: <Baby className="h-4 w-4 mr-2" strokeWidth={2} />,
+    },
+    {
+      id: 'variety',
+      name: t('categoryVariety'),
+      icon: <Popcorn className="h-4 w-4 mr-2" strokeWidth={2} />,
+    },
+    {
+      id: 'short',
+      name: t('categoryShort'),
+      icon: <Ticket className="h-4 w-4 mr-2" strokeWidth={2} />,
+    },
+  ];
 
-  const WEEKDAYS = WEEKDAYS_KEYS.map(key => t(`weekdaysList.${key}` as const))
+  const WEEKDAYS = WEEKDAYS_KEYS.map((key) => t(`weekdaysList.${key}` as const));
 
   // 核心状态管理
   const {
@@ -126,32 +161,38 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     setAppearanceSettings,
     updateLocalItem,
     showFeedback,
-  } = useItemDetailState({ item, onUpdate })
+  } = useItemDetailState({ item, onUpdate });
 
   const onClearRefreshError = () => {
-    setRefreshError(null)
-  }
+    setRefreshError(null);
+  };
 
-  const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined)
-  const [customSeasonNumber, setCustomSeasonNumber] = useState(1)
-  const [mobileInfoExpanded, setMobileInfoExpanded] = useState(false)
+  const [selectedSeason, setSelectedSeason] = useState<number | undefined>(undefined);
+  const [customSeasonNumber, setCustomSeasonNumber] = useState(1);
+  const [mobileInfoExpanded, setMobileInfoExpanded] = useState(false);
 
-  useItemImagesPreloader(item)
+  useItemImagesPreloader(item);
 
-  const currentSeason = localItem.seasons?.find(s => s.seasonNumber === selectedSeason) || null
+  const currentSeason = localItem.seasons?.find((s) => s.seasonNumber === selectedSeason) || null;
 
   function getNextSeasonNumber(seasons: Season[]): number {
-    if (!seasons || seasons.length === 0) return 1
-    const existingNumbers = seasons.map(s => s.seasonNumber)
-    for (let i = 1; i <= existingNumbers.length + 1; i++) {
-      if (!existingNumbers.includes(i)) return i
+    if (!seasons || seasons.length === 0) {
+      return 1;
     }
-    return Math.max(...existingNumbers) + 1
+    const existingNumbers = seasons.map((s) => s.seasonNumber);
+    for (let i = 1; i <= existingNumbers.length + 1; i++) {
+      if (!existingNumbers.includes(i)) {
+        return i;
+      }
+    }
+    return Math.max(...existingNumbers) + 1;
   }
 
   function getInlineContainer(): HTMLElement | null {
-    if (typeof document === 'undefined') return null
-    return document.body
+    if (typeof document === 'undefined') {
+      return null;
+    }
+    return document.body;
   }
 
   async function saveItemDirectly(updatedItem: TMDBItem): Promise<boolean> {
@@ -165,209 +206,233 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': 'user_admin_system'
+          'x-user-id': 'user_admin_system',
         },
-        body: JSON.stringify({ item: updatedItem })
-      })
+        body: JSON.stringify({ item: updatedItem }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        logger.error('[saveItemDirectly] 保存项目失败:', errorData.error || response.statusText)
-        return false
+        const errorData = await response.json();
+        logger.error('[saveItemDirectly] 保存项目失败:', errorData.error || response.statusText);
+        return false;
       }
 
-      await response.json()
-      onUpdate(updatedItem)
+      await response.json();
+      onUpdate(updatedItem);
 
-      realtimeSyncManager.notifyDataChange({
-        type: 'item_updated',
-        data: updatedItem
-      }).catch((syncError) => {
-        logger.warn('[saveItemDirectly] 发送实时同步事件失败:', syncError)
-      })
+      realtimeSyncManager
+        .notifyDataChange({
+          type: 'item_updated',
+          data: updatedItem,
+        })
+        .catch((syncError) => {
+          logger.warn('[saveItemDirectly] 发送实时同步事件失败:', syncError);
+        });
 
-      return true
+      return true;
     } catch (error) {
-      logger.error('[saveItemDirectly] 保存项目时出错:', error)
-      return false
+      logger.error('[saveItemDirectly] 保存项目时出错:', error);
+      return false;
     }
   }
 
   useEffect(() => {
-    setLocalItem(item)
-    setEditData(item)
-  }, [item])
+    setLocalItem(item);
+    setEditData(item);
+  }, [item, setEditData, setLocalItem]);
 
   useEffect(() => {
     const initializeSettings = async () => {
       try {
-        const savedSettings = await ClientConfigManager.getItem("general_settings")
-        const parsed = savedSettings ? JSON.parse(savedSettings) : null
+        const savedSettings = await ClientConfigManager.getItem('general_settings');
+        const parsed = savedSettings ? JSON.parse(savedSettings) : null;
 
         setAppearanceSettings({
           detailBackdropBlurEnabled: parsed?.detailBackdropBlurEnabled ?? true,
           detailBackdropBlurIntensity: parsed?.detailBackdropBlurIntensity ?? 'medium',
           detailBackdropOverlayOpacity: 0.25,
-        })
+        });
       } catch {
         setAppearanceSettings({
           detailBackdropBlurEnabled: true,
           detailBackdropBlurIntensity: 'medium',
           detailBackdropOverlayOpacity: 0.25,
-        })
+        });
       }
-    }
+    };
 
-    initializeSettings()
-  }, [])
+    initializeSettings();
+  }, [setAppearanceSettings]);
 
   useEffect(() => {
-    const seasons = localItem.seasons || []
+    const seasons = localItem.seasons || [];
 
     if (seasons.length > 0) {
-      const maxSeasonNumber = Math.max(...seasons.map(s => s.seasonNumber || 1))
-      setSelectedSeason(maxSeasonNumber)
-      setCustomSeasonNumber(getNextSeasonNumber(seasons))
-    } else if (localItem.mediaType === "tv") {
-      setSelectedSeason(1)
-      setCustomSeasonNumber(1)
+      const maxSeasonNumber = Math.max(...seasons.map((s) => s.seasonNumber || 1));
+      setSelectedSeason(maxSeasonNumber);
+      setCustomSeasonNumber(getNextSeasonNumber(seasons));
+    } else if (localItem.mediaType === 'tv') {
+      setSelectedSeason(1);
+      setCustomSeasonNumber(1);
     }
-  }, [localItem])
+  }, [localItem]);
 
   function handleSeasonClick(seasonNumber: number): void {
-    setSelectedSeason(seasonNumber)
-    setCustomSeasonNumber(getNextSeasonNumber(localItem.seasons || []))
-    showFeedback(t("switchedToSeason", { season: seasonNumber }), 1000)
+    setSelectedSeason(seasonNumber);
+    setCustomSeasonNumber(getNextSeasonNumber(localItem.seasons || []));
+    showFeedback(t('switchedToSeason', { season: seasonNumber }), 1000);
   }
 
   function handleDeleteSeason(): void {
-    if (!selectedSeason) return
-    setSeasonToDelete(selectedSeason)
-    setShowDeleteSeasonDialog(true)
+    if (!selectedSeason) {
+      return;
+    }
+    setSeasonToDelete(selectedSeason);
+    setShowDeleteSeasonDialog(true);
   }
 
   async function confirmDeleteSeason(): Promise<void> {
-    if (!seasonToDelete || !localItem.seasons) return
+    if (!seasonToDelete || !localItem.seasons) {
+      return;
+    }
 
-    const updatedSeasons = localItem.seasons.filter(s => s.seasonNumber !== seasonToDelete)
-    const updatedTotalEpisodes = updatedSeasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+    const updatedSeasons = localItem.seasons.filter((s) => s.seasonNumber !== seasonToDelete);
+    const updatedTotalEpisodes = updatedSeasons.reduce(
+      (sum, season) => sum + season.totalEpisodes,
+      0
+    );
 
-    const updatedEpisodes = updatedSeasons.flatMap(season =>
-      season.episodes?.map(ep => ({
-        ...ep,
-        seasonNumber: season.seasonNumber,
-      })) || []
-    )
+    const updatedEpisodes = updatedSeasons.flatMap(
+      (season) =>
+        season.episodes?.map((ep) => ({
+          ...ep,
+          seasonNumber: season.seasonNumber,
+        })) || []
+    );
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
       totalEpisodes: updatedTotalEpisodes,
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
-      showFeedback(t("seasonDeleted", { season: seasonToDelete }), DELAY_2S)
-      setShowDeleteSeasonDialog(false)
-      setSeasonToDelete(null)
+      updateLocalItem(updatedItem, false);
+      showFeedback(t('seasonDeleted', { season: seasonToDelete }), DELAY_2S);
+      setShowDeleteSeasonDialog(false);
+      setSeasonToDelete(null);
 
       if (updatedSeasons.length > 0) {
-        const maxSeason = Math.max(...updatedSeasons.map(s => s.seasonNumber))
-        setSelectedSeason(maxSeason)
-        setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons))
+        const maxSeason = Math.max(...updatedSeasons.map((s) => s.seasonNumber));
+        setSelectedSeason(maxSeason);
+        setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons));
       } else {
-        setSelectedSeason(undefined)
+        setSelectedSeason(undefined);
       }
     } else {
-      showFeedback(t("deleteSeasonFailed"))
+      showFeedback(t('deleteSeasonFailed'));
     }
   }
 
   async function handleResetSeason(): Promise<void> {
-    if (!selectedSeason || !currentSeason) return
+    if (!selectedSeason || !currentSeason) {
+      return;
+    }
 
-    const updatedSeasons = localItem.seasons?.map(season => {
-      if (season.seasonNumber === selectedSeason) {
-        return {
-          ...season,
-          episodes: season.episodes?.map(ep => ({ ...ep, completed: false })) || []
+    const updatedSeasons =
+      localItem.seasons?.map((season) => {
+        if (season.seasonNumber === selectedSeason) {
+          return {
+            ...season,
+            episodes: season.episodes?.map((ep) => ({ ...ep, completed: false })) || [],
+          };
         }
-      }
-      return season
-    }) || []
+        return season;
+      }) || [];
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
-      episodes: updatedSeasons.flatMap(s =>
-        s.episodes?.map(ep => ({ ...ep, seasonNumber: s.seasonNumber })) || []
+      episodes: updatedSeasons.flatMap(
+        (s) => s.episodes?.map((ep) => ({ ...ep, seasonNumber: s.seasonNumber })) || []
       ),
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
-      showFeedback(t("seasonReset", { season: selectedSeason }), DELAY_2S)
+      updateLocalItem(updatedItem, false);
+      showFeedback(t('seasonReset', { season: selectedSeason }), DELAY_2S);
     } else {
-      showFeedback(t("resetSeasonFailed"))
+      showFeedback(t('resetSeasonFailed'));
     }
   }
 
   function handleTotalEpisodesChange(newCount: number): void {
-    if (!selectedSeason || !localItem.seasons) return
+    if (!selectedSeason || !localItem.seasons) {
+      return;
+    }
 
-    const currentSeason = localItem.seasons.find(function(s: Season) { return s.seasonNumber === selectedSeason })
-    if (!currentSeason) return
+    const currentSeason = localItem.seasons.find(function (s: Season) {
+      return s.seasonNumber === selectedSeason;
+    });
+    if (!currentSeason) {
+      return;
+    }
 
-    const oldCount = currentSeason.totalEpisodes
-    if (newCount === oldCount) return
+    const oldCount = currentSeason.totalEpisodes;
+    if (newCount === oldCount) {
+      return;
+    }
 
-    setShowEpisodeChangeDialog(true)
+    setShowEpisodeChangeDialog(true);
     setEpisodeChangeData({
       oldCount,
       newCount,
-      action: newCount > oldCount ? "increase" : "decrease"
-    })
+      action: newCount > oldCount ? 'increase' : 'decrease',
+    });
   }
 
   async function confirmEpisodeChange(): Promise<void> {
-    if (!episodeChangeData || !selectedSeason || !localItem.seasons) return
+    if (!episodeChangeData || !selectedSeason || !localItem.seasons) {
+      return;
+    }
 
-    const { oldCount, newCount } = episodeChangeData
+    const { oldCount, newCount } = episodeChangeData;
 
-    const updatedSeasons = localItem.seasons.map(season => {
+    const updatedSeasons = localItem.seasons.map((season) => {
       if (season.seasonNumber === selectedSeason) {
-        let updatedEpisodes = [...(season.episodes || [])]
+        let updatedEpisodes = [...(season.episodes || [])];
 
         if (newCount > oldCount) {
           const newEpisodes = Array.from({ length: newCount - oldCount }, (_, i) => ({
             number: oldCount + i + 1,
             completed: false,
-          }))
-          updatedEpisodes = [...updatedEpisodes, ...newEpisodes]
+          }));
+          updatedEpisodes = [...updatedEpisodes, ...newEpisodes];
         } else {
-          updatedEpisodes = updatedEpisodes.slice(0, newCount)
+          updatedEpisodes = updatedEpisodes.slice(0, newCount);
         }
 
         return {
           ...season,
           totalEpisodes: newCount,
           episodes: updatedEpisodes,
-        }
+        };
       }
-      return season
-    })
+      return season;
+    });
 
-    const updatedEpisodes = updatedSeasons.flatMap(season =>
-      season.episodes?.map(ep => ({
-        ...ep,
-        seasonNumber: season.seasonNumber,
-      })) || []
-    )
+    const updatedEpisodes = updatedSeasons.flatMap(
+      (season) =>
+        season.episodes?.map((ep) => ({
+          ...ep,
+          seasonNumber: season.seasonNumber,
+        })) || []
+    );
 
     const updatedItem = {
       ...localItem,
@@ -375,31 +440,33 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
       episodes: updatedEpisodes,
       totalEpisodes: updatedSeasons.reduce((sum, s) => sum + s.totalEpisodes, 0),
       updatedAt: new Date().toISOString(),
-    }
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
-      showFeedback(t("episodeCountUpdated", { season: selectedSeason, count: newCount }), DELAY_2S)
-      setShowEpisodeChangeDialog(false)
-      setEpisodeChangeData(null)
+      updateLocalItem(updatedItem, false);
+      showFeedback(t('episodeCountUpdated', { season: selectedSeason, count: newCount }), DELAY_2S);
+      setShowEpisodeChangeDialog(false);
+      setEpisodeChangeData(null);
     } else {
-      showFeedback(t("updateEpisodeCountFailed"))
+      showFeedback(t('updateEpisodeCountFailed'));
     }
   }
 
   function cancelEpisodeChange(): void {
-    setShowEpisodeChangeDialog(false)
-    setEpisodeChangeData(null)
+    setShowEpisodeChangeDialog(false);
+    setEpisodeChangeData(null);
   }
 
   async function handleAddSeason(seasonNumber: number, episodeCount: number): Promise<void> {
-    if (seasonNumber < 1 || episodeCount < 1) return
+    if (seasonNumber < 1 || episodeCount < 1) {
+      return;
+    }
 
-    const seasonExists = localItem.seasons?.some(s => s.seasonNumber === seasonNumber)
+    const seasonExists = localItem.seasons?.some((s) => s.seasonNumber === seasonNumber);
     if (seasonExists) {
-      showFeedback(t("seasonAlreadyExists", { season: seasonNumber }))
-      return
+      showFeedback(t('seasonAlreadyExists', { season: seasonNumber }));
+      return;
     }
 
     const newSeason = {
@@ -409,38 +476,39 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         number: i + 1,
         completed: false,
       })),
-    }
+    };
 
-    const updatedSeasons = [...(localItem.seasons || []), newSeason]
-      .sort((a, b) => a.seasonNumber - b.seasonNumber)
+    const updatedSeasons = [...(localItem.seasons || []), newSeason].sort(
+      (a, b) => a.seasonNumber - b.seasonNumber
+    );
 
     const updatedEpisodes = [
       ...(localItem.episodes || []),
-      ...newSeason.episodes.map(ep => ({
+      ...newSeason.episodes.map((ep) => ({
         ...ep,
         seasonNumber: newSeason.seasonNumber,
       })),
-    ]
+    ];
 
-    const newTotalEpisodes = updatedSeasons.reduce((sum, s) => sum + s.totalEpisodes, 0)
+    const newTotalEpisodes = updatedSeasons.reduce((sum, s) => sum + s.totalEpisodes, 0);
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
       episodes: updatedEpisodes,
       totalEpisodes: newTotalEpisodes,
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
+      updateLocalItem(updatedItem, false);
 
-      setSelectedSeason(seasonNumber)
-      setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons))
-      showFeedback(t("seasonAdded", { season: seasonNumber, count: episodeCount }), DELAY_2S)
+      setSelectedSeason(seasonNumber);
+      setCustomSeasonNumber(getNextSeasonNumber(updatedSeasons));
+      showFeedback(t('seasonAdded', { season: seasonNumber, count: episodeCount }), DELAY_2S);
     } else {
-      showFeedback(t("addSeasonFailed"))
+      showFeedback(t('addSeasonFailed'));
     }
   }
 
@@ -448,41 +516,43 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
     const updatedItem = {
       ...localItem,
       completed,
-      status: completed ? ("completed" as const) : ("ongoing" as const),
+      status: completed ? ('completed' as const) : ('ongoing' as const),
       updatedAt: new Date().toISOString(),
-    }
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
+      updateLocalItem(updatedItem, false);
     } else {
-      showFeedback(t("updateStatusFailed"))
+      showFeedback(t('updateStatusFailed'));
     }
   }
 
   async function refreshSeasonFromTMDB(): Promise<void> {
     if (!editData.tmdbId) {
-      showFeedback(t("noTmdbIdForRefresh"))
-      return
+      showFeedback(t('noTmdbIdForRefresh'));
+      return;
     }
 
-    setIsRefreshingTMDBData(true)
-    setRefreshError(null)
+    setIsRefreshingTMDBData(true);
+    setRefreshError(null);
 
     try {
-      const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`
+      const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
 
-      const response = await fetch(`/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`)
+      const response = await fetch(
+        `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`
+      );
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const apiResponse = await response.json()
-      const tmdbData = apiResponse.success ? apiResponse.data : null
+      const apiResponse = await response.json();
+      const tmdbData = apiResponse.success ? apiResponse.data : null;
 
       if (!tmdbData) {
-        throw new Error(apiResponse.error || t("errors.tmdbFetchFailed"))
+        throw new Error(apiResponse.error || t('errors.tmdbFetchFailed'));
       }
 
       const updatedItem: TMDBItem = {
@@ -500,102 +570,109 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         networks: tmdbData.networks,
         overview: tmdbData.overview,
         platformUrls: localItem.platformUrls,
-        seasons: tmdbData.seasons?.map(function(newSeason: Season) {
-          const existingSeason = localItem.seasons?.find(function(s: Season) { return s.seasonNumber === newSeason.seasonNumber })
+        seasons: tmdbData.seasons?.map(function (newSeason: Season) {
+          const existingSeason = localItem.seasons?.find(function (s: Season) {
+            return s.seasonNumber === newSeason.seasonNumber;
+          });
           return {
             ...newSeason,
-            currentEpisode: existingSeason?.currentEpisode ?? newSeason.currentEpisode
-          }
+            currentEpisode: existingSeason?.currentEpisode ?? newSeason.currentEpisode,
+          };
         }),
-        updatedAt: new Date().toISOString()
-      }
+        updatedAt: new Date().toISOString(),
+      };
 
-      setLocalItem(updatedItem)
+      setLocalItem(updatedItem);
 
-      const success = await saveItemDirectly(updatedItem)
+      const success = await saveItemDirectly(updatedItem);
       if (!success) {
-        throw new Error(t("dataSaveFailed"))
+        throw new Error(t('dataSaveFailed'));
       }
 
-      const baseText = t("tmdbDataRefreshed")
-      const extraText = editData.mediaType === "tv" ? t("networkLogo") : ""
-      const backdropText = tmdbData.hasNewBackdrop ? t("backdropImage") : ""
-      showFeedback(`${baseText}${extraText}${backdropText}`)
-
+      const baseText = t('tmdbDataRefreshed');
+      const extraText = editData.mediaType === 'tv' ? t('networkLogo') : '';
+      const backdropText = tmdbData.hasNewBackdrop ? t('backdropImage') : '';
+      showFeedback(`${baseText}${extraText}${backdropText}`);
     } catch (error) {
-      setRefreshError(error instanceof Error ? error.message : t("refreshTmdbDataFailed"))
+      setRefreshError(error instanceof Error ? error.message : t('refreshTmdbDataFailed'));
     } finally {
-      setIsRefreshingTMDBData(false)
+      setIsRefreshingTMDBData(false);
     }
   }
 
   const progress = localItem.seasons?.length
     ? {
         completed: localItem.seasons.reduce((sum, season) => sum + (season.currentEpisode || 0), 0),
-        total: localItem.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0)
+        total: localItem.seasons.reduce((sum, season) => sum + season.totalEpisodes, 0),
       }
     : {
         completed: localItem.seasons?.[0]?.currentEpisode || 0,
-        total: localItem.seasons?.[0]?.totalEpisodes || 0
-      }
+        total: localItem.seasons?.[0]?.totalEpisodes || 0,
+      };
 
-  const isDailyUpdate = localItem.isDailyUpdate
+  const isDailyUpdate = localItem.isDailyUpdate;
 
   function isInPopover(element: HTMLElement | null): boolean {
-    let current = element
+    let current = element;
     while (current) {
-      if (current.hasAttribute('data-radix-select-content') ||
-          current.hasAttribute('data-radix-popover-content') ||
-          current.getAttribute('role') === 'dialog' ||
-          current.hasAttribute('data-radix-scroll-area-viewport') ||
-          current.closest('[data-radix-select-content]') ||
-          current.closest('[data-radix-popover-content]') ||
-          current.closest('[role="dialog"]') ||
-          current.closest('[data-radix-scroll-area-viewport]')) {
-        return true
+      if (
+        current.hasAttribute('data-radix-select-content') ||
+        current.hasAttribute('data-radix-popover-content') ||
+        current.getAttribute('role') === 'dialog' ||
+        current.hasAttribute('data-radix-scroll-area-viewport') ||
+        current.closest('[data-radix-select-content]') ||
+        current.closest('[data-radix-popover-content]') ||
+        current.closest('[role="dialog"]') ||
+        current.closest('[data-radix-scroll-area-viewport]')
+      ) {
+        return true;
       }
-      current = current.parentElement
+      current = current.parentElement;
     }
-    return false
+    return false;
   }
 
   // 辅助函数：查找可滚动元素
   function findScrollableElement(start: HTMLElement): HTMLElement | null {
-    let current = start
+    let current = start;
     while (current && current !== contentRef.current) {
-      const style = window.getComputedStyle(current)
-      const overflowY = style.overflowY
-      if ((overflowY === 'auto' || overflowY === 'scroll') &&
-          current.scrollHeight > current.clientHeight) {
-        return current
+      const style = window.getComputedStyle(current);
+      const overflowY = style.overflowY;
+      if (
+        (overflowY === 'auto' || overflowY === 'scroll') &&
+        current.scrollHeight > current.clientHeight
+      ) {
+        return current;
       }
       if (current.hasAttribute('data-radix-scroll-area-viewport')) {
-        return current
+        return current;
       }
-      current = current.parentElement
+      current = current.parentElement!;
     }
-    return null
+    return null;
   }
 
   function handleScroll(deltaY: number, target: Element): void {
-    if (!contentRef.current) return
-
-    if (isInPopover(target as HTMLElement)) {
-      return
+    if (!contentRef.current) {
+      return;
     }
 
-    const scrollableElement = findScrollableElement(target as HTMLElement)
+    if (isInPopover(target as HTMLElement)) {
+      return;
+    }
+
+    const scrollableElement = findScrollableElement(target as HTMLElement);
 
     if (scrollableElement && contentRef.current.contains(scrollableElement)) {
-      const scrollTop = scrollableElement.scrollTop
-      const scrollHeight = scrollableElement.scrollHeight
-      const clientHeight = scrollableElement.clientHeight
+      const scrollTop = scrollableElement.scrollTop;
+      const scrollHeight = scrollableElement.scrollHeight;
+      const clientHeight = scrollableElement.clientHeight;
 
-      const canScroll = (deltaY < 0 && scrollTop > 0) ||
-                       (deltaY > 0 && scrollTop < scrollHeight - clientHeight)
+      const canScroll =
+        (deltaY < 0 && scrollTop > 0) || (deltaY > 0 && scrollTop < scrollHeight - clientHeight);
 
       if (canScroll) {
-        scrollableElement.scrollTop += deltaY
+        scrollableElement.scrollTop += deltaY;
       }
     }
   }
@@ -603,212 +680,237 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
   function cleanupContainerStyles(container: HTMLElement): void {
     try {
       if (container.dataset.tmhManaged) {
-        const prevOverflow = container.dataset.tmhPrevOverflow ?? ''
-        container.style.overflow = prevOverflow
-        container.style.removeProperty('--dialog-left')
-        container.style.removeProperty('--dialog-top')
-        container.style.removeProperty('--dialog-width')
-        container.style.removeProperty('--dialog-height')
-        delete container.dataset.tmhPrevOverflow
-        delete container.dataset.tmhManaged
+        const prevOverflow = container.dataset.tmhPrevOverflow ?? '';
+        container.style.overflow = prevOverflow;
+        container.style.removeProperty('--dialog-left');
+        container.style.removeProperty('--dialog-top');
+        container.style.removeProperty('--dialog-width');
+        container.style.removeProperty('--dialog-height');
+        delete container.dataset.tmhPrevOverflow;
+        delete container.dataset.tmhManaged;
       } else {
-        container.style.overflow = ''
+        container.style.overflow = '';
       }
     } catch {
-      container.style.overflow = ''
+      container.style.overflow = '';
     }
   }
 
   function setupContainerStyles(container: HTMLElement): void {
     try {
-      container.dataset.tmhPrevOverflow = container.style.overflow || ''
-      container.dataset.tmhManaged = '1'
+      container.dataset.tmhPrevOverflow = container.style.overflow || '';
+      container.dataset.tmhManaged = '1';
     } catch {}
-    container.style.overflow = 'hidden'
+    container.style.overflow = 'hidden';
   }
 
-  useEffect(function() {
-    if (displayMode !== 'inline') return undefined
-    const container = getInlineContainer()
-    if (!container) return undefined
-    if (open) {
-      const mainContent = document.getElementById('main-content-container')
-      if (mainContent) {
-        const rect = mainContent.getBoundingClientRect()
-        container.style.setProperty('--dialog-left', `${rect.left}px`)
-        container.style.setProperty('--dialog-top', `${rect.top}px`)
-        container.style.setProperty('--dialog-width', `${rect.width}px`)
-        container.style.setProperty('--dialog-height', `${rect.height}px`)
+  useEffect(
+    function () {
+      if (displayMode !== 'inline') {
+        return undefined;
       }
-
-      setupContainerStyles(container)
-
-      const root = document.documentElement
-      const body = document.body
-      const savedScrollY = window.scrollY || window.pageYOffset || 0
-      const prevRootOverflow = root.style.overflow
-      const prevBodyOverflow = body.style.overflow
-      const prevBodyPosition = body.style.position
-      const prevBodyTop = body.style.top
-      const prevBodyWidth = body.style.width
-      const prevRootOverscroll = root.style.overscrollBehavior
-      const prevBodyOverscroll = body.style.overscrollBehavior
-
-      root.style.overflow = 'hidden'
-      body.style.overflow = 'hidden'
-      root.style.overscrollBehavior = 'none'
-      body.style.overscrollBehavior = 'none'
-      body.style.position = 'fixed'
-      body.style.top = `-${savedScrollY}px`
-      body.style.width = '100%'
-
-      const wheelHandler = function(e: WheelEvent) {
-        if (isInPopover(e.target as HTMLElement)) {
-          return
-        }
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        handleScroll(e.deltaY, e.target as Element)
+      const container = getInlineContainer();
+      if (!container) {
+        return undefined;
       }
-
-      const touchStartYRef = { current: 0 }
-      const touchStartHandler = function(e: TouchEvent) {
-        const t = e.touches[0]
-        if (t) touchStartYRef.current = t.clientY
-      }
-      const touchMoveHandler = function(e: TouchEvent) {
-        if (isInPopover(e.target as HTMLElement)) {
-          return
-        }
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0)
-        handleScroll(deltaY, e.target as Element)
-        touchStartYRef.current = e.touches[0]?.clientY || 0
-      }
-
-      window.addEventListener('wheel', wheelHandler, { passive: false, capture: true })
-      window.addEventListener('touchstart', touchStartHandler, { passive: true, capture: true })
-      window.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true })
-
-      function updateDialogPosition() {
-        const mainContent = document.getElementById('main-content-container')
+      if (open) {
+        const mainContent = document.getElementById('main-content-container');
         if (mainContent) {
-          const rect = mainContent.getBoundingClientRect()
-          container.style.setProperty('--dialog-left', `${rect.left}px`)
-          container.style.setProperty('--dialog-top', `${rect.top}px`)
-          container.style.setProperty('--dialog-width', `${rect.width}px`)
-          container.style.setProperty('--dialog-height', `${rect.height}px`)
+          const rect = mainContent.getBoundingClientRect();
+          container.style.setProperty('--dialog-left', `${rect.left}px`);
+          container.style.setProperty('--dialog-top', `${rect.top}px`);
+          container.style.setProperty('--dialog-width', `${rect.width}px`);
+          container.style.setProperty('--dialog-height', `${rect.height}px`);
         }
-      }
 
-      const resizeHandler = function() {
-        requestAnimationFrame(updateDialogPosition)
-      }
-      window.addEventListener('resize', resizeHandler)
+        setupContainerStyles(container);
 
-      return function() {
-        cleanupContainerStyles(container)
+        const root = document.documentElement;
+        const body = document.body;
+        const savedScrollY = window.scrollY || window.pageYOffset || 0;
+        const prevRootOverflow = root.style.overflow;
+        const prevBodyOverflow = body.style.overflow;
+        const prevBodyPosition = body.style.position;
+        const prevBodyTop = body.style.top;
+        const prevBodyWidth = body.style.width;
+        const prevRootOverscroll = root.style.overscrollBehavior;
+        const prevBodyOverscroll = body.style.overscrollBehavior;
 
-        root.style.overflow = prevRootOverflow
-        body.style.overflow = prevBodyOverflow
-        body.style.position = prevBodyPosition
-        body.style.top = prevBodyTop
-        body.style.width = prevBodyWidth
-        root.style.overscrollBehavior = prevRootOverscroll
-        body.style.overscrollBehavior = prevBodyOverscroll
+        root.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+        root.style.overscrollBehavior = 'none';
+        body.style.overscrollBehavior = 'none';
+        body.style.position = 'fixed';
+        body.style.top = `-${savedScrollY}px`;
+        body.style.width = '100%';
 
-        try {
-          const y = parseInt((prevBodyTop || '0').replace(/[^-\d]/g, ''))
-          if (!isNaN(y) && y !== 0) {
-            window.scrollTo({ top: -y, behavior: 'auto' })
+        const wheelHandler = function (e: WheelEvent) {
+          if (isInPopover(e.target as HTMLElement)) {
+            return;
           }
-        } catch {}
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleScroll(e.deltaY, e.target as Element);
+        };
 
-        window.removeEventListener('wheel', wheelHandler as any, true)
-        window.removeEventListener('touchstart', touchStartHandler as any, true)
-        window.removeEventListener('touchmove', touchMoveHandler as any, true)
-        window.removeEventListener('resize', resizeHandler)
+        const touchStartYRef = { current: 0 };
+        const touchStartHandler = function (e: TouchEvent) {
+          const t = e.touches[0];
+          if (t) {
+            touchStartYRef.current = t.clientY;
+          }
+        };
+        const touchMoveHandler = function (e: TouchEvent) {
+          if (isInPopover(e.target as HTMLElement)) {
+            return;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          const deltaY = touchStartYRef.current - (e.touches[0]?.clientY || 0);
+          handleScroll(deltaY, e.target as Element);
+          touchStartYRef.current = e.touches[0]?.clientY || 0;
+        };
+
+        window.addEventListener('wheel', wheelHandler, { passive: false, capture: true });
+        window.addEventListener('touchstart', touchStartHandler, { passive: true, capture: true });
+        window.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true });
+
+        function updateDialogPosition() {
+          const mainContent = document.getElementById('main-content-container');
+          if (mainContent) {
+            const rect = mainContent.getBoundingClientRect();
+            container!.style.setProperty('--dialog-left', `${rect.left}px`);
+            container!.style.setProperty('--dialog-top', `${rect.top}px`);
+            container!.style.setProperty('--dialog-width', `${rect.width}px`);
+            container!.style.setProperty('--dialog-height', `${rect.height}px`);
+          }
+        }
+
+        const resizeHandler = function () {
+          requestAnimationFrame(updateDialogPosition);
+        };
+        window.addEventListener('resize', resizeHandler);
+
+        return function () {
+          cleanupContainerStyles(container);
+
+          root.style.overflow = prevRootOverflow;
+          body.style.overflow = prevBodyOverflow;
+          body.style.position = prevBodyPosition;
+          body.style.top = prevBodyTop;
+          body.style.width = prevBodyWidth;
+          root.style.overscrollBehavior = prevRootOverscroll;
+          body.style.overscrollBehavior = prevBodyOverscroll;
+
+          try {
+            const y = parseInt((prevBodyTop || '0').replace(/[^-\d]/g, ''));
+            if (!isNaN(y) && y !== 0) {
+              window.scrollTo({ top: -y, behavior: 'auto' });
+            }
+          } catch {}
+
+          window.removeEventListener('wheel', wheelHandler as any, true);
+          window.removeEventListener('touchstart', touchStartHandler as any, true);
+          window.removeEventListener('touchmove', touchMoveHandler as any, true);
+          window.removeEventListener('resize', resizeHandler);
+        };
+      } else {
+        cleanupContainerStyles(container);
       }
-    } else {
-      cleanupContainerStyles(container)
-    }
-    return undefined
-  }, [open, displayMode])
+      return undefined;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, displayMode]
+  );
 
   useEffect(() => {
-    if (typeof document === 'undefined') return
+    if (typeof document === 'undefined') {
+      return;
+    }
     try {
-      const container = getInlineContainer()
-      if (!container) return
+      const container = getInlineContainer();
+      if (!container) {
+        return;
+      }
       if (container.dataset.tmhManaged && !open) {
-        cleanupContainerStyles(container)
+        cleanupContainerStyles(container);
       }
     } catch {}
-  }, [open, displayMode])
+  }, [open, displayMode]);
 
-  async function handleEpisodeProgressUpdate(currentEpisode: number, seasonNumber: number): Promise<void> {
-    if (!localItem.seasons) return
+  async function handleEpisodeProgressUpdate(
+    currentEpisode: number,
+    seasonNumber: number
+  ): Promise<void> {
+    if (!localItem.seasons) {
+      return;
+    }
 
-    const updatedSeasons = localItem.seasons.map(season =>
-      season.seasonNumber === seasonNumber
-        ? { ...season, currentEpisode }
-        : season
-    )
+    const updatedSeasons = localItem.seasons.map((season) =>
+      season.seasonNumber === seasonNumber ? { ...season, currentEpisode } : season
+    );
 
-    const season = updatedSeasons.find(s => s.seasonNumber === seasonNumber)
-    const isCompleted = season?.currentEpisode === season?.totalEpisodes
+    const season = updatedSeasons.find((s) => s.seasonNumber === seasonNumber);
+    const isCompleted = season?.currentEpisode === season?.totalEpisodes;
 
     const updatedItem = {
       ...localItem,
       seasons: updatedSeasons,
-      status: isCompleted ? "completed" : "ongoing",
+      status: isCompleted ? 'completed' : 'ongoing',
       completed: isCompleted,
       updatedAt: new Date().toISOString(),
-    }
+    };
 
-    const success = await saveItemDirectly(updatedItem)
+    const success = await saveItemDirectly(updatedItem);
     if (success) {
-      updateLocalItem(updatedItem, false)
+      updateLocalItem(updatedItem, false);
     } else {
-      showFeedback(t("updateProgressFailed"))
+      showFeedback(t('updateProgressFailed'));
     }
   }
 
   async function handleSaveEdit(): Promise<void> {
-    if (isSaving) return
+    if (isSaving) {
+      return;
+    }
 
-    setIsSaving(true)
+    setIsSaving(true);
 
     const updatedItem = {
       ...editData,
       updatedAt: new Date().toISOString(),
-    }
+    };
 
     try {
-      const success = await saveItemDirectly(updatedItem)
+      const success = await saveItemDirectly(updatedItem);
       if (!success) {
-        throw new Error(t("saveFailed"))
+        throw new Error(t('saveFailed'));
       }
 
-      setLocalItem(updatedItem)
-      onUpdate(updatedItem)
-      setEditing(false)
-      showFeedback(t("saveSuccess"))
+      setLocalItem(updatedItem);
+      onUpdate(updatedItem);
+      setEditing(false);
+      showFeedback(t('saveSuccess'));
     } catch {
-      showFeedback(t("saveFailed"))
+      showFeedback(t('saveFailed'));
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
 
   const getAirTime = (weekday?: number): string => {
-    if (weekday === undefined) return ""
-    const days = WEEKDAYS.map((_, i) => t(`weekdaysList.${["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][i]}`))
-    return days[weekday] || ""
-  }
+    if (weekday === undefined) {
+      return '';
+    }
+    const days = WEEKDAYS.map((_, i) =>
+      t(
+        `weekdaysList.${['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][i]}`
+      )
+    );
+    return days[weekday] || '';
+  };
 
   return (
     <>
@@ -817,16 +919,20 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
           disableAnimation={true}
           className={cn(
             displayMode === 'inline'
-              ? "absolute rounded-none max-w-none h-[100vh] bg-transparent border-none overscroll-none touch-none"
-              : "w-screen h-screen md:max-w-7xl md:h-[85vh] overflow-hidden p-0 bg-transparent border-none"
+              ? 'absolute rounded-none max-w-none h-[100vh] bg-transparent border-none overscroll-none touch-none'
+              : 'w-screen h-screen md:max-w-7xl md:h-[85vh] overflow-hidden p-0 bg-transparent border-none'
           )}
-          style={displayMode === 'inline' ? {
-            left: 'var(--dialog-left, 0px)',
-            top: 'var(--dialog-top, 0px)',
-            width: 'var(--dialog-width, 100vw)',
-            height: 'var(--dialog-height, 100vh)',
-            transform: 'translate(0, 0)'
-          } : undefined}
+          style={
+            displayMode === 'inline'
+              ? {
+                  left: 'var(--dialog-left, 0px)',
+                  top: 'var(--dialog-top, 0px)',
+                  width: 'var(--dialog-width, 100vw)',
+                  height: 'var(--dialog-height, 100vh)',
+                  transform: 'translate(0, 0)',
+                }
+              : undefined
+          }
           ref={contentRef}
           showCloseButton={false}
           showOverlay={displayMode !== 'inline'}
@@ -835,34 +941,41 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
         >
           {/* 背景图 - 使用BackgroundImage组件，支持缓存避免重复加载 */}
           {(() => {
-            const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl
-            if (!backgroundImageUrl) return null
+            const backgroundImageUrl = localItem.backdropUrl || localItem.posterUrl;
+            if (!backgroundImageUrl) {
+              return null;
+            }
 
-            const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl
+            const isUsingPoster = !localItem.backdropUrl && localItem.posterUrl;
             const overlayClass = isUsingPoster
-              ? "bg-gradient-to-b from-background/50 via-background/45 to-background/55"
-              : "bg-gradient-to-b from-background/30 via-background/25 to-background/35"
+              ? 'bg-gradient-to-b from-background/50 via-background/45 to-background/55'
+              : 'bg-gradient-to-b from-background/30 via-background/25 to-background/35';
 
             return (
               <BackgroundImage
                 src={backgroundImageUrl}
-                alt={localItem.title + (isUsingPoster ? ` ${t("posterBg")}` : ` ${t("backdropBg")}`)}
+                alt={
+                  localItem.title + (isUsingPoster ? ` ${t('posterBg')}` : ` ${t('backdropBg')}`)
+                }
                 className={cn(
-                  "absolute inset-0 z-0",
-                  displayMode === 'inline' ? "w-screen h-screen" : "w-full h-full"
+                  'absolute inset-0 z-0',
+                  displayMode === 'inline' ? 'w-screen h-screen' : 'w-full h-full'
                 )}
                 objectPosition="center 20%"
                 blur={appearanceSettings?.detailBackdropBlurEnabled ?? true}
                 blurIntensity={appearanceSettings?.detailBackdropBlurIntensity || 'medium'}
                 overlayClassName={overlayClass}
               />
-            )
+            );
           })()}
 
           {/* 内容层 */}
-          <div className="relative z-10 h-full flex flex-col overflow-hidden overscroll-none" ref={contentRef}>
+          <div
+            className="relative z-10 h-full flex flex-col overflow-hidden overscroll-none"
+            ref={contentRef}
+          >
             <DialogHeader className="p-3 md:p-6 md:pb-2 flex flex-row items-start justify-between">
-                <div className="flex-1 pr-2 md:pr-4 min-w-0">
+              <div className="flex-1 pr-2 md:pr-4 min-w-0">
                 <DialogTitle className="text-base md:text-xl flex items-center flex-wrap">
                   <Tv className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
                   {localItem.logoUrl ? (
@@ -883,17 +996,19 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       />
                     </div>
                   ) : null}
-                  <span className={localItem.logoUrl ? "hidden ml-1" : ""}>
-                    {localItem.title}
-                  </span>
+                  <span className={localItem.logoUrl ? 'hidden ml-1' : ''}>{localItem.title}</span>
                   {localItem.category && (
                     <Badge variant="outline" className="ml-2">
-                      {CATEGORIES.find((cat) => cat.id === localItem.category)?.name || localItem.category}
+                      {CATEGORIES.find((cat) => cat.id === localItem.category)?.name ||
+                        localItem.category}
                     </Badge>
                   )}
                   {!editing && (
-                    <Badge variant={localItem.status === "ongoing" ? "outline" : "default"} className="ml-2">
-                      {localItem.status === "ongoing" ? t("ongoing") : t("completed")}
+                    <Badge
+                      variant={localItem.status === 'ongoing' ? 'outline' : 'default'}
+                      className="ml-2"
+                    >
+                      {localItem.status === 'ongoing' ? t('ongoing') : t('completed')}
                     </Badge>
                   )}
                 </DialogTitle>
@@ -901,23 +1016,24 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   {isDailyUpdate ? (
                     <Badge className="bg-blue-500 text-white">
                       <Zap className="h-3 w-3 mr-1 animate-pulse" />
-                      {t("dailyUpdate")} {localItem.airTime || ""}
+                      {t('dailyUpdate')} {localItem.airTime || ''}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary">
-                      {getAirTime(localItem.weekday)}
-                    </Badge>
+                    <Badge variant="secondary">{getAirTime(localItem.weekday)}</Badge>
                   )}
                   {typeof localItem.secondWeekday === 'number' &&
-                   localItem.secondWeekday >= 0 &&
-                   !isDailyUpdate && (
-                    <Badge className="bg-blue-500 text-white">
-                      {getAirTime(localItem.secondWeekday)}
-                    </Badge>
-                  )}
-                  {localItem.mediaType === "tv" && (
+                    localItem.secondWeekday >= 0 &&
+                    !isDailyUpdate && (
+                      <Badge className="bg-blue-500 text-white">
+                        {getAirTime(localItem.secondWeekday)}
+                      </Badge>
+                    )}
+                  {localItem.mediaType === 'tv' && (
                     <Badge variant="outline">
-                      {progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0}% {t("completed")}
+                      {progress.total > 0
+                        ? Math.round((progress.completed / progress.total) * 100)
+                        : 0}
+                      % {t('completed')}
                     </Badge>
                   )}
                 </div>
@@ -928,7 +1044,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                  title={t("refreshTmdbData")}
+                  title={t('refreshTmdbData')}
                   onClick={refreshSeasonFromTMDB}
                   disabled={isRefreshingTMDBData}
                 >
@@ -943,8 +1059,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                    title={t("viewOnTmdb")}
-                    onClick={() => window.open(localItem.tmdbUrl, "_blank")}
+                    title={t('viewOnTmdb')}
+                    onClick={() => window.open(localItem.tmdbUrl, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
@@ -954,7 +1070,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                    title={t("edit")}
+                    title={t('edit')}
                     onClick={() => setEditing(true)}
                   >
                     <Edit className="h-4 w-4" />
@@ -964,7 +1080,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                    title={t("save")}
+                    title={t('save')}
                     onClick={handleSaveEdit}
                     disabled={isSaving}
                   >
@@ -980,7 +1096,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 text-destructive hover:text-destructive transition-transform hover:scale-110"
-                    title={t("delete")}
+                    title={t('delete')}
                     onClick={() => setShowDeleteDialog(true)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -990,16 +1106,20 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   variant="outline"
                   size="icon"
                   className="h-9 w-9 md:h-8 md:w-8 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 transition-transform hover:scale-110"
-                  title={editing ? t("cancel") : (displayMode === 'inline' ? t("back") : t("close"))}
+                  title={editing ? t('cancel') : displayMode === 'inline' ? t('back') : t('close')}
                   onClick={() => {
                     if (editing) {
-                      setEditing(false)
+                      setEditing(false);
                     } else {
-                      onOpenChange(false)
+                      onOpenChange(false);
                     }
                   }}
                 >
-                  {displayMode === 'inline' ? <ArrowRightCircle className="h-4 w-4 rotate-180" /> : <X className="h-4 w-4" />}
+                  {displayMode === 'inline' ? (
+                    <ArrowRightCircle className="h-4 w-4 rotate-180" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </DialogHeader>
@@ -1010,12 +1130,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
               <div className="flex overflow-hidden flex-col min-h-0">
                 <div className="flex-1 flex flex-col pr-2 min-h-0 justify-center">
                   {/* 海报区域 - 编辑模式下过渡隐藏 */}
-                  <div className={cn(
-                    "hidden md:flex rounded-lg overflow-hidden backdrop-blur-md bg-background/30 items-center justify-center w-full transition-all duration-500 ease-in-out hover:shadow-lg",
-                    editing
-                      ? "max-h-0 min-h-0 mb-0 opacity-0"
-                      : "aspect-[2/3] flex-shrink-0 mb-2"
-                  )}>
+                  <div
+                    className={cn(
+                      'hidden md:flex rounded-lg overflow-hidden backdrop-blur-md bg-background/30 items-center justify-center w-full transition-all duration-500 ease-in-out hover:shadow-lg',
+                      editing ? 'max-h-0 min-h-0 mb-0 opacity-0' : 'aspect-[2/3] flex-shrink-0 mb-2'
+                    )}
+                  >
                     {localItem.posterUrl ? (
                       <CachedImage
                         src={localItem.posterUrl}
@@ -1027,7 +1147,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                     ) : (
                       <div className="text-center p-4">
                         <Tv className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">{t("poster")}</p>
+                        <p className="text-sm text-muted-foreground">{t('poster')}</p>
                       </div>
                     )}
                   </div>
@@ -1040,37 +1160,44 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           <div className="pb-0.5 mb-0.5 flex items-center justify-between border-b border-border/20">
                             <h3 className="text-sm font-medium flex items-center">
                               <Edit className="h-3.5 w-3.5 mr-1" />
-                              {t("editItem")}
+                              {t('editItem')}
                             </h3>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-title" className="text-xs text-muted-foreground">{t("title")}</Label>
+                            <Label htmlFor="edit-title" className="text-xs text-muted-foreground">
+                              {t('title')}
+                            </Label>
                             <Input
                               id="edit-title"
                               value={editData.title}
                               onChange={function handleTitleChange(e) {
-                              setEditData({...editData, title: e.target.value})
-                            }}
+                                setEditData({ ...editData, title: e.target.value });
+                              }}
                               className="h-8"
                             />
                           </div>
 
                           <div className="grid grid-cols-2 gap-1.5">
                             <div className="space-y-0.5">
-                              <Label htmlFor="edit-category" className="text-xs text-muted-foreground">{t("category")}</Label>
+                              <Label
+                                htmlFor="edit-category"
+                                className="text-xs text-muted-foreground"
+                              >
+                                {t('category')}
+                              </Label>
                               <Select
-                                value={editData.category || "none"}
+                                value={editData.category || 'none'}
                                 onValueChange={function handleCategoryChange(value) {
-                                  setEditData({...editData, category: value as CategoryType})
+                                  setEditData({ ...editData, category: value as CategoryType });
                                 }}
                               >
                                 <SelectTrigger className="h-8">
-                                  <SelectValue placeholder={t("selectCategory")} />
+                                  <SelectValue placeholder={t('selectCategory')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">{t("uncategorized")}</SelectItem>
-                                  {CATEGORIES.map(cat => (
+                                  <SelectItem value="none">{t('uncategorized')}</SelectItem>
+                                  {CATEGORIES.map((cat) => (
                                     <SelectItem key={cat.id} value={cat.id}>
                                       <div className="flex items-center">
                                         {cat.icon}
@@ -1083,52 +1210,69 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                             </div>
 
                             <div className="space-y-0.5">
-                              <Label htmlFor="edit-status" className="text-xs text-muted-foreground">{t("status")}</Label>
+                              <Label
+                                htmlFor="edit-status"
+                                className="text-xs text-muted-foreground"
+                              >
+                                {t('status')}
+                              </Label>
                               <Select
                                 value={editData.status}
                                 onValueChange={function handleStatusChange(value) {
-                                  setEditData({...editData, status: value as "ongoing" | "completed"})
+                                  setEditData({
+                                    ...editData,
+                                    status: value as 'ongoing' | 'completed',
+                                  });
                                 }}
                               >
                                 <SelectTrigger className="h-8">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="ongoing">{t("ongoing")}</SelectItem>
-                                  <SelectItem value="completed">{t("completed")}</SelectItem>
+                                  <SelectItem value="ongoing">{t('ongoing')}</SelectItem>
+                                  <SelectItem value="completed">{t('completed')}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-airtime" className="text-xs text-muted-foreground">{t("airTime")}</Label>
+                            <Label htmlFor="edit-airtime" className="text-xs text-muted-foreground">
+                              {t('airTime')}
+                            </Label>
                             <Input
                               id="edit-airtime"
-                              value={editData.airTime || ""}
+                              value={editData.airTime || ''}
                               onChange={function handleAirTimeChange(e) {
-                              setEditData({...editData, airTime: e.target.value})
-                            }}
-                              placeholder={t("airTimePlaceholder")}
+                                setEditData({ ...editData, airTime: e.target.value });
+                              }}
+                              placeholder={t('airTimePlaceholder')}
                               className="h-8"
                             />
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-weekday" className="text-xs text-muted-foreground">{t("airDate")}</Label>
+                            <Label htmlFor="edit-weekday" className="text-xs text-muted-foreground">
+                              {t('airDate')}
+                            </Label>
                             <Select
-                              value={editData.weekday?.toString() || "none"}
+                              value={editData.weekday?.toString() || 'none'}
                               onValueChange={function handleWeekdayChange(value) {
-                                setEditData({...editData, weekday: value === "none" ? undefined : parseInt(value)})
+                                setEditData({
+                                  ...editData,
+                                  weekday: value === 'none' ? undefined : parseInt(value),
+                                });
                               }}
                             >
                               <SelectTrigger className="h-8">
-                                <SelectValue placeholder={t("selectAirDate")} />
+                                <SelectValue placeholder={t('selectAirDate')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">{t("none")}</SelectItem>
+                                <SelectItem value="none">{t('none')}</SelectItem>
                                 {WEEKDAYS.map((day, index) => (
-                                  <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
+                                  <SelectItem key={index} value={index.toString()}>
+                                    {day}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -1136,105 +1280,145 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
 
                           <div className="space-y-0.5">
                             <div className="flex items-center justify-between">
-                              <Label className="text-xs text-muted-foreground">{t("dailyUpdate")}</Label>
+                              <Label className="text-xs text-muted-foreground">
+                                {t('dailyUpdate')}
+                              </Label>
                               <input
                                 type="checkbox"
                                 checked={editData.isDailyUpdate || false}
                                 onChange={function handleDailyUpdateChange(e) {
-                                setEditData({...editData, isDailyUpdate: e.target.checked})
-                              }}
+                                  setEditData({ ...editData, isDailyUpdate: e.target.checked });
+                                }}
                                 className="h-4 w-4"
                               />
                             </div>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-second-weekday" className="text-xs text-muted-foreground">{t("secondAirDate")}</Label>
+                            <Label
+                              htmlFor="edit-second-weekday"
+                              className="text-xs text-muted-foreground"
+                            >
+                              {t('secondAirDate')}
+                            </Label>
                             <Select
-                              value={editData.secondWeekday?.toString() || "none"}
+                              value={editData.secondWeekday?.toString() || 'none'}
                               onValueChange={function handleSecondWeekdayChange(value) {
-                                setEditData({...editData, secondWeekday: value === "none" ? undefined : parseInt(value)})
+                                setEditData({
+                                  ...editData,
+                                  secondWeekday: value === 'none' ? undefined : parseInt(value),
+                                });
                               }}
                             >
                               <SelectTrigger className="h-8">
-                                <SelectValue placeholder={t("selectWeekday")} />
+                                <SelectValue placeholder={t('selectWeekday')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">{t("none")}</SelectItem>
+                                <SelectItem value="none">{t('none')}</SelectItem>
                                 {WEEKDAYS.map((day, index) => (
-                                  <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
+                                  <SelectItem key={index} value={index.toString()}>
+                                    {day}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label className="text-xs text-muted-foreground">{t("platformUrl")}</Label>
+                            <Label className="text-xs text-muted-foreground">
+                              {t('platformUrl')}
+                            </Label>
                             <div className="space-y-1">
-                              {(editData.platformUrls?.length ? editData.platformUrls : ['']).map((url, idx) => {
-                                const isDefault = !editData.defaultPlatformUrl
-                                  ? idx === 0
-                                  : editData.defaultPlatformUrl === url
-                                return (
-                                  <div key={idx} className="flex gap-1">
-                                    {url && (editData.platformUrls?.length ?? 0) > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditData({...editData, defaultPlatformUrl: isDefault ? undefined : url})}
-                                        className={`h-8 w-6 flex-shrink-0 flex items-center justify-center ${isDefault ? 'text-amber-500' : 'text-muted-foreground/40 hover:text-muted-foreground/70'}`}
-                                        title={isDefault ? t('defaultPlatformUrl') : t('setAsDefault')}
+                              {(editData.platformUrls?.length ? editData.platformUrls : ['']).map(
+                                (url, idx) => {
+                                  const isDefault = !editData.defaultPlatformUrl
+                                    ? idx === 0
+                                    : editData.defaultPlatformUrl === url;
+                                  return (
+                                    <div key={idx} className="flex gap-1">
+                                      {url && (editData.platformUrls?.length ?? 0) > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setEditData({
+                                              ...editData,
+                                              defaultPlatformUrl: isDefault ? undefined : url,
+                                            })
+                                          }
+                                          className={`h-8 w-6 flex-shrink-0 flex items-center justify-center ${isDefault ? 'text-amber-500' : 'text-muted-foreground/40 hover:text-muted-foreground/70'}`}
+                                          title={
+                                            isDefault ? t('defaultPlatformUrl') : t('setAsDefault')
+                                          }
+                                        >
+                                          <Star
+                                            className="h-3.5 w-3.5"
+                                            fill={isDefault ? 'currentColor' : 'none'}
+                                          />
+                                        </button>
+                                      )}
+                                      <Input
+                                        value={url}
+                                        onChange={(e) => {
+                                          const urls = [...(editData.platformUrls || [''])];
+                                          urls[idx] = e.target.value;
+                                          setEditData({
+                                            ...editData,
+                                            platformUrls:
+                                              urls.filter((u) => u !== '').length > 0
+                                                ? urls.filter((u) => u !== '')
+                                                : undefined,
+                                          });
+                                        }}
+                                        placeholder="https://example.com/show-page"
+                                        className="h-8 flex-1"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 flex-shrink-0"
+                                        onClick={() => {
+                                          const urls = [...(editData.platformUrls || [''])];
+                                          urls.splice(idx, 1);
+                                          setEditData({
+                                            ...editData,
+                                            platformUrls: urls.length > 0 ? urls : undefined,
+                                          });
+                                        }}
                                       >
-                                        <Star className="h-3.5 w-3.5" fill={isDefault ? 'currentColor' : 'none'} />
-                                      </button>
-                                    )}
-                                    <Input
-                                      value={url}
-                                      onChange={(e) => {
-                                        const urls = [...(editData.platformUrls || [''])]
-                                        urls[idx] = e.target.value
-                                        setEditData({...editData, platformUrls: urls.filter(u => u !== '').length > 0 ? urls.filter(u => u !== '') : undefined})
-                                      }}
-                                      placeholder="https://example.com/show-page"
-                                      className="h-8 flex-1"
-                                    />
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 flex-shrink-0"
-                                      onClick={() => {
-                                        const urls = [...(editData.platformUrls || [''])]
-                                        urls.splice(idx, 1)
-                                        setEditData({...editData, platformUrls: urls.length > 0 ? urls : undefined})
-                                      }}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                )
-                              })}
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  );
+                                }
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="h-7 text-xs w-full"
                                 onClick={() => {
-                                  const urls = [...(editData.platformUrls || []), '']
-                                  setEditData({...editData, platformUrls: urls})
+                                  const urls = [...(editData.platformUrls || []), ''];
+                                  setEditData({ ...editData, platformUrls: urls });
                                 }}
                               >
                                 <Plus className="h-3 w-3 mr-1" />
-                                {t("addPlatformUrl")}
+                                {t('addPlatformUrl')}
                               </Button>
                             </div>
                           </div>
 
                           <div className="space-y-0.5">
-                            <Label htmlFor="edit-backdrop-url" className="text-xs text-muted-foreground">{t("backdropUrl")}</Label>
+                            <Label
+                              htmlFor="edit-backdrop-url"
+                              className="text-xs text-muted-foreground"
+                            >
+                              {t('backdropUrl')}
+                            </Label>
                             <Input
                               id="edit-backdrop-url"
-                              value={editData.backdropUrl || ""}
+                              value={editData.backdropUrl || ''}
                               onChange={function handleBackdropUrlChange(e) {
-                              setEditData({...editData, backdropUrl: e.target.value})
-                            }}
+                                setEditData({ ...editData, backdropUrl: e.target.value });
+                              }}
                               placeholder="https://example.com/backdrop.jpg"
                               className="h-8"
                             />
@@ -1251,9 +1435,13 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                           className="w-full flex items-center justify-between p-2 hover:bg-background/20 transition-colors flex-shrink-0"
                         >
                           <span className="text-xs text-muted-foreground font-medium">
-                            {mobileInfoExpanded ? t("itemDetail.collapseInfo") : t("itemDetail.platformOverview")}
+                            {mobileInfoExpanded
+                              ? t('itemDetail.collapseInfo')
+                              : t('itemDetail.platformOverview')}
                           </span>
-                          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${mobileInfoExpanded ? 'rotate-180' : ''}`} />
+                          <ChevronDown
+                            className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${mobileInfoExpanded ? 'rotate-180' : ''}`}
+                          />
                         </button>
                         {mobileInfoExpanded && (
                           <div className="px-3 pb-3 flex-1 overflow-hidden">
@@ -1279,23 +1467,35 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
               {/* 右侧：内容区域 */}
               <div className="md:col-span-3 flex flex-col min-h-0 overflow-hidden">
                 {/* 操作按钮 */}
-                <div className="flex flex-wrap gap-2 mb-3 items-center">
-                </div>
+                <div className="flex flex-wrap gap-2 mb-3 items-center"></div>
 
                 {/* 标签页切换 */}
-                <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
+                <Tabs
+                  value={detailTab}
+                  onValueChange={setDetailTab}
+                  className="flex-1 flex flex-col min-h-0"
+                >
                   <TabsList className="w-full mb-2 md:mb-3 overflow-x-auto flex-nowrap scrollbar-hide md:grid md:grid-cols-3">
-                    <TabsTrigger value="details" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
+                    <TabsTrigger
+                      value="details"
+                      className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300"
+                    >
                       <Info className="h-4 w-4 mr-2" />
-                      {t("details")}
+                      {t('details')}
                     </TabsTrigger>
-                    <TabsTrigger value="integration" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
+                    <TabsTrigger
+                      value="integration"
+                      className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300"
+                    >
                       <Terminal className="h-4 w-4 mr-2" />
-                      {t("integrationTools")}
+                      {t('integrationTools')}
                     </TabsTrigger>
-                    <TabsTrigger value="schedule" className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300">
+                    <TabsTrigger
+                      value="schedule"
+                      className="flex items-center flex-shrink-0 whitespace-nowrap transition-all duration-300"
+                    >
                       <Clock className="h-4 w-4 mr-2" />
-                      {tSchedule("scheduleManagement")}
+                      {tSchedule('scheduleManagement')}
                     </TabsTrigger>
                   </TabsList>
 
@@ -1309,8 +1509,6 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                       isRefreshingTMDBData={isRefreshingTMDBData}
                       refreshError={refreshError}
                       customSeasonNumber={customSeasonNumber}
-                      CATEGORIES={CATEGORIES}
-                      WEEKDAYS={WEEKDAYS}
                       onSeasonClick={handleSeasonClick}
                       onResetSeason={handleResetSeason}
                       onDeleteSeason={handleDeleteSeason}
@@ -1328,8 +1526,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
                   <TMDBIntegrationTab
                     item={localItem}
                     onUpdate={(updatedItem) => {
-                      setLocalItem(updatedItem)
-                      onUpdate(updatedItem)
+                      setLocalItem(updatedItem);
+                      onUpdate(updatedItem);
                     }}
                   />
 
@@ -1372,25 +1570,21 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({ item, open, o
             item={localItem}
             onCancel={() => setShowDeleteDialog(false)}
             onConfirm={() => {
-              setShowDeleteDialog(false)
-              onOpenChange(false)
-              onDelete(localItem.id)
+              setShowDeleteDialog(false);
+              onOpenChange(false);
+              onDelete(localItem.id);
             }}
           />
 
           {/* 修复TMDB导入Bug对话框 */}
-          <FixTMDBImportBugDialog
-            open={showFixBugDialog}
-            onOpenChange={setShowFixBugDialog}
-            onCopyFix={() => {}}
-          />
+          <FixTMDBImportBugDialog open={showFixBugDialog} onOpenChange={setShowFixBugDialog} />
         </DialogContent>
       </Dialog>
 
       {/* 定时任务对话框 */}
     </>
-  )
-})
+  );
+});
 
 // 导出组件
-export const ItemDetailDialog = ItemDetailDialogComponent
+export const ItemDetailDialog = ItemDetailDialogComponent;

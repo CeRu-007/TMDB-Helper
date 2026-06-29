@@ -1,52 +1,45 @@
-import React from "react"
-import { TableRow, TableCell } from "@/shared/components/ui/table"
-import { Button } from "@/shared/components/ui/button"
-import { cn } from "@/lib/utils"
+import React from 'react';
+import { TableRow, TableCell } from '@/shared/components/ui/table';
+import { Button } from '@/shared/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
-import {
-  Plus,
-  MoreHorizontal,
-  ArrowUp,
-  ArrowDown,
-  Copy,
-  Trash2,
-} from "lucide-react"
-import { useTranslation } from "react-i18next"
-import CellRenderer from "./CellRenderer"
-import type { CellPosition } from "../types"
+} from '@/shared/components/ui/dropdown-menu';
+import { Plus, MoreHorizontal, ArrowUp, ArrowDown, Copy, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import CellRenderer from './CellRenderer';
+import type { CellPosition } from '../types';
 
 interface RowRendererProps {
-  rowIndex: number
-  rowData: string[]
-  headers: string[]
-  isSelected: boolean
-  selectedCells: CellPosition[]
-  activeCell: CellPosition | null
-  editingCell: { row: number; col: number; value: string } | null
-  isDragging: boolean
-  canStartDragging: boolean
-  showRowNumbers: boolean
-  showRowOperations: boolean
-  rowHeight?: number
-  onCellDoubleClick: (row: number, col: number, event: React.MouseEvent) => void
-  onCellContextMenu: (row: number, col: number) => void
-  onCellMouseMove: (row: number, col: number, event: React.MouseEvent) => void
-  onCellMouseDown: (row: number, col: number, event: React.MouseEvent) => void
-  onEditInputChange: (value: string) => void
-  onEditFinish: () => void
-  onEditCancel: () => void
-  onRowSelect: (rowIndex: number, selected: boolean) => void
-  onInsertRow: (index: number, position: "before" | "after") => void
-  onDeleteRow: (index: number) => void
-  onDuplicateRow: (index: number) => void
-  onMoveRow: (index: number, direction: "up" | "down") => void
-  editInputRef: React.RefObject<HTMLInputElement | null>
+  rowIndex: number;
+  rowData: string[];
+  headers: string[];
+  isSelected: boolean;
+  selectedCells: CellPosition[];
+  activeCell: CellPosition | null;
+  editingCell: { row: number; col: number; value: string } | null;
+  isDragging: boolean;
+  canStartDragging: boolean;
+  showRowNumbers: boolean;
+  showRowOperations: boolean;
+  rowHeight?: number;
+  onCellDoubleClick: (row: number, col: number, event: React.MouseEvent) => void;
+  onCellContextMenu: (row: number, col: number) => void;
+  onCellMouseMove: (row: number, col: number, event: React.MouseEvent) => void;
+  onCellMouseDown: (row: number, col: number, event: React.MouseEvent) => void;
+  onEditInputChange: (value: string) => void;
+  onEditFinish: () => void;
+  onEditCancel: () => void;
+  onRowSelect: (rowIndex: number, selected: boolean) => void;
+  onInsertRow: (index: number, position: 'before' | 'after') => void;
+  onDeleteRow: (index: number) => void;
+  onDuplicateRow: (index: number) => void;
+  onMoveRow: (index: number, direction: 'up' | 'down') => void;
+  editInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export const RowRenderer: React.FC<RowRendererProps> = ({
@@ -76,19 +69,19 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
   onMoveRow,
   editInputRef,
 }) => {
-  const { t: tMedia } = useTranslation('media')
-  const m = (key: string) => tMedia(`csvEditor.${key}`)
+  const { t: tMedia } = useTranslation('media');
+  const m = (key: string) => tMedia(`csvEditor.${key}`);
   const isCellSelected = (row: number, col: number) => {
-    return selectedCells.some((cell) => cell.row === row && cell.col === col)
-  }
+    return selectedCells.some((cell) => cell.row === row && cell.col === col);
+  };
 
   const isActiveCell = (row: number, col: number) => {
-    return activeCell?.row === row && activeCell?.col === col
-  }
+    return activeCell?.row === row && activeCell?.col === col;
+  };
 
   const isEditingCell = (row: number, col: number) => {
-    return editingCell?.row === row && editingCell?.col === col
-  }
+    return editingCell?.row === row && editingCell?.col === col;
+  };
 
   return (
     <TableRow key={rowIndex} style={{ height: rowHeight }} className="group">
@@ -101,9 +94,7 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
               onChange={(e) => onRowSelect(rowIndex, e.target.checked)}
               className="w-4 h-4"
             />
-            <span className="text-xs text-muted-foreground">
-              {rowIndex + 1}
-            </span>
+            <span className="text-xs text-muted-foreground">{rowIndex + 1}</span>
 
             {showRowOperations && (
               <DropdownMenu>
@@ -117,15 +108,11 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem
-                    onClick={() => onInsertRow(rowIndex, "before")}
-                  >
+                  <DropdownMenuItem onClick={() => onInsertRow(rowIndex, 'before')}>
                     <Plus className="mr-2 h-4 w-4" />
                     {m('insertRowAbove')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onInsertRow(rowIndex, "after")}
-                  >
+                  <DropdownMenuItem onClick={() => onInsertRow(rowIndex, 'after')}>
                     <Plus className="mr-2 h-4 w-4" />
                     {m('insertRowBelow')}
                   </DropdownMenuItem>
@@ -135,14 +122,14 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => onMoveRow(rowIndex, "up")}
+                    onClick={() => onMoveRow(rowIndex, 'up')}
                     disabled={rowIndex === 0}
                   >
                     <ArrowUp className="mr-2 h-4 w-4" />
                     {m('moveUp')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => onMoveRow(rowIndex, "down")}
+                    onClick={() => onMoveRow(rowIndex, 'down')}
                     disabled={rowIndex === rowData.length - 1}
                   >
                     <ArrowDown className="mr-2 h-4 w-4" />
@@ -170,13 +157,13 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
           row={rowIndex}
           col={colIndex}
           value={cell}
-          columnName={headers[colIndex] || ""}
+          columnName={headers[colIndex] || ''}
           isSelected={isCellSelected(rowIndex, colIndex)}
           isActive={isActiveCell(rowIndex, colIndex)}
           isEditing={isEditingCell(rowIndex, colIndex)}
           isDragging={isDragging}
           canStartDragging={canStartDragging}
-          editValue={editingCell?.value || ""}
+          editValue={editingCell?.value || ''}
           onDoubleClick={(e) => onCellDoubleClick(rowIndex, colIndex, e)}
           onContextMenu={() => onCellContextMenu(rowIndex, colIndex)}
           onMouseMove={(e) => onCellMouseMove(rowIndex, colIndex, e)}
@@ -188,7 +175,7 @@ export const RowRenderer: React.FC<RowRendererProps> = ({
         />
       ))}
     </TableRow>
-  )
-}
+  );
+};
 
-export default RowRenderer
+export default RowRenderer;

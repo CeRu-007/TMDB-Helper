@@ -5,37 +5,41 @@
 import { getDatabase } from '../database/connection';
 import { BaseRepository } from '../database/repositories/base.repository';
 import type { DatabaseResult } from '../database/types';
-import type {
-  ScheduleTask,
-  ScheduleTaskRow,
-  CreateScheduleTaskInput,
-  UpdateScheduleTaskInput,
-  FieldCleanup,
+import {
+  type ScheduleTask,
+  type ScheduleTaskRow,
+  type CreateScheduleTaskInput,
+  type UpdateScheduleTaskInput,
+  type FieldCleanup,
+  scheduleTaskRowToScheduleTask,
+  scheduleTaskToRow,
 } from '@/types/schedule';
-import { scheduleTaskRowToScheduleTask, scheduleTaskToRow } from '@/types/schedule';
 import { logger } from '@/lib/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTaskRow> {
   protected tableName = 'schedule_tasks';
 
+  // @ts-expect-error - findById override returns ScheduleTask (converted from ScheduleTaskRow)
   findById(id: string): ScheduleTask | undefined {
     const db = getDatabase();
-    const row = db
-      .prepare('SELECT * FROM schedule_tasks WHERE id = ?')
-      .get(id) as ScheduleTaskRow | undefined;
+    const row = db.prepare('SELECT * FROM schedule_tasks WHERE id = ?').get(id) as
+      ScheduleTaskRow | undefined;
 
-    if (!row) return undefined;
-    return scheduleTaskRowToScheduleTask(row);
+    if (!row) {
+      return undefined;
+    }
+    return scheduleTaskRowToScheduleTask(row) as unknown as ScheduleTask | undefined;
   }
 
   findByItemId(itemId: string): ScheduleTask | undefined {
     const db = getDatabase();
-    const row = db
-      .prepare('SELECT * FROM schedule_tasks WHERE itemId = ?')
-      .get(itemId) as ScheduleTaskRow | undefined;
+    const row = db.prepare('SELECT * FROM schedule_tasks WHERE itemId = ?').get(itemId) as
+      ScheduleTaskRow | undefined;
 
-    if (!row) return undefined;
+    if (!row) {
+      return undefined;
+    }
     return scheduleTaskRowToScheduleTask(row);
   }
 
@@ -84,7 +88,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     const row = scheduleTaskToRow(task);
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO schedule_tasks (
           id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
           checkMetadataCompleteness,
@@ -96,7 +101,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           @platformUrl, @platformConfigs,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
-      `).run(row);
+      `
+      ).run(row);
 
       return { success: true, data: task };
     } catch (error) {
@@ -128,7 +134,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbLanguage: input.tmdbLanguage ?? existing.tmdbLanguage,
       tmdbAutoResponse: input.tmdbAutoResponse ?? existing.tmdbAutoResponse,
       fieldCleanup: input.fieldCleanup ?? existing.fieldCleanup,
-      checkMetadataCompleteness: input.checkMetadataCompleteness ?? existing.checkMetadataCompleteness,
+      checkMetadataCompleteness:
+        input.checkMetadataCompleteness ?? existing.checkMetadataCompleteness,
       platformUrl: input.platformUrl ?? existing.platformUrl,
       platformConfigs: input.platformConfigs ?? existing.platformConfigs,
       updatedAt: now,
@@ -137,7 +144,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     const row = scheduleTaskToRow(updated);
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE schedule_tasks SET
           cron = @cron,
           enabled = @enabled,
@@ -153,7 +161,8 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           platformConfigs = @platformConfigs,
           updatedAt = @updatedAt
         WHERE id = @id
-      `).run({
+      `
+      ).run({
         id: row.id,
         cron: row.cron,
         enabled: row.enabled,
@@ -185,13 +194,15 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
     const now = new Date().toISOString();
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE schedule_tasks SET
           lastRunAt = @lastRunAt,
           nextRunAt = @nextRunAt,
           updatedAt = @updatedAt
         WHERE id = @id
-      `).run({ id, lastRunAt, nextRunAt, updatedAt: now });
+      `
+      ).run({ id, lastRunAt, nextRunAt, updatedAt: now });
 
       return { success: true };
     } catch (error) {

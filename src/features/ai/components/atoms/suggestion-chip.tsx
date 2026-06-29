@@ -1,9 +1,9 @@
-import React from 'react'
-import { ChevronRight } from "lucide-react"
+import React from 'react';
+import { ChevronRight } from 'lucide-react';
 
 interface SuggestionChipProps {
-  label: string
-  onClick: () => void
+  label: string;
+  onClick: () => void;
 }
 
 export function SuggestionChip({ label, onClick }: SuggestionChipProps) {
@@ -17,5 +17,5 @@ export function SuggestionChip({ label, onClick }: SuggestionChipProps) {
         <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </div>
     </button>
-  )
+  );
 }

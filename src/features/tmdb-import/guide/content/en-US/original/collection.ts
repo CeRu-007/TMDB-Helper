@@ -43,4 +43,4 @@ When adding parts, please ensure:
 - The movies are true sequels following our collection guidelines.
 - The movies are in the correct order (usually by release date).
 - Each movie can only be in one collection at a time.
-`
+`;

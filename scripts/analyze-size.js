@@ -54,7 +54,7 @@ const directories = [
   ['app', 'app'],
   ['lib', 'lib'],
   ['scripts', 'scripts'],
-  ['data', 'data']
+  ['data', 'data'],
 ];
 
 let totalSize = 0;
@@ -76,7 +76,7 @@ if (fs.existsSync('.next')) {
     ['static', '.next/static'],
     ['server', '.next/server'],
     ['cache', '.next/cache'],
-    ['trace', '.next/trace']
+    ['trace', '.next/trace'],
   ];
 
   nextSubDirs.forEach(([name, dirPath]) => {
@@ -91,7 +91,7 @@ if (fs.existsSync('TMDB-Import-master')) {
   const tmdbSubDirs = [
     ['tmdb-import', 'TMDB-Import-master/tmdb-import'],
     ['Browser', 'TMDB-Import-master/Browser'],
-    ['Image', 'TMDB-Import-master/Image']
+    ['Image', 'TMDB-Import-master/Image'],
   ];
 
   tmdbSubDirs.forEach(([name, dirPath]) => {
@@ -104,8 +104,9 @@ logger.info('\n📦 预估打包后大小:');
 
 const nextSize = getDirectorySize('.next/standalone') + getDirectorySize('.next/static');
 const electronSize = getDirectorySize('electron');
-const publicSize = fs.existsSync('public/images/tmdb-helper-logo-new.png') ?
-                   fs.statSync('public/images/tmdb-helper-logo-new.png').size : 0;
+const publicSize = fs.existsSync('public/images/tmdb-helper-logo-new.png')
+  ? fs.statSync('public/images/tmdb-helper-logo-new.png').size
+  : 0;
 
 const estimatedSize = nextSize + electronSize + publicSize;
 

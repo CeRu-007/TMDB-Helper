@@ -82,8 +82,8 @@ async function startElectronDev() {
         ...process.env,
         NODE_ENV: 'development',
         ELECTRON_BUILD: 'true',
-        TMDB_DATA_DIR: appDataDir
-      }
+        TMDB_DATA_DIR: appDataDir,
+      },
     });
 
     nextProcess.on('error', (error) => {
@@ -112,8 +112,8 @@ async function startElectronDev() {
       NODE_ENV: 'development',
       ELECTRON_IS_DEV: '1',
       ELECTRON_BUILD: 'true',
-      TMDB_DATA_DIR: appDataDir
-    }
+      TMDB_DATA_DIR: appDataDir,
+    },
   });
 
   electronProcess.on('error', (error) => {

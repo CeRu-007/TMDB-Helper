@@ -9,19 +9,15 @@ export const GET = AuthMiddleware.withAuth(async (_request: NextRequest) => {
     const user = AuthService.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      user: user
+      user: user,
     });
-
   } catch (error) {
-    logger.error('获取管理员信息失败', error)
+    logger.error('获取管理员信息失败', error);
     return NextResponse.json(
       { success: false, error: ErrorHandler.toUserMessage(error) },
       { status: ErrorHandler.getStatusCode(error) }
@@ -35,18 +31,12 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
     const { username } = body;
 
     if (!username || username.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: '用户名不能为空' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: '用户名不能为空' }, { status: 400 });
     }
 
     const currentUser = AuthService.getUser();
     if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -54,12 +44,11 @@ export const PUT = AuthMiddleware.withAuth(async (request: NextRequest) => {
       message: '用户信息更新成功',
       user: {
         ...currentUser,
-        username: username.trim()
-      }
+        username: username.trim(),
+      },
     });
-
   } catch (error) {
-    logger.error('更新管理员信息失败', error)
+    logger.error('更新管理员信息失败', error);
     return NextResponse.json(
       { success: false, error: ErrorHandler.toUserMessage(error) },
       { status: ErrorHandler.getStatusCode(error) }

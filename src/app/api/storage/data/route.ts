@@ -18,14 +18,12 @@ export async function POST(request: NextRequest) {
           error: '无效的导入数据',
           success: false,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const userId = await AuthService.getUserIdFromRequest(request);
-    logger.info(
-      `[API] 导入数据 - 用户ID: ${userId}, 项目数: ${items.length}`,
-    );
+    logger.info(`[API] 导入数据 - 用户ID: ${userId}, 项目数: ${items.length}`);
 
     const validItems: TMDBItem[] = [];
     for (const item of items) {
@@ -55,16 +53,16 @@ export async function POST(request: NextRequest) {
         },
         userId,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
-    logger.error('导入数据失败', error)
+    logger.error('导入数据失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),
         success: false,
       },
-      { status: ErrorHandler.getStatusCode(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }
@@ -88,16 +86,16 @@ export async function GET(request: NextRequest) {
           itemCount: items.length,
         },
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
-    logger.error('导出数据失败', error)
+    logger.error('导出数据失败', error);
     return NextResponse.json(
       {
         error: ErrorHandler.toUserMessage(error),
         items: [],
       },
-      { status: ErrorHandler.getStatusCode(error) },
+      { status: ErrorHandler.getStatusCode(error) }
     );
   }
 }

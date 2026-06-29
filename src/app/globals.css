@@ -134,11 +134,11 @@
 
 /* 隐藏滚动条但保持滚动功能 */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 @layer base {
@@ -291,54 +291,54 @@ body.shift-select-mode .episode-item:hover {
 }
 
 /* 主色调变量 */
-:root[data-primary-color="blue"] {
+:root[data-primary-color='blue'] {
   --primary: 221.2 83.2% 53.3%;
   --primary-foreground: 210 40% 98%;
 }
 
-:root[data-primary-color="green"] {
+:root[data-primary-color='green'] {
   --primary: 142.1 76.2% 36.3%;
   --primary-foreground: 355.7 100% 97.3%;
 }
 
-:root[data-primary-color="purple"] {
+:root[data-primary-color='purple'] {
   --primary: 262.1 83.3% 57.8%;
   --primary-foreground: 210 40% 98%;
 }
 
-:root[data-primary-color="red"] {
+:root[data-primary-color='red'] {
   --primary: 0 84.2% 60.2%;
   --primary-foreground: 210 40% 98%;
 }
 
-:root[data-primary-color="orange"] {
+:root[data-primary-color='orange'] {
   --primary: 24.6 95% 53.1%;
   --primary-foreground: 210 40% 98%;
 }
 
-:root[data-primary-color="pink"] {
+:root[data-primary-color='pink'] {
   --primary: 330.4 81.2% 60.4%;
   --primary-foreground: 210 40% 98%;
 }
 
 /* 隐藏滚动条但保持滚动功能 */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 /* 全局应用隐藏滚动条样式 */
 *::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 * {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 /* 特殊情况下需要显示滚动条的元素 */

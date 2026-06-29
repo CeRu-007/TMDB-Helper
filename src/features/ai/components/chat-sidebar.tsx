@@ -1,22 +1,22 @@
-import React from 'react'
-import { Button } from "@/shared/components/ui/button"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Sheet, SheetContent } from "@/shared/components/ui/sheet"
-import { MessageSquare, PanelLeft, Trash2, Plus } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { ChatHistory } from "@/types/ai-chat"
-import { formatChatDate, truncateText } from "@/lib/utils/ai-chat-helpers"
-import { useMobile } from "@/shared/hooks/use-mobile"
-import { useTranslation } from "react-i18next"
+import React from 'react';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
+import { MessageSquare, PanelLeft, Trash2, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ChatHistory } from '@/types/ai-chat';
+import { formatChatDate, truncateText } from '@/lib/utils/ai-chat-helpers';
+import { useMobile } from '@/shared/hooks/use-mobile';
+import { useTranslation } from 'react-i18next';
 
 interface ChatSidebarProps {
-  chatHistories: ChatHistory[]
-  currentChatId: string | null
-  isSidebarCollapsed: boolean
-  onToggleSidebar: () => void
-  onCreateNewChat: () => void
-  onSwitchChat: (chatId: string) => void
-  onDeleteChat: (chatId: string) => void
+  chatHistories: ChatHistory[];
+  currentChatId: string | null;
+  isSidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+  onCreateNewChat: () => void;
+  onSwitchChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
 }
 
 function SidebarContent({
@@ -25,16 +25,16 @@ function SidebarContent({
   onToggleSidebar,
   onCreateNewChat,
   onSwitchChat,
-  onDeleteChat
+  onDeleteChat,
 }: {
-  chatHistories: ChatHistory[]
-  currentChatId: string | null
-  onToggleSidebar: () => void
-  onCreateNewChat: () => void
-  onSwitchChat: (chatId: string) => void
-  onDeleteChat: (chatId: string) => void
+  chatHistories: ChatHistory[];
+  currentChatId: string | null;
+  onToggleSidebar: () => void;
+  onCreateNewChat: () => void;
+  onSwitchChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
 }) {
-  const { t } = useTranslation("ai-chat")
+  const { t } = useTranslation('ai-chat');
   return (
     <>
       <div className="p-3 flex items-center gap-2">
@@ -51,20 +51,18 @@ function SidebarContent({
           variant="outline"
         >
           <MessageSquare className="w-4 h-4 mr-2" />
-          {t("newConversation")}
+          {t('newConversation')}
         </Button>
       </div>
-      
+
       <ScrollArea className="flex-1 px-2">
         <div className="space-y-1">
           {chatHistories.map((chat) => (
             <div
               key={chat.id}
               className={cn(
-                "group relative p-3 rounded-lg cursor-pointer transition-all duration-200",
-                currentChatId === chat.id
-                  ? "bg-muted"
-                  : "hover:bg-accent"
+                'group relative p-3 rounded-lg cursor-pointer transition-all duration-200',
+                currentChatId === chat.id ? 'bg-muted' : 'hover:bg-accent'
               )}
               onClick={() => onSwitchChat(chat.id)}
             >
@@ -85,8 +83,8 @@ function SidebarContent({
                   size="sm"
                   className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
                   onClick={(e) => {
-                    e.stopPropagation()
-                    onDeleteChat(chat.id)
+                    e.stopPropagation();
+                    onDeleteChat(chat.id);
                   }}
                 >
                   <Trash2 className="w-3 h-3 text-muted-foreground" />
@@ -94,22 +92,18 @@ function SidebarContent({
               </div>
             </div>
           ))}
-          
+
           {chatHistories.length === 0 && (
             <div className="p-4 text-center">
               <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {t("noConversationHistory")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("startNewConversation")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t('noConversationHistory')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('startNewConversation')}</p>
             </div>
           )}
         </div>
       </ScrollArea>
     </>
-  )
+  );
 }
 
 export function ChatSidebar({
@@ -119,13 +113,20 @@ export function ChatSidebar({
   onToggleSidebar,
   onCreateNewChat,
   onSwitchChat,
-  onDeleteChat
+  onDeleteChat,
 }: ChatSidebarProps) {
-  const isMobile = useMobile()
+  const isMobile = useMobile();
 
   if (isMobile) {
     return (
-      <Sheet open={!isSidebarCollapsed} onOpenChange={(open) => { if (!open) onToggleSidebar() }}>
+      <Sheet
+        open={!isSidebarCollapsed}
+        onOpenChange={(open) => {
+          if (!open) {
+            onToggleSidebar();
+          }
+        }}
+      >
         <SheetContent side="left" className="w-72 p-0 [&>button:last-child]:hidden">
           <div className="flex flex-col h-full">
             <SidebarContent
@@ -139,14 +140,16 @@ export function ChatSidebar({
           </div>
         </SheetContent>
       </Sheet>
-    )
+    );
   }
 
   return (
-    <div className={cn(
-      "bg-background border-r border-border flex flex-col transition-all duration-300",
-      isSidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
-    )}>
+    <div
+      className={cn(
+        'bg-background border-r border-border flex flex-col transition-all duration-300',
+        isSidebarCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-64 opacity-100'
+      )}
+    >
       <SidebarContent
         chatHistories={chatHistories}
         currentChatId={currentChatId}
@@ -156,5 +159,5 @@ export function ChatSidebar({
         onDeleteChat={onDeleteChat}
       />
     </div>
-  )
+  );
 }

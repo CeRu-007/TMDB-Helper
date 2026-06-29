@@ -3,17 +3,17 @@
  * 提供运行时类型检查和数据验证
  */
 
-import { z } from 'zod'
-import { Logger } from '@/lib/utils/logger'
+import { z } from 'zod';
+import { Logger } from '@/lib/utils/logger';
 
-const log = new Logger({ prefix: 'Validators' })
+const log = new Logger({ prefix: 'Validators' });
 
 export const TMDBItemSchema = z.object({
   id: z.string().min(1, '项目ID不能为空'),
   title: z.string().min(1, '标题不能为空'),
   originalTitle: z.string().optional(),
   mediaType: z.enum(['tv'], {
-    errorMap: () => ({ message: '媒体类型必须是 tv' })
+    errorMap: () => ({ message: '媒体类型必须是 tv' }),
   }),
   tmdbId: z.string().optional(),
   tmdbUrl: z.string().url().optional().or(z.literal('')),
@@ -29,7 +29,10 @@ export const TMDBItemSchema = z.object({
   voteAverage: z.number().min(0).max(10).optional(),
   weekday: z.number().min(0).max(6, '星期几必须在0-6之间'),
   secondWeekday: z.number().min(0).max(6).optional(),
-  airTime: z.string().regex(/^\d{2}:\d{2}$/, '播出时间格式应为 HH:MM').optional(),
+  airTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, '播出时间格式应为 HH:MM')
+    .optional(),
   isDailyUpdate: z.boolean().optional(),
   totalEpisodes: z.number().min(0).optional(),
   manuallySetEpisodes: z.boolean().optional(),
@@ -37,142 +40,171 @@ export const TMDBItemSchema = z.object({
   status: z.enum(['ongoing', 'completed']),
   platformUrls: z.array(z.string().url()).optional(),
   defaultPlatformUrl: z.string().url().optional(),
-  networks: z.array(z.object({
-    id: z.number(),
-    name: z.string(),
-    logoPath: z.string().optional(),
-    logoUrl: z.string().url().optional(),
-  })).optional(),
+  networks: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        logoPath: z.string().optional(),
+        logoUrl: z.string().url().optional(),
+      })
+    )
+    .optional(),
   maintenanceCode: z.string().optional(),
   notes: z.string().optional(),
   category: z.enum(['anime', 'tv', 'kids', 'variety', 'short']).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  seasons: z.array(z.object({
-    seasonNumber: z.number().min(1),
-    name: z.string(),
-    totalEpisodes: z.number().min(0),
-    episodes: z.array(z.object({
-      number: z.number().min(1),
-      completed: z.boolean(),
-      seasonNumber: z.number().min(1).optional()
-    })),
-    posterUrl: z.string().url().optional().or(z.literal(''))
-  })).optional(),
-  episodes: z.array(z.object({
-    number: z.number().min(1),
-    completed: z.boolean(),
-    seasonNumber: z.number().min(1).optional()
-  })).optional()
-})
+  seasons: z
+    .array(
+      z.object({
+        seasonNumber: z.number().min(1),
+        name: z.string(),
+        totalEpisodes: z.number().min(0),
+        episodes: z.array(
+          z.object({
+            number: z.number().min(1),
+            completed: z.boolean(),
+            seasonNumber: z.number().min(1).optional(),
+          })
+        ),
+        posterUrl: z.string().url().optional().or(z.literal('')),
+      })
+    )
+    .optional(),
+  episodes: z
+    .array(
+      z.object({
+        number: z.number().min(1),
+        completed: z.boolean(),
+        seasonNumber: z.number().min(1).optional(),
+      })
+    )
+    .optional(),
+});
 
 export const ImportDataSchema = z.object({
   items: z.array(TMDBItemSchema),
   version: z.string().optional(),
-  exportedAt: z.string().datetime().optional()
-})
+  exportedAt: z.string().datetime().optional(),
+});
 
 export class DataValidator {
   private static formatZodError(error: z.ZodError): string[] {
-    return error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+    return error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
   }
 
-  static validateTMDBItem(data: unknown): { success: boolean; data?: TMDBItemType; errors?: string[] } {
+  static validateTMDBItem(data: unknown): {
+    success: boolean;
+    data?: TMDBItemType;
+    errors?: string[];
+  } {
     try {
-      const validated = TMDBItemSchema.parse(data)
-      log.debug('DataValidator', 'TMDB项目验证成功')
-      return { success: true, data: validated }
+      const validated = TMDBItemSchema.parse(data);
+      log.debug('DataValidator', 'TMDB项目验证成功');
+      return { success: true, data: validated };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = this.formatZodError(error)
-        log.warn('DataValidator', 'TMDB项目验证失败', { errors })
-        return { success: false, errors }
+        const errors = this.formatZodError(error);
+        log.warn('DataValidator', 'TMDB项目验证失败', { errors });
+        return { success: false, errors };
       }
-      log.error('DataValidator', 'TMDB项目验证异常', error)
-      return { success: false, errors: ['验证过程中发生未知错误'] }
+      log.error('DataValidator', 'TMDB项目验证异常', error);
+      return { success: false, errors: ['验证过程中发生未知错误'] };
     }
   }
 
-  static validateImportData(data: unknown): { success: boolean; data?: ImportDataType; errors?: string[] } {
+  static validateImportData(data: unknown): {
+    success: boolean;
+    data?: ImportDataType;
+    errors?: string[];
+  } {
     try {
-      const validated = ImportDataSchema.parse(data)
+      const validated = ImportDataSchema.parse(data);
       log.info('DataValidator', '导入数据验证成功', {
         itemCount: validated.items.length,
-      })
-      return { success: true, data: validated }
+      });
+      return { success: true, data: validated };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = this.formatZodError(error)
-        log.warn('DataValidator', '导入数据验证失败', { errors })
-        return { success: false, errors }
+        const errors = this.formatZodError(error);
+        log.warn('DataValidator', '导入数据验证失败', { errors });
+        return { success: false, errors };
       }
-      log.error('DataValidator', '导入数据验证异常', error)
-      return { success: false, errors: ['验证过程中发生未知错误'] }
+      log.error('DataValidator', '导入数据验证异常', error);
+      return { success: false, errors: ['验证过程中发生未知错误'] };
     }
   }
 
   static validateTMDBItems(items: unknown[]): {
-    validItems: TMDBItemType[]
-    invalidItems: Array<{ index: number; errors: string[] }>
-    summary: { total: number; valid: number; invalid: number }
+    validItems: TMDBItemType[];
+    invalidItems: Array<{ index: number; errors: string[] }>;
+    summary: { total: number; valid: number; invalid: number };
   } {
-    const validItems: TMDBItemType[] = []
-    const invalidItems: Array<{ index: number; errors: string[] }> = []
+    const validItems: TMDBItemType[] = [];
+    const invalidItems: Array<{ index: number; errors: string[] }> = [];
 
     items.forEach((item, index) => {
-      const result = this.validateTMDBItem(item)
+      const result = this.validateTMDBItem(item);
       if (result.success && result.data) {
-        validItems.push(result.data)
+        validItems.push(result.data);
       } else {
         invalidItems.push({
           index,
-          errors: result.errors || ['未知验证错误']
-        })
+          errors: result.errors || ['未知验证错误'],
+        });
       }
-    })
+    });
 
     const summary = {
       total: items.length,
       valid: validItems.length,
-      invalid: invalidItems.length
-    }
+      invalid: invalidItems.length,
+    };
 
-    log.info('DataValidator', '批量验证完成', summary)
-    return { validItems, invalidItems, summary }
+    log.info('DataValidator', '批量验证完成', summary);
+    return { validItems, invalidItems, summary };
   }
 
   static sanitizeTMDBItem(data: unknown): TMDBItemType {
-    const cleaned = data as Record<string, unknown>
-    const urlFields = ['tmdbUrl', 'posterUrl', 'backdropUrl', 'logoUrl', 'networkLogoUrl', 'defaultPlatformUrl']
+    const cleaned = data as Record<string, unknown>;
+    const urlFields = [
+      'tmdbUrl',
+      'posterUrl',
+      'backdropUrl',
+      'logoUrl',
+      'networkLogoUrl',
+      'defaultPlatformUrl',
+    ];
 
-    urlFields.forEach(field => {
+    urlFields.forEach((field) => {
       if (cleaned[field] === '') {
-        cleaned[field] = undefined
+        cleaned[field] = undefined;
       }
-    })
+    });
 
-    if (cleaned.createdAt && !cleaned.createdAt.includes('T')) {
-      cleaned.createdAt = new Date(cleaned.createdAt).toISOString()
+    if (typeof cleaned.createdAt === 'string' && !cleaned.createdAt.includes('T')) {
+      cleaned.createdAt = new Date(cleaned.createdAt).toISOString();
     }
-    if (cleaned.updatedAt && !cleaned.updatedAt.includes('T')) {
-      cleaned.updatedAt = new Date(cleaned.updatedAt).toISOString()
+    if (typeof cleaned.updatedAt === 'string' && !cleaned.updatedAt.includes('T')) {
+      cleaned.updatedAt = new Date(cleaned.updatedAt).toISOString();
     }
 
     if (typeof cleaned.weekday === 'string') {
-      cleaned.weekday = parseInt(cleaned.weekday, 10)
+      cleaned.weekday = parseInt(cleaned.weekday, 10);
     }
     if (typeof cleaned.secondWeekday === 'string') {
-      cleaned.secondWeekday = parseInt(cleaned.secondWeekday, 10)
+      cleaned.secondWeekday = parseInt(cleaned.secondWeekday, 10);
     }
 
     if (cleaned.status && cleaned.status !== 'ongoing' && cleaned.status !== 'completed') {
-      cleaned.status = 'ongoing'
-      cleaned.completed = false
+      cleaned.status = 'ongoing';
+      cleaned.completed = false;
     }
 
-    return cleaned
+    return cleaned as TMDBItemType;
   }
 }
 
-export type TMDBItemType = z.infer<typeof TMDBItemSchema>
-export type ImportDataType = z.infer<typeof ImportDataSchema>
+export type TMDBItemType = z.infer<typeof TMDBItemSchema>;
+export type ImportDataType = z.infer<typeof ImportDataSchema>;

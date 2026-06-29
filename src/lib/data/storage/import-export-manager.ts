@@ -1,4 +1,5 @@
 import { StorageBase } from './storage-base';
+import { ItemManager } from './item-manager';
 
 export class ImportExportManager extends StorageBase {
   /**
@@ -6,7 +7,7 @@ export class ImportExportManager extends StorageBase {
    */
   static async exportData(): Promise<string> {
     try {
-      const items = await this.getItemsWithRetry();
+      const items = await ItemManager.getItemsWithRetry();
 
       const exportData = {
         items,
@@ -85,7 +86,7 @@ export class ImportExportManager extends StorageBase {
         }
 
         // mediaType值检查
-        if (!['movie', 'tv'].includes(item.mediaType)) {
+        if (!['movie', 'tv'].includes((item as Record<string, unknown>).mediaType as string)) {
           return false;
         }
 
@@ -175,7 +176,7 @@ export class ImportExportManager extends StorageBase {
         }
       } else {
         // 使用localStorage
-        this.saveItems(items);
+        localStorage.setItem(StorageBase.STORAGE_KEY, JSON.stringify(items));
       }
 
       return {
@@ -188,8 +189,7 @@ export class ImportExportManager extends StorageBase {
     } catch (error) {
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : '导入过程中发生未知错误',
+        error: error instanceof Error ? error.message : '导入过程中发生未知错误',
       };
     }
   }

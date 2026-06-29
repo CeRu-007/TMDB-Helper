@@ -1,23 +1,19 @@
-"use client"
+'use client';
 
-import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Settings, RefreshCw, Loader2 } from "lucide-react"
-import type { TMDBItem } from "@/lib/data/storage"
-import { useTranslation } from "react-i18next"
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Settings, RefreshCw, Loader2 } from 'lucide-react';
+import type { TMDBItem } from '@/lib/data/storage';
+import { useTranslation } from 'react-i18next';
 
 interface TMDBRefreshPanelProps {
-  item: TMDBItem
-  isRefreshingTMDBData: boolean
-  onRefresh: () => void
+  item: TMDBItem;
+  isRefreshingTMDBData: boolean;
+  onRefresh: () => void;
 }
 
-export function TMDBRefreshPanel({
-  item,
-  isRefreshingTMDBData,
-  onRefresh
-}: TMDBRefreshPanelProps) {
-  const { t } = useTranslation('media')
+export function TMDBRefreshPanel({ item, isRefreshingTMDBData, onRefresh }: TMDBRefreshPanelProps) {
+  const { t } = useTranslation('media');
 
   return (
     <Card variant="frosted">
@@ -47,5 +43,5 @@ export function TMDBRefreshPanel({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

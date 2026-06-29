@@ -284,4 +284,4 @@ When editing international content, please be mindful of the following:
 # Vibes
 
 Vibes are a way for users to express their feelings about a movie or TV show. They are meant to be fun and lighthearted. Please be respectful when adding vibes and do not use them to harass or attack others.
-`
+`;

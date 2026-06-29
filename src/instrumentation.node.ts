@@ -1,7 +1,6 @@
 import path from 'path';
-import { LogLevel, getLogDir } from '@/lib/utils/logger';
+import { LogLevel, getLogDir, setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
 import { FileTransport } from '@/lib/utils/file-transport';
-import { setFileTransport, logger as rootLogger } from '@/lib/utils/logger';
 
 function initFileTransport(): void {
   const logDir = getLogDir();

@@ -27,7 +27,7 @@ export class ItemsService {
   getAll(): TMDBItem[] {
     const cacheKey = CacheKeys.items.all;
     const cached = cacheManager.get<TMDBItem[]>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -43,7 +43,7 @@ export class ItemsService {
   getById(id: string): TMDBItem | undefined {
     const cacheKey = CacheKeys.items.byId(id);
     const cached = cacheManager.get<TMDBItem>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -61,7 +61,7 @@ export class ItemsService {
   getByTmdbId(tmdbId: string): TMDBItem | undefined {
     const cacheKey = CacheKeys.items.byTmdbId(tmdbId);
     const cached = cacheManager.get<TMDBItem>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -79,7 +79,7 @@ export class ItemsService {
   getByWeekday(weekday: number): TMDBItem[] {
     const cacheKey = CacheKeys.items.byWeekday(weekday);
     const cached = cacheManager.get<TMDBItem[]>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -94,12 +94,12 @@ export class ItemsService {
    */
   create(item: TMDBItem): DatabaseResult<TMDBItem> {
     const result = itemsRepository.create(item);
-    
+
     if (result.success) {
       this.invalidateCache();
       logger.info(`[ItemsService] 创建项目: ${item.title}`);
     }
-    
+
     return result;
   }
 
@@ -108,12 +108,12 @@ export class ItemsService {
    */
   update(item: TMDBItem): DatabaseResult<TMDBItem> {
     const result = itemsRepository.update(item);
-    
+
     if (result.success) {
       this.invalidateCache(item.id);
       logger.info(`[ItemsService] 更新项目: ${item.title}`);
     }
-    
+
     return result;
   }
 
@@ -122,11 +122,11 @@ export class ItemsService {
    */
   save(item: TMDBItem): DatabaseResult<TMDBItem> {
     const existing = itemsRepository.findById(item.id);
-    
+
     if (existing) {
       return this.update(item);
     }
-    
+
     return this.create(item);
   }
 
@@ -135,12 +135,12 @@ export class ItemsService {
    */
   delete(id: string): DatabaseResult {
     const result = itemsRepository.softDelete(id);
-    
+
     if (result.success) {
       this.invalidateCache(id);
       logger.info(`[ItemsService] 删除项目: ${id}`);
     }
-    
+
     return result;
   }
 
@@ -149,12 +149,12 @@ export class ItemsService {
    */
   restore(id: string): DatabaseResult {
     const result = itemsRepository.restore(id);
-    
+
     if (result.success) {
       this.invalidateCache(id);
       logger.info(`[ItemsService] 恢复项目: ${id}`);
     }
-    
+
     return result;
   }
 
@@ -163,12 +163,12 @@ export class ItemsService {
    */
   hardDelete(id: string): DatabaseResult {
     const result = itemsRepository.deleteById(id);
-    
+
     if (result.success) {
       this.invalidateCache(id);
       logger.info(`[ItemsService] 永久删除项目: ${id}`);
     }
-    
+
     return result;
   }
 
@@ -177,12 +177,12 @@ export class ItemsService {
    */
   import(items: TMDBItem[]): DatabaseResult<{ imported: number; skipped: number }> {
     const result = itemsRepository.importItems(items);
-    
+
     if (result.success) {
       this.invalidateCache();
       logger.info(`[ItemsService] 导入项目: ${result.data?.imported} 个`);
     }
-    
+
     return result;
   }
 
@@ -212,7 +212,7 @@ export class ItemsService {
    */
   private invalidateCache(itemId?: string): void {
     cacheManager.delete(CacheKeys.items.all);
-    
+
     if (itemId) {
       cacheManager.delete(CacheKeys.items.byId(itemId));
       // 清除所有 weekday 缓存

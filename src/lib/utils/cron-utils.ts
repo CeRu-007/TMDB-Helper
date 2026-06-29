@@ -21,29 +21,42 @@ export interface CronRecommendation {
 }
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-const MONTHS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+const MONTHS = [
+  '一月',
+  '二月',
+  '三月',
+  '四月',
+  '五月',
+  '六月',
+  '七月',
+  '八月',
+  '九月',
+  '十月',
+  '十一月',
+  '十二月',
+];
 
 export function parseCronExpression(expression: string): CronParts | null {
   const parts = expression.trim().split(/\s+/);
 
   if (parts.length === 5) {
     return {
-      minute: parts[0],
-      hour: parts[1],
-      dayOfMonth: parts[2],
-      month: parts[3],
-      dayOfWeek: parts[4],
+      minute: parts[0] || '',
+      hour: parts[1] || '',
+      dayOfMonth: parts[2] || '',
+      month: parts[3] || '',
+      dayOfWeek: parts[4] || '',
     };
   }
 
   if (parts.length === 6) {
     return {
-      second: parts[0],
-      minute: parts[1],
-      hour: parts[2],
-      dayOfMonth: parts[3],
-      month: parts[4],
-      dayOfWeek: parts[5],
+      second: parts[0] || '',
+      minute: parts[1] || '',
+      hour: parts[2] || '',
+      dayOfMonth: parts[3] || '',
+      month: parts[4] || '',
+      dayOfWeek: parts[5] || '',
     };
   }
 
@@ -103,7 +116,12 @@ export function getCronDescription(cronExpression: string): string {
   return `Cron: ${cronExpression}`;
 }
 
-function getDayOfWeekDescription(minute: string, hour: string, dayOfWeek: string, timeStr?: string): string {
+function getDayOfWeekDescription(
+  minute: string,
+  hour: string,
+  dayOfWeek: string,
+  timeStr?: string
+): string {
   if (!timeStr) {
     const hourNum = parseInt(hour, 10);
     const minuteNum = parseInt(minute, 10);
@@ -115,7 +133,7 @@ function getDayOfWeekDescription(minute: string, hour: string, dayOfWeek: string
   }
 
   if (dayOfWeek.includes(',')) {
-    const days = dayOfWeek.split(',').map(d => {
+    const days = dayOfWeek.split(',').map((d) => {
       const dayNum = parseInt(d, 10);
       return isNaN(dayNum) ? d : WEEKDAYS[dayNum];
     });
@@ -123,8 +141,8 @@ function getDayOfWeekDescription(minute: string, hour: string, dayOfWeek: string
   }
 
   if (dayOfWeek.includes('-')) {
-    const [start, end] = dayOfWeek.split('-').map(d => parseInt(d, 10));
-    return `每周 ${WEEKDAYS[start]} 至 ${WEEKDAYS[end]} ${timeStr} 执行`;
+    const [start, end] = dayOfWeek.split('-').map((d) => parseInt(d, 10));
+    return `每周 ${WEEKDAYS[start] ?? ''} 至 ${WEEKDAYS[end] ?? ''} ${timeStr} 执行`;
   }
 
   const dayNum = parseInt(dayOfWeek, 10);
@@ -135,7 +153,12 @@ function getDayOfWeekDescription(minute: string, hour: string, dayOfWeek: string
   return `每周 ${dayOfWeek} ${timeStr} 执行`;
 }
 
-function getMonthlyDescription(minute: string, hour: string, dayOfMonth: string, month: string): string {
+function getMonthlyDescription(
+  minute: string,
+  hour: string,
+  dayOfMonth: string,
+  month: string
+): string {
   const hourNum = parseInt(hour, 10);
   const minuteNum = parseInt(minute, 10);
   const timeStr = `${hourNum.toString().padStart(2, '0')}:${minuteNum.toString().padStart(2, '0')}`;
@@ -175,7 +198,10 @@ export function getNextRunTime(cronExpression: string): string {
 
   if (dayOfWeek !== '*') {
     const currentDay = now.getDay();
-    const targetDays = dayOfWeek.split(',').map(d => parseInt(d, 10)).filter(d => !isNaN(d));
+    const targetDays = dayOfWeek
+      .split(',')
+      .map((d) => parseInt(d, 10))
+      .filter((d) => !isNaN(d));
 
     if (targetDays.length > 0) {
       const sortedDays = targetDays.sort((a, b) => a - b);
@@ -229,9 +255,13 @@ export function validateCronExpression(cronExpression: string): boolean {
 
   for (let i = indexOffset; i < parts.length; i++) {
     const part = parts[i];
-    if (part === '*') continue;
+    if (part === '*') {
+      continue;
+    }
 
-    if (!patterns[i - indexOffset].test(part) && !ranges[i - indexOffset].test(part)) {
+    const pattern = patterns[i - indexOffset];
+    const range = ranges[i - indexOffset];
+    if (pattern && !pattern.test(part) && range && !range.test(part)) {
       return false;
     }
   }
@@ -271,7 +301,7 @@ export function getRecommendations(item: {
   }
 
   if (item.airTime) {
-    const [hour, minute] = item.airTime.split(':').map(Number);
+    const [hour = NaN, minute = NaN] = item.airTime.split(':').map(Number);
     if (!isNaN(hour) && !isNaN(minute)) {
       if (item.isDailyUpdate) {
         recommendations.push({

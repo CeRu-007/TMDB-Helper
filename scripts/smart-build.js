@@ -10,7 +10,7 @@ logger.info(`📱 当前平台: ${os.platform()}`);
 // 根据当前平台确定可构建的目标
 function getAvailableTargets() {
   const platform = os.platform();
-  
+
   switch (platform) {
     case 'darwin': // macOS
       return ['--win', '--mac', '--linux'];
@@ -44,7 +44,7 @@ const buildCommand = [
   'pnpm run build',
   '&&',
   'electron-builder',
-  ...targets
+  ...targets,
 ].join(' ');
 
 logger.info(`📦 执行构建命令: ${buildCommand}`);
@@ -53,12 +53,11 @@ try {
   // 执行构建
   execSync(buildCommand, {
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: process.cwd(),
   });
 
   logger.info('✅ 构建完成！');
   logger.info('📁 查看构建结果: dist/ 目录');
-
 } catch (error) {
   logger.error('❌ 构建失败:', error.message);
 

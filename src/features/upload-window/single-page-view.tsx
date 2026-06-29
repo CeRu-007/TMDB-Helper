@@ -1,56 +1,67 @@
-"use client"
+'use client';
 
-import React, { useMemo, useState, useCallback } from "react"
-import { useTranslation } from "react-i18next"
-import { useUploadStore } from "@/stores/upload-store"
-import { ImageThumbnail } from "./image-thumbnail"
-import { cn } from "@/lib/utils"
-import { ArrowUpDown, FolderOpen } from "lucide-react"
+import React, { useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useUploadStore } from '@/stores/upload-store';
+import { ImageThumbnail } from './image-thumbnail';
+import { cn } from '@/lib/utils';
+import { ArrowUpDown, FolderOpen } from 'lucide-react';
 
-type SortKey = "name" | "size" | "type"
-type SortDir = "asc" | "desc"
+type SortKey = 'name' | 'size' | 'type';
+type SortDir = 'asc' | 'desc';
 
 export function SinglePageView() {
-  const { t } = useTranslation("upload-window")
-  const files = useUploadStore((s) => s.files)
-  const tree = useUploadStore((s) => s.tree)
-  const columnPaths = useUploadStore((s) => s.columnPaths)
-  const setColumnPath = useUploadStore((s) => s.setColumnPath)
-  const uploadedPaths = useUploadStore((s) => s.uploadedPaths)
+  const { t } = useTranslation('upload-window');
+  const files = useUploadStore((s) => s.files);
+  const tree = useUploadStore((s) => s.tree);
+  const columnPaths = useUploadStore((s) => s.columnPaths);
+  const setColumnPath = useUploadStore((s) => s.setColumnPath);
+  const uploadedPaths = useUploadStore((s) => s.uploadedPaths);
 
-  const [sortKey, setSortKey] = useState<SortKey>("name")
-  const [sortDir, setSortDir] = useState<SortDir>("asc")
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const toggleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
       if (prev === key) {
-        setSortDir((d) => (d === "asc" ? "desc" : "asc"))
-        return prev
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+        return prev;
       }
-      setSortDir("asc")
-      return key
-    })
-  }, [])
+      setSortDir('asc');
+      return key;
+    });
+  }, []);
 
   const allImages = useMemo(() => {
     return [...files].sort((a, b) => {
-      let cmp = 0
+      let cmp = 0;
       switch (sortKey) {
-        case "name": cmp = a.name.localeCompare(b.name); break
-        case "size": cmp = a.size - b.size; break
-        case "type": cmp = a.type.localeCompare(b.type); break
+        case 'name':
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case 'size':
+          cmp = a.size - b.size;
+          break;
+        case 'type':
+          cmp = a.type.localeCompare(b.type);
+          break;
       }
-      return sortDir === "asc" ? cmp : -cmp
-    })
-  }, [files, sortKey, sortDir])
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [files, sortKey, sortDir]);
 
-  const currentDir = columnPaths[columnPaths.length - 1]
+  const currentDir = columnPaths[columnPaths.length - 1];
 
-  const handleDirClick = useCallback((path: string) => {
-    setColumnPath(0, path)
-  }, [setColumnPath])
+  const handleDirClick = useCallback(
+    (path: string) => {
+      setColumnPath(0, path);
+    },
+    [setColumnPath]
+  );
 
-  if (files.length === 0) return null
+  if (files.length === 0) {
+    return null;
+  }
 
   const SortHeader = ({ label, sortKey: sk }: { label: string; sortKey: SortKey }) => (
     <button
@@ -58,9 +69,9 @@ export function SinglePageView() {
       className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
     >
       {label}
-      <ArrowUpDown className={cn("w-3 h-3", sortKey === sk ? "text-blue-500" : "")} />
+      <ArrowUpDown className={cn('w-3 h-3', sortKey === sk ? 'text-blue-500' : '')} />
     </button>
-  )
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -72,10 +83,10 @@ export function SinglePageView() {
               key={dir.path}
               onClick={() => handleDirClick(dir.path)}
               className={cn(
-                "text-xs px-2 py-0.5 rounded transition-colors whitespace-nowrap",
+                'text-xs px-2 py-0.5 rounded transition-colors whitespace-nowrap',
                 currentDir === dir.path
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-muted-foreground hover:bg-accent",
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-muted-foreground hover:bg-accent'
               )}
             >
               {dir.name}
@@ -87,20 +98,24 @@ export function SinglePageView() {
       <div className="flex-1 overflow-y-auto">
         <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 border-b border-border text-xs font-medium text-muted-foreground sticky top-0 bg-background/90 backdrop-blur-sm z-10">
           <div className="col-span-1" />
-          <div className="col-span-4"><SortHeader label={t("name")} sortKey="name" /></div>
-          <div className="col-span-2"><SortHeader label={t("fileSize")} sortKey="size" /></div>
-          <div className="col-span-2"><SortHeader label={t("type")} sortKey="type" /></div>
-          <div className="col-span-2">{t("status")}</div>
+          <div className="col-span-4">
+            <SortHeader label={t('name')} sortKey="name" />
+          </div>
+          <div className="col-span-2">
+            <SortHeader label={t('fileSize')} sortKey="size" />
+          </div>
+          <div className="col-span-2">
+            <SortHeader label={t('type')} sortKey="type" />
+          </div>
+          <div className="col-span-2">{t('status')}</div>
         </div>
 
         {allImages.map((f) => (
           <div
             key={f.id}
             className={cn(
-              "grid grid-cols-12 gap-2 items-center px-4 py-2 border-b border-border/50 transition-colors",
-              uploadedPaths.includes(f.relativePath)
-                ? "opacity-50"
-                : "hover:bg-accent",
+              'grid grid-cols-12 gap-2 items-center px-4 py-2 border-b border-border/50 transition-colors',
+              uploadedPaths.includes(f.relativePath) ? 'opacity-50' : 'hover:bg-accent'
             )}
           >
             <div className="col-span-1">
@@ -108,21 +123,27 @@ export function SinglePageView() {
             </div>
             <div className="col-span-4 text-sm text-foreground truncate">{f.name}</div>
             <div className="col-span-2 text-xs text-gray-400">{formatSize(f.size)}</div>
-            <div className="col-span-2 text-xs text-gray-400">{f.type.split("/").pop()?.toUpperCase()}</div>
+            <div className="col-span-2 text-xs text-gray-400">
+              {f.type.split('/').pop()?.toUpperCase()}
+            </div>
             <div className="col-span-2">
               {uploadedPaths.includes(f.relativePath) && (
-                <span className="text-xs text-green-500 font-medium">{t("uploaded")}</span>
+                <span className="text-xs text-green-500 font-medium">{t('uploaded')}</span>
               )}
             </div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

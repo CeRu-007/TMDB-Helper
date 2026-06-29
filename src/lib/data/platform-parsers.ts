@@ -90,9 +90,7 @@ export const NetflixParser: PlatformParser = {
 
     try {
       // 提取 Netflix 特有的 JSON 数据
-      const reactContextMatch = html.match(
-        /netflix\.reactContext\s*=\s*({.+?});/,
-      );
+      const reactContextMatch = html.match(/netflix\.reactContext\s*=\s*({.+?});/);
       if (reactContextMatch) {
         const reactContext = JSON.parse(reactContextMatch[1]!);
         const models = reactContext?.models;
@@ -101,10 +99,11 @@ export const NetflixParser: PlatformParser = {
           // 查找视频数据
           const videoData = Object.values(models).find(
             (model): model is NetflixModel =>
-              typeof model === 'object' && model !== null &&
+              typeof model === 'object' &&
+              model !== null &&
               ((model as NetflixModel).type === 'video' ||
-               (model as NetflixModel).summary?.type === 'show' ||
-               (model as NetflixModel).summary?.type === 'movie'),
+                (model as NetflixModel).summary?.type === 'show' ||
+                (model as NetflixModel).summary?.type === 'movie')
           ) as NetflixModel | undefined;
 
           if (videoData) {
@@ -120,27 +119,21 @@ export const NetflixParser: PlatformParser = {
             // 类型信息
             if ((summary as any).genres) {
               metadata.genre = (summary as any).genres.map((g: any) =>
-                typeof g === 'object' && g !== null && 'name' in g
-                  ? g.name || String(g)
-                  : String(g)
+                typeof g === 'object' && g !== null && 'name' in g ? g.name || String(g) : String(g)
               );
             }
 
             // 演员信息
             if ((summary as any).cast) {
               metadata.cast = (summary as any).cast.map((c: any) =>
-                typeof c === 'object' && c !== null && 'name' in c
-                  ? c.name || String(c)
-                  : String(c)
+                typeof c === 'object' && c !== null && 'name' in c ? c.name || String(c) : String(c)
               );
             }
 
             // 导演信息
             if ((summary as any).creators) {
               metadata.director = (summary as any).creators.map((c: any) =>
-                typeof c === 'object' && c !== null && 'name' in c
-                  ? c.name || String(c)
-                  : String(c)
+                typeof c === 'object' && c !== null && 'name' in c ? c.name || String(c) : String(c)
               );
             }
 
@@ -196,15 +189,13 @@ export const PrimeVideoParser: PlatformParser = {
     try {
       // 提取 Prime Video 的 JSON-LD 数据
       const jsonLdMatches = html.match(
-        /<script[^>]*type="application\/ld\+json"[^>]*>([^<]+)<\/script>/gi,
+        /<script[^>]*type="application\/ld\+json"[^>]*>([^<]+)<\/script>/gi
       );
 
       if (jsonLdMatches) {
         for (const _match of jsonLdMatches) {
           try {
-            const jsonContent = match
-              .replace(/<script[^>]*>/, '')
-              .replace(/<\/script>/, '');
+            const jsonContent = _match.replace(/<script[^>]*>/, '').replace(/<\/script>/, '');
             const data = JSON.parse(jsonContent);
 
             if (data['@type'] === 'Movie' || data['@type'] === 'TVSeries') {
@@ -215,9 +206,7 @@ export const PrimeVideoParser: PlatformParser = {
                 : undefined;
 
               if (data.genre) {
-                metadata.genre = Array.isArray(data.genre)
-                  ? data.genre
-                  : [data.genre];
+                metadata.genre = Array.isArray(data.genre) ? data.genre : [data.genre];
               }
 
               if (data.director) {
@@ -227,9 +216,13 @@ export const PrimeVideoParser: PlatformParser = {
                         ? (d as { name?: string }).name || String(d)
                         : String(d)
                     )
-                  : [typeof data.director === 'object' && data.director !== null && 'name' in data.director
-                      ? (data.director as { name?: string }).name || String(data.director)
-                      : String(data.director)];
+                  : [
+                      typeof data.director === 'object' &&
+                      data.director !== null &&
+                      'name' in data.director
+                        ? (data.director as { name?: string }).name || String(data.director)
+                        : String(data.director),
+                    ];
               }
 
               if (data.actor) {
@@ -239,9 +232,11 @@ export const PrimeVideoParser: PlatformParser = {
                         ? (a as { name?: string }).name || String(a)
                         : String(a)
                     )
-                  : [typeof data.actor === 'object' && data.actor !== null && 'name' in data.actor
-                      ? (data.actor as { name?: string }).name || String(data.actor)
-                      : String(data.actor)];
+                  : [
+                      typeof data.actor === 'object' && data.actor !== null && 'name' in data.actor
+                        ? (data.actor as { name?: string }).name || String(data.actor)
+                        : String(data.actor),
+                    ];
               }
 
               if (data.aggregateRating) {
@@ -249,9 +244,7 @@ export const PrimeVideoParser: PlatformParser = {
               }
 
               if (data.image) {
-                metadata.posterUrl = Array.isArray(data.image)
-                  ? data.image[0]
-                  : data.image;
+                metadata.posterUrl = Array.isArray(data.image) ? data.image[0] : data.image;
               }
             }
           } catch (e) {
@@ -291,9 +284,7 @@ export const DisneyPlusParser: PlatformParser = {
 
     try {
       // Disney+ 通常使用 React 应用，数据在 window.__INITIAL_STATE__ 中
-      const initialStateMatch = html.match(
-        /window\.__INITIAL_STATE__\s*=\s*({.+?});/,
-      );
+      const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.+?});/);
       if (initialStateMatch) {
         const initialState = JSON.parse(initialStateMatch[1]!);
 
@@ -303,10 +294,10 @@ export const DisneyPlusParser: PlatformParser = {
           metadata.title = contentData.title as string;
           metadata.originalTitle = contentData.originalTitle as string;
           metadata.description =
-            contentData.description || contentData.synopsis;
+            (contentData.description as string) || (contentData.synopsis as string);
           metadata.year = contentData.releaseYear as number;
-          metadata.duration = contentData.runtimeMillis
-            ? Math.round(contentData.runtimeMillis / 60000)
+          metadata.duration = (contentData.runtimeMillis as number)
+            ? Math.round((contentData.runtimeMillis as number) / 60000)
             : undefined;
 
           if (contentData.genres) {
@@ -320,11 +311,11 @@ export const DisneyPlusParser: PlatformParser = {
           if (contentData.participants) {
             const directors = (contentData.participants as any[]).filter(
               (p): p is { role?: string; displayName?: string } =>
-                typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Director',
+                typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Director'
             );
             const actors = (contentData.participants as any[]).filter(
               (p): p is { role?: string; displayName?: string } =>
-                typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Actor',
+                typeof p === 'object' && p !== null && (p as { role?: string }).role === 'Actor'
             );
 
             if (directors.length > 0) {
@@ -339,15 +330,23 @@ export const DisneyPlusParser: PlatformParser = {
           if (contentData.images) {
             const poster = (contentData.images as any[]).find(
               (img): img is { purpose?: string; url?: string } =>
-                typeof img === 'object' && img !== null && (img as { purpose?: string }).purpose === 'poster',
+                typeof img === 'object' &&
+                img !== null &&
+                (img as { purpose?: string }).purpose === 'poster'
             );
             const backdrop = (contentData.images as any[]).find(
               (img): img is { purpose?: string; url?: string } =>
-                typeof img === 'object' && img !== null && (img as { purpose?: string }).purpose === 'hero',
+                typeof img === 'object' &&
+                img !== null &&
+                (img as { purpose?: string }).purpose === 'hero'
             );
 
-            if (poster) metadata.posterUrl = poster.url;
-            if (backdrop) metadata.backdropUrl = backdrop.url;
+            if (poster) {
+              metadata.posterUrl = poster.url;
+            }
+            if (backdrop) {
+              metadata.backdropUrl = backdrop.url;
+            }
           }
         }
       }
@@ -374,9 +373,7 @@ export const BilibiliParser: PlatformParser = {
 
     try {
       // Bilibili 的初始数据通常在 window.__INITIAL_STATE__ 中
-      const initialStateMatch = html.match(
-        /window\.__INITIAL_STATE__\s*=\s*({.+?});/,
-      );
+      const initialStateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.+?});/);
       if (initialStateMatch) {
         const initialState = JSON.parse(initialStateMatch[1]);
 
@@ -396,23 +393,17 @@ export const BilibiliParser: PlatformParser = {
 
           // 类型
           if (mediaInfo.style) {
-            metadata.genre = mediaInfo.style
-              .split(',')
-              .map((s: string) => s.trim());
+            metadata.genre = mediaInfo.style.split(',').map((s: string) => s.trim());
           }
 
           // 演员
           if (mediaInfo.actors) {
-            metadata.cast = mediaInfo.actors
-              .split(',')
-              .map((a: string) => a.trim());
+            metadata.cast = mediaInfo.actors.split(',').map((a: string) => a.trim());
           }
 
           // 制作信息
           if (mediaInfo.staff) {
-            metadata.director = mediaInfo.staff
-              .split(',')
-              .map((s: string) => s.trim());
+            metadata.director = mediaInfo.staff.split(',').map((s: string) => s.trim());
           }
 
           // 集数信息
@@ -428,7 +419,7 @@ export const BilibiliParser: PlatformParser = {
           // 地区
           if (mediaInfo.areas) {
             metadata.country = mediaInfo.areas
-              .map((a) =>
+              .map((a: any) =>
                 typeof a === 'object' && a !== null && 'name' in a
                   ? (a as { name?: string }).name || String(a)
                   : String(a)
@@ -438,8 +429,7 @@ export const BilibiliParser: PlatformParser = {
 
           // 状态
           if (mediaInfo.publish) {
-            metadata.status =
-              mediaInfo.publish.is_finish === 1 ? '已完结' : '连载中';
+            metadata.status = mediaInfo.publish.is_finish === 1 ? '已完结' : '连载中';
           }
         }
 
@@ -510,7 +500,7 @@ export const IqiyiParser: PlatformParser = {
           }
 
           if (albumInfo.directors) {
-            metadata.director = albumInfo.directors.map((d) =>
+            metadata.director = albumInfo.directors.map((d: any) =>
               typeof d === 'object' && d !== null && 'name' in d
                 ? (d as { name?: string }).name || String(d)
                 : String(d)
@@ -518,7 +508,7 @@ export const IqiyiParser: PlatformParser = {
           }
 
           if (albumInfo.actors) {
-            metadata.cast = albumInfo.actors.map((a) =>
+            metadata.cast = albumInfo.actors.map((a: any) =>
               typeof a === 'object' && a !== null && 'name' in a
                 ? (a as { name?: string }).name || String(a)
                 : String(a)
@@ -540,9 +530,7 @@ export const IqiyiParser: PlatformParser = {
       }
 
       // 从页面元素提取
-      const titleMatch = html.match(
-        /<h1[^>]*class="[^"]*title[^"]*"[^>]*>([^<]+)<\/h1>/i,
-      );
+      const titleMatch = html.match(/<h1[^>]*class="[^"]*title[^"]*"[^>]*>([^<]+)<\/h1>/i);
       if (titleMatch && !metadata.title) {
         metadata.title = titleMatch[1].trim();
       }
@@ -587,9 +575,7 @@ export const YoukuParser: PlatformParser = {
           }
 
           if (show.director) {
-            metadata.director = show.director
-              .split(',')
-              .map((d: string) => d.trim());
+            metadata.director = show.director.split(',').map((d: string) => d.trim());
           }
 
           if (show.actor) {
@@ -649,7 +635,7 @@ export const TencentVideoParser: PlatformParser = {
         }
 
         if (coverInfo.director_list) {
-          metadata.director = coverInfo.director_list.map((d) =>
+          metadata.director = coverInfo.director_list.map((d: any) =>
             typeof d === 'object' && d !== null && 'name' in d
               ? (d as { name?: string }).name || String(d)
               : String(d)
@@ -657,7 +643,7 @@ export const TencentVideoParser: PlatformParser = {
         }
 
         if (coverInfo.leading_actor_list) {
-          metadata.cast = coverInfo.leading_actor_list.map((a) =>
+          metadata.cast = coverInfo.leading_actor_list.map((a: any) =>
             typeof a === 'object' && a !== null && 'name' in a
               ? (a as { name?: string }).name || String(a)
               : String(a)
@@ -674,7 +660,7 @@ export const TencentVideoParser: PlatformParser = {
 
         if (coverInfo.area_list) {
           metadata.country = coverInfo.area_list
-            .map((a) =>
+            .map((a: any) =>
               typeof a === 'object' && a !== null && 'name' in a
                 ? (a as { name?: string }).name || String(a)
                 : String(a)
@@ -697,15 +683,13 @@ export const HBOMaxParser: PlatformParser = {
 
     try {
       // HBO Max 的数据通常在 window.__APOLLO_STATE__ 中
-      const apolloStateMatch = html.match(
-        /window\.__APOLLO_STATE__\s*=\s*({.+?});/,
-      );
+      const apolloStateMatch = html.match(/window\.__APOLLO_STATE__\s*=\s*({.+?});/);
       if (apolloStateMatch) {
         const apolloState = JSON.parse(apolloStateMatch[1]);
 
         // 查找内容数据
         const contentKeys = Object.keys(apolloState).filter(
-          (key) => key.includes('Content:') && apolloState[key].titles,
+          (key) => key.includes('Content:') && apolloState[key].titles
         );
 
         if (contentKeys.length > 0) {
@@ -717,8 +701,7 @@ export const HBOMaxParser: PlatformParser = {
           }
 
           if (content.summaries) {
-            metadata.description =
-              content.summaries.full || content.summaries.short;
+            metadata.description = content.summaries.full || content.summaries.short;
           }
 
           if (content.releaseYear) {
@@ -726,7 +709,7 @@ export const HBOMaxParser: PlatformParser = {
           }
 
           if (content.genres) {
-            metadata.genre = content.genres.map((g) =>
+            metadata.genre = content.genres.map((g: any) =>
               typeof g === 'object' && g !== null && 'name' in g
                 ? (g as { name?: string }).name || String(g)
                 : String(g)
@@ -735,35 +718,43 @@ export const HBOMaxParser: PlatformParser = {
 
           if (content.credits) {
             const directors = content.credits.filter(
-              (c): c is { role?: string; name?: string } =>
-                typeof c === 'object' && c !== null && (c as { role?: string }).role === 'DIRECTOR',
+              (c: any): c is { role?: string; name?: string } =>
+                typeof c === 'object' && c !== null && (c as { role?: string }).role === 'DIRECTOR'
             );
             const actors = content.credits.filter(
-              (c): c is { role?: string; name?: string } =>
-                typeof c === 'object' && c !== null && (c as { role?: string }).role === 'ACTOR',
+              (c: any): c is { role?: string; name?: string } =>
+                typeof c === 'object' && c !== null && (c as { role?: string }).role === 'ACTOR'
             );
 
             if (directors.length > 0) {
-              metadata.director = directors.map((d) => d.name || String(d));
+              metadata.director = directors.map((d: any) => d.name || String(d));
             }
 
             if (actors.length > 0) {
-              metadata.cast = actors.map((a) => a.name || String(a));
+              metadata.cast = actors.map((a: any) => a.name || String(a));
             }
           }
 
           if (content.images) {
             const poster = content.images.find(
-              (img): img is { type?: string; url?: string } =>
-                typeof img === 'object' && img !== null && (img as { type?: string }).type === 'POSTER',
+              (img: any): img is { type?: string; url?: string } =>
+                typeof img === 'object' &&
+                img !== null &&
+                (img as { type?: string }).type === 'POSTER'
             );
             const backdrop = content.images.find(
-              (img): img is { type?: string; url?: string } =>
-                typeof img === 'object' && img !== null && (img as { type?: string }).type === 'BACKGROUND',
+              (img: any): img is { type?: string; url?: string } =>
+                typeof img === 'object' &&
+                img !== null &&
+                (img as { type?: string }).type === 'BACKGROUND'
             );
 
-            if (poster) metadata.posterUrl = poster.url;
-            if (backdrop) metadata.backdropUrl = backdrop.url;
+            if (poster) {
+              metadata.posterUrl = poster.url;
+            }
+            if (backdrop) {
+              metadata.backdropUrl = backdrop.url;
+            }
           }
         }
       }
@@ -782,9 +773,7 @@ export const AppleTVParser: PlatformParser = {
 
     try {
       // Apple TV+ 的数据通常在特定的 script 标签中
-      const showtimeDataMatch = html.match(
-        /window\.showtimeData\s*=\s*({.+?});/,
-      );
+      const showtimeDataMatch = html.match(/window\.showtimeData\s*=\s*({.+?});/);
       if (showtimeDataMatch) {
         const showtimeData = JSON.parse(showtimeDataMatch[1]);
 
@@ -821,21 +810,24 @@ export const AppleTVParser: PlatformParser = {
 
 // 辅助函数：在复杂的状态对象中查找内容数据
 function findContentInState(state: StateObject): StateObject | null {
-  if (!state || typeof state !== 'object') return null;
+  if (!state || typeof state !== 'object') {
+    return null;
+  }
 
   // 递归查找包含内容信息的对象
   for (const key in state) {
     const value = state[key];
 
     if (value && typeof value === 'object') {
-      // 检查是否是内容对象
-      if (value.title && (value.description || value.synopsis)) {
-        return value;
+      const obj = value as Record<string, any>;
+      if (obj.title && (obj.description || obj.synopsis)) {
+        return obj;
       }
 
-      // 递归查找
-      const found = findContentInState(value);
-      if (found) return found;
+      const found = findContentInState(obj);
+      if (found) {
+        return found;
+      }
     }
   }
 
@@ -862,7 +854,7 @@ export function getPlatformParser(url: string): PlatformParser | null {
 
     return (
       PlatformParsers.find((parser) =>
-        parser.domains.some((domain) => hostname.includes(domain)),
+        parser.domains.some((domain) => hostname.includes(domain))
       ) || null
     );
   } catch (error) {

@@ -6,6 +6,7 @@ import {
   generateCSVRobust,
   deleteEpisodesByNumbers,
   validateCSVData,
+  type CSVData,
 } from '@/lib/data/robust-csv-processor';
 import { logger } from '@/lib/utils/logger';
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '缺少必要参数',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -45,8 +46,7 @@ export async function POST(request: NextRequest) {
 
     // 检测平台类型和用户设置
     const isYoukuPlatform = platformUrl && platformUrl.includes('youku.com');
-    const shouldUseYoukuHandling =
-      isYoukuPlatform && enableYoukuSpecialHandling;
+    const shouldUseYoukuHandling = isYoukuPlatform && enableYoukuSpecialHandling;
 
     // 检查CSV文件是否存在
     try {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
             error: error instanceof Error ? error.message : String(error),
           },
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -73,9 +73,9 @@ export async function POST(request: NextRequest) {
     // 强化CSV处理现在是默认启用的，除非明确禁用
     let useRobustProcessing = enableYoukuSpecialHandling !== false;
 
-    let csvData;
-    let removedEpisodes = [];
-    let processedData;
+    let csvData: CSVData | undefined;
+    let removedEpisodes: number[] = [];
+    let processedData: CSVData | undefined;
 
     if (useRobustProcessing) {
       try {
@@ -94,11 +94,9 @@ export async function POST(request: NextRequest) {
 
         if (shouldUseYoukuHandling && markedEpisodes.length > 0) {
           // 优酷平台特殊处理：删除已标记集数-1的行
-          episodesToDelete = markedEpisodes
-            .map((ep) => ep - 1)
-            .filter((ep) => ep > 0);
+          episodesToDelete = markedEpisodes.map((ep) => ep - 1).filter((ep) => ep > 0);
           logger.info(
-            `[API] 优酷平台特殊处理：原始标记集数 [${markedEpisodes.join(', ')}] -> 实际删除集数 [${episodesToDelete.join(', ')}]`,
+            `[API] 优酷平台特殊处理：原始标记集数 [${markedEpisodes.join(', ')}] -> 实际删除集数 [${episodesToDelete.join(', ')}]`
           );
         }
 
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
 
       lines.slice(0, 3).forEach((line, index) => {
         logger.info(
-          `[API]   第${index + 1}行: ${line.substring(0, 100)}${line.length > 100 ? '...' : ''}`,
+          `[API]   第${index + 1}行: ${line.substring(0, 100)}${line.length > 100 ? '...' : ''}`
         );
       });
 
@@ -129,7 +127,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: 'CSV文件为空',
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -141,12 +139,10 @@ export async function POST(request: NextRequest) {
             success: false,
             error: 'CSV文件头部为空',
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
-      const headers = headerLine
-        .split(',')
-        .map((h) => h.trim().replace(/"/g, ''));
+      const headers = headerLine.split(',').map((h) => h.trim().replace(/"/g, ''));
       logger.info(`[API] CSV头部列名: [${headers.join(', ')}]`);
 
       // 尝试多种可能的集数列名
@@ -165,7 +161,7 @@ export async function POST(request: NextRequest) {
 
       for (const possibleName of possibleEpisodeColumns) {
         episodeNumberIndex = headers.findIndex((h) =>
-          h.toLowerCase().includes(possibleName.toLowerCase()),
+          h.toLowerCase().includes(possibleName.toLowerCase())
         );
         if (episodeNumberIndex !== -1) {
           break;
@@ -173,9 +169,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (episodeNumberIndex === -1) {
-        logger.error(
-          `[API] 无法找到集数列，可用列名: [${headers.join(', ')}]`,
-        );
+        logger.error(`[API] 无法找到集数列，可用列名: [${headers.join(', ')}]`);
         return NextResponse.json(
           {
             success: false,
@@ -185,7 +179,7 @@ export async function POST(request: NextRequest) {
               searchedColumns: possibleEpisodeColumns,
             },
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -195,7 +189,7 @@ export async function POST(request: NextRequest) {
 
       for (const possibleName of possibleNameColumns) {
         nameColumnIndex = headers.findIndex((h) =>
-          h.toLowerCase().includes(possibleName.toLowerCase()),
+          h.toLowerCase().includes(possibleName.toLowerCase())
         );
         if (nameColumnIndex !== -1) {
           break;
@@ -260,7 +254,7 @@ export async function POST(request: NextRequest) {
               shouldRemove = adjustedMarkedEpisodes.includes(episodeNumber);
               if (shouldRemove) {
                 logger.info(
-                  `[API] ✓ 优酷平台特殊处理：删除第 ${episodeNumber} 集 (对应已标记第 ${episodeNumber + 1} 集)`,
+                  `[API] ✓ 优酷平台特殊处理：删除第 ${episodeNumber} 集 (对应已标记第 ${episodeNumber + 1} 集)`
                 );
               }
             } else {
@@ -298,9 +292,7 @@ export async function POST(request: NextRequest) {
         rows: filteredLines.map((line) => parseCSVLine(line)),
       };
 
-      logger.info(
-        `[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`,
-      );
+      logger.info(`[API] 删除的集数: [${removedEpisodes.sort((a, b) => a - b).join(', ')}]`);
     }
 
     // 如果是测试模式，只返回分析结果，不实际处理文件
@@ -312,17 +304,16 @@ export async function POST(request: NextRequest) {
           analysis: {
             originalCsvPath: csvPath,
             markedEpisodesInput: markedEpisodes,
-            totalDataLines: processedData.rows.length,
+            totalDataLines: processedData!.rows.length,
             episodesToRemove: removedEpisodes.sort((a, b) => a - b),
-            episodesToKeep: processedData.rows.length,
+            episodesToKeep: processedData!.rows.length,
             wouldNeedProcessing:
-              removedEpisodes.length > 0 ||
-              (platformUrl && platformUrl.includes('iqiyi.com')),
+              removedEpisodes.length > 0 || (platformUrl && platformUrl.includes('iqiyi.com')),
             processingMethod: useRobustProcessing ? 'robust' : 'traditional',
           },
           message: `测试模式：分析完成，将删除 ${removedEpisodes.length} 个集数的数据行`,
         },
-        { status: 200 },
+        { status: 200 }
       );
     }
 
@@ -335,24 +326,30 @@ export async function POST(request: NextRequest) {
       // 使用强化CSV生成器
 
       // 应用特殊变量处理到强化处理的数据
-      const finalData = processedData;
+      const finalData = processedData!;
 
       // 删除指定的CSV列
       const columnsToRemove = [];
-      if (removeAirDateColumn) columnsToRemove.push('air_date');
-      if (removeRuntimeColumn) columnsToRemove.push('runtime');
-      if (removeBackdropColumn) columnsToRemove.push('backdrop');
+      if (removeAirDateColumn) {
+        columnsToRemove.push('air_date');
+      }
+      if (removeRuntimeColumn) {
+        columnsToRemove.push('runtime');
+      }
+      if (removeBackdropColumn) {
+        columnsToRemove.push('backdrop');
+      }
 
       if (columnsToRemove.length > 0) {
         logger.info(`[API] 需要删除的列: ${columnsToRemove.join(', ')}`);
 
         // 查找要删除的列的索引（从后往前删除，避免索引变化）
-        const columnsToRemoveIndexes = [];
+        const columnsToRemoveIndexes: { index: number; name: string }[] = [];
         for (const columnName of columnsToRemove) {
           const columnIndex = finalData.headers.findIndex(
             (h) =>
               h.toLowerCase() === columnName.toLowerCase() ||
-              h.toLowerCase().includes(columnName.toLowerCase()),
+              h.toLowerCase().includes(columnName.toLowerCase())
           );
           if (columnIndex !== -1) {
             columnsToRemoveIndexes.push({
@@ -380,7 +377,7 @@ export async function POST(request: NextRequest) {
       }
 
       finalContent = generateCSVRobust(finalData);
-      originalRowCount = csvData.rows.length;
+      originalRowCount = csvData!.rows.length;
       processedRowCount = finalData.rows.length;
     } else {
       // 使用传统方式
@@ -388,8 +385,7 @@ export async function POST(request: NextRequest) {
       // 如果没有删除任何行，检查是否需要应用特殊变量处理
       if (removedEpisodes.length === 0) {
         // 检查是否需要特殊变量处理
-        const needsSpecialProcessing =
-          platformUrl && platformUrl.includes('iqiyi.com');
+        const needsSpecialProcessing = platformUrl && platformUrl.includes('iqiyi.com');
 
         if (!needsSpecialProcessing) {
           return NextResponse.json(
@@ -399,36 +395,31 @@ export async function POST(request: NextRequest) {
               originalCsvPath: csvPath,
               backupCsvPath: null, // 没有创建备份
               removedEpisodes: [],
-              originalRowCount: processedData.rows.length,
-              processedRowCount: processedData.rows.length,
+              originalRowCount: processedData!.rows.length,
+              processedRowCount: processedData!.rows.length,
               markedEpisodesInput: markedEpisodes,
               strategy: 'no_processing_needed',
               processingMethod: useRobustProcessing ? 'robust' : 'traditional',
               message: `没有需要删除的集数，使用原始CSV文件`,
             },
-            { status: 200 },
+            { status: 200 }
           );
         }
       }
 
       // 应用特殊变量处理
       const processedLines = await applySpecialVariables(
-        [
-          processedData.headers.join(','),
-          ...processedData.rows.map((row) => row.join(',')),
-        ],
-        processedData.headers,
+        [processedData!.headers.join(','), ...processedData!.rows.map((row) => row.join(','))],
+        processedData!.headers,
         platformUrl,
         removeAirDateColumn,
         removeRuntimeColumn,
-        removeBackdropColumn,
+        removeBackdropColumn
       );
 
       finalContent = processedLines.join('\n');
-      originalRowCount = csvData
-        ? csvData.rows.length
-        : processedData.rows.length;
-      processedRowCount = processedData.rows.length;
+      originalRowCount = csvData ? csvData.rows.length : processedData!.rows.length;
+      processedRowCount = processedData!.rows.length;
     }
 
     // 策略：直接覆盖原始文件，不创建备份
@@ -452,9 +443,7 @@ export async function POST(request: NextRequest) {
     // 验证文件是否成功写入
     try {
       const writtenContent = await fs.readFile(processedCsvPath, 'utf-8');
-      const writtenLines = writtenContent
-        .split('\n')
-        .filter((line) => line.trim() !== '');
+      const writtenLines = writtenContent.split('\n').filter((line) => line.trim() !== '');
     } catch (verifyError) {
       throw new Error(`文件写入验证失败: ${verifyError}`);
     }
@@ -476,7 +465,7 @@ export async function POST(request: NextRequest) {
         strategy: 'direct_overwrite',
         message: `成功处理CSV文件，删除了 ${removedEpisodes.length} 个已标记集数的数据行`,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     return NextResponse.json(
@@ -485,7 +474,7 @@ export async function POST(request: NextRequest) {
         error: 'CSV处理失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -561,30 +550,38 @@ async function applySpecialVariables(
   platformUrl?: string,
   removeAirDateColumn?: boolean,
   removeRuntimeColumn?: boolean,
-  removeBackdropColumn?: boolean,
+  removeBackdropColumn?: boolean
 ): Promise<string[]> {
-  if (lines.length === 0) return lines;
+  if (lines.length === 0) {
+    return lines;
+  }
 
   const headerLine = lines[0];
   const dataLines = lines.slice(1);
 
   // 确定需要删除的列
   const columnsToRemove = [];
-  if (removeAirDateColumn) columnsToRemove.push('air_date');
-  if (removeRuntimeColumn) columnsToRemove.push('runtime');
-  if (removeBackdropColumn) columnsToRemove.push('backdrop');
+  if (removeAirDateColumn) {
+    columnsToRemove.push('air_date');
+  }
+  if (removeRuntimeColumn) {
+    columnsToRemove.push('runtime');
+  }
+  if (removeBackdropColumn) {
+    columnsToRemove.push('backdrop');
+  }
 
   if (columnsToRemove.length > 0) {
     logger.info(`[API] 将删除以下列: ${columnsToRemove.join(', ')}`);
   }
 
   // 查找相关列的索引
-  const columnsToRemoveIndexes = [];
+  const columnsToRemoveIndexes: { index: number; name: string }[] = [];
   for (const columnName of columnsToRemove) {
     const columnIndex = headers.findIndex(
       (h) =>
         h.toLowerCase() === columnName.toLowerCase() ||
-        h.toLowerCase().includes(columnName.toLowerCase()),
+        h.toLowerCase().includes(columnName.toLowerCase())
     );
     if (columnIndex !== -1) {
       columnsToRemoveIndexes.push({ index: columnIndex, name: columnName });
@@ -592,9 +589,7 @@ async function applySpecialVariables(
   }
 
   const overviewIndex = headers.findIndex(
-    (h) =>
-      h.toLowerCase().includes('overview') ||
-      h.toLowerCase().includes('description'),
+    (h) => h.toLowerCase().includes('overview') || h.toLowerCase().includes('description')
   );
 
   const processedDataLines = dataLines.map((line) => {

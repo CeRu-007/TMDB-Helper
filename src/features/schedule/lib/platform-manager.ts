@@ -1,126 +1,131 @@
-import { PlatformScheduleAdapter, ScheduleResponse, ScheduleDay, ScheduleEpisode } from '../types/schedule'
-import { bilibiliAdapter } from './adapters/bilibili-adapter'
-import { iqiyiAdapter } from './adapters/iqiyi-adapter'
-import { logger } from '@/lib/utils/logger'
+import {
+  PlatformScheduleAdapter,
+  ScheduleResponse,
+  ScheduleDay,
+  ScheduleEpisode,
+} from '../types/schedule';
+import { bilibiliAdapter } from './adapters/bilibili-adapter';
+import { iqiyiAdapter } from './adapters/iqiyi-adapter';
+import { logger } from '@/lib/utils/logger';
 
-const CACHE_DURATION_MS = 5 * 60 * 1000
+const CACHE_DURATION_MS = 5 * 60 * 1000;
 
 interface CacheEntry {
-  data: ScheduleResponse
-  timestamp: number
+  data: ScheduleResponse;
+  timestamp: number;
 }
 
 class SchedulePlatformManager {
-  private adapters: Map<string, PlatformScheduleAdapter> = new Map()
-  private cache: Map<string, CacheEntry> = new Map()
+  private adapters: Map<string, PlatformScheduleAdapter> = new Map();
+  private cache: Map<string, CacheEntry> = new Map();
 
   constructor() {
-    this.registerAdapter(bilibiliAdapter)
-    this.registerAdapter(iqiyiAdapter)
+    this.registerAdapter(bilibiliAdapter);
+    this.registerAdapter(iqiyiAdapter);
   }
 
   registerAdapter(adapter: PlatformScheduleAdapter): void {
-    this.adapters.set(adapter.platformId, adapter)
+    this.adapters.set(adapter.platformId, adapter);
   }
 
   getAvailablePlatforms(): PlatformScheduleAdapter[] {
-    return Array.from(this.adapters.values())
+    return Array.from(this.adapters.values());
   }
 
   async fetchSchedule(platformId: string, useCache = true): Promise<ScheduleResponse> {
-    const adapter = this.adapters.get(platformId)
+    const adapter = this.adapters.get(platformId);
 
     if (!adapter) {
-      throw new Error(`Platform ${platformId} not found`)
+      throw new Error(`Platform ${platformId} not found`);
     }
 
     if (useCache && this.isCacheValid(platformId)) {
-      return this.cache.get(platformId)!.data
+      return this.cache.get(platformId)!.data;
     }
 
-    const data = await adapter.fetchSchedule()
-    this.updateCache(platformId, data)
-    return data
+    const data = await adapter.fetchSchedule();
+    this.updateCache(platformId, data);
+    return data;
   }
 
   async fetchMultipleSchedules(platformIds: string[]): Promise<Map<string, ScheduleResponse>> {
-    const results = new Map<string, ScheduleResponse>()
+    const results = new Map<string, ScheduleResponse>();
 
     await Promise.allSettled(
       platformIds.map(async (platformId) => {
-        const data = await this.fetchSchedule(platformId)
-        results.set(platformId, data)
+        const data = await this.fetchSchedule(platformId);
+        results.set(platformId, data);
       })
-    )
+    );
 
     for (const platformId of platformIds) {
       if (!results.has(platformId)) {
-        logger.error(`Failed to fetch schedule for ${platformId}`)
-        results.set(platformId, this.createErrorResponse('Failed to fetch schedule'))
+        logger.error(`Failed to fetch schedule for ${platformId}`);
+        results.set(platformId, this.createErrorResponse('Failed to fetch schedule'));
       }
     }
 
-    return results
+    return results;
   }
 
   clearCache(platformId?: string): void {
     if (platformId) {
-      this.cache.delete(platformId)
+      this.cache.delete(platformId);
     } else {
-      this.cache.clear()
+      this.cache.clear();
     }
   }
 
   mergeSchedules(...schedules: ScheduleResponse[]): ScheduleResponse {
-    const mergedDays = new Map<string, ScheduleDay>()
+    const mergedDays = new Map<string, ScheduleDay>();
 
     for (const schedule of schedules) {
       if (!this.isValidSchedule(schedule)) {
-        continue
+        continue;
       }
 
       for (const day of schedule.result.list) {
-        this.mergeDay(mergedDays, day)
+        this.mergeDay(mergedDays, day);
       }
     }
 
     return {
       code: 0,
       message: 'success',
-      result: { list: Array.from(mergedDays.values()) }
-    }
+      result: { list: Array.from(mergedDays.values()) },
+    };
   }
 
   private isCacheValid(platformId: string): boolean {
-    const cacheEntry = this.cache.get(platformId)
+    const cacheEntry = this.cache.get(platformId);
     if (!cacheEntry) {
-      return false
+      return false;
     }
 
-    return Date.now() - cacheEntry.timestamp < CACHE_DURATION_MS
+    return Date.now() - cacheEntry.timestamp < CACHE_DURATION_MS;
   }
 
   private updateCache(platformId: string, data: ScheduleResponse): void {
     this.cache.set(platformId, {
       data,
-      timestamp: Date.now()
-    })
+      timestamp: Date.now(),
+    });
   }
 
   private isValidSchedule(schedule: ScheduleResponse): boolean {
-    return schedule.code === 0 && schedule.result?.list?.length > 0
+    return schedule.code === 0 && schedule.result?.list?.length > 0;
   }
 
   private mergeDay(mergedDays: Map<string, ScheduleDay>, day: ScheduleDay): void {
-    const existingDay = mergedDays.get(day.date)
+    const existingDay = mergedDays.get(day.date);
 
     if (existingDay) {
-      const allEpisodes = [...existingDay.episodes, ...day.episodes]
-      const mergedEpisodes = this.mergeEpisodes(allEpisodes)
-      existingDay.episodes = mergedEpisodes
-      existingDay.isToday = existingDay.isToday || day.isToday
+      const allEpisodes = [...existingDay.episodes, ...day.episodes];
+      const mergedEpisodes = this.mergeEpisodes(allEpisodes);
+      existingDay.episodes = mergedEpisodes;
+      existingDay.isToday = existingDay.isToday || day.isToday;
     } else {
-      mergedDays.set(day.date, { ...day, episodes: this.mergeEpisodes(day.episodes) })
+      mergedDays.set(day.date, { ...day, episodes: this.mergeEpisodes(day.episodes) });
     }
   }
 
@@ -129,48 +134,48 @@ class SchedulePlatformManager {
       .trim()
       .toLowerCase()
       .replace(/[\s\u3000-\u303F\uFF00-\uFFEF]+/g, ' ')
-      .replace(/['"()（）\[\]【】]/g, '')
+      .replace(/['"()（）\[\]【】]/g, '');
   }
 
   mergeEpisodes(episodes: ScheduleEpisode[]): ScheduleEpisode[] {
-    const grouped = new Map<string, ScheduleEpisode[]>()
+    const grouped = new Map<string, ScheduleEpisode[]>();
 
-    episodes.forEach(ep => {
-      const key = this.normalizeTitle(ep.title)
+    episodes.forEach((ep) => {
+      const key = this.normalizeTitle(ep.title);
 
       if (!grouped.has(key)) {
-        grouped.set(key, [])
+        grouped.set(key, []);
       }
-      grouped.get(key)!.push(ep)
-    })
+      grouped.get(key)!.push(ep);
+    });
 
-    return Array.from(grouped.values()).map(group => this.mergeEpisodeGroup(group))
+    return Array.from(grouped.values()).map((group) => this.mergeEpisodeGroup(group));
   }
 
   private mergeEpisodeGroup(group: ScheduleEpisode[]): ScheduleEpisode {
-    const primary = group[0]
-    const platformSet = new Set<string>()
-    const platformUrls: Record<string, string> = {}
-    const pubTimeSet = new Set<string>()
-    const pubIndexSet = new Set<string>()
-    const typeSet = new Set<string>()
+    const primary = group[0];
+    const platformSet = new Set<string>();
+    const platformUrls: Record<string, string> = {};
+    const pubTimeSet = new Set<string>();
+    const pubIndexSet = new Set<string>();
+    const typeSet = new Set<string>();
 
     for (const ep of group) {
       if (ep.platform) {
-        platformSet.add(ep.platform)
+        platformSet.add(ep.platform);
       }
       if (ep.url && ep.platform) {
-        platformUrls[ep.platform] = ep.url
+        platformUrls[ep.platform] = ep.url;
       }
       if (ep.pubTime && ep.pubTime !== '00:00') {
-        pubTimeSet.add(ep.pubTime)
+        pubTimeSet.add(ep.pubTime);
       }
       if (ep.pubIndex && ep.pubIndex !== '更新中') {
-        pubIndexSet.add(ep.pubIndex)
+        pubIndexSet.add(ep.pubIndex);
       }
       if (ep.types) {
         for (const type of ep.types) {
-          typeSet.add(type)
+          typeSet.add(type);
         }
       }
     }
@@ -182,17 +187,17 @@ class SchedulePlatformManager {
       pubTime: pubTimeSet.size > 0 ? Array.from(pubTimeSet)[0] : primary.pubTime || '00:00',
       pubIndex: pubIndexSet.size > 0 ? Array.from(pubIndexSet)[0] : primary.pubIndex || '更新中',
       types: typeSet.size > 0 ? Array.from(typeSet) : primary.types,
-      published: group.some(ep => ep.published)
-    }
+      published: group.some((ep) => ep.published),
+    };
   }
 
   private createErrorResponse(message: string): ScheduleResponse {
     return {
       code: -1,
       message,
-      result: { list: [] }
-    }
+      result: { list: [] },
+    };
   }
 }
 
-export const schedulePlatformManager = new SchedulePlatformManager()
+export const schedulePlatformManager = new SchedulePlatformManager();

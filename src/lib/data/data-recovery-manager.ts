@@ -3,13 +3,14 @@
  * 处理数据导出过程中的错误恢复和数据验证
  */
 
-import type { TMDBItem } from '@/lib/data/storage/types';
+import type { TMDBItem } from '@/types/tmdb-item';
 
 export interface DataValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
   itemCount: number;
+  taskCount: number;
   corruptedData?: unknown;
 }
 
@@ -27,6 +28,7 @@ export interface ExportResult {
   error?: string;
   stats?: {
     itemCount: number;
+    taskCount: number;
     dataSource: string;
     exportTime: string;
   };
@@ -55,11 +57,13 @@ class DataRecoveryManager {
       errors: [],
       warnings: [],
       itemCount: 0,
+      taskCount: 0,
     };
 
     try {
       const items = await this.getItemsWithFallback();
       result.itemCount = items.length;
+      result.taskCount = items.reduce((sum, item) => sum + (item.episodes?.length ?? 0), 0);
 
       if (items.length === 0) {
         result.warnings.push('没有找到项目数据');
@@ -77,9 +81,7 @@ class DataRecoveryManager {
         }
       }
     } catch (error) {
-      result.errors.push(
-        `数据验证失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
+      result.errors.push(`数据验证失败: ${error instanceof Error ? error.message : '未知错误'}`);
       result.isValid = false;
     }
 
@@ -93,24 +95,34 @@ class DataRecoveryManager {
     const fallbackMethods = [
       async () => {
         const response = await fetch('/api/storage/items');
-        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`API请求失败: ${response.status}`);
+        }
         const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'API返回失败');
+        if (!result.success) {
+          throw new Error(result.error || 'API返回失败');
+        }
         return result.items || [];
       },
 
       async () => {
         const response = await fetch('/api/storage/data');
-        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`API请求失败: ${response.status}`);
+        }
         const result = await response.json();
         return result.items || [];
       },
 
       async () => {
         const response = await fetch('/api/storage/file-operations');
-        if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`API请求失败: ${response.status}`);
+        }
         const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'API返回失败');
+        if (!result.success) {
+          throw new Error(result.error || 'API返回失败');
+        }
         return result.items || [];
       },
     ];
@@ -138,7 +150,7 @@ class DataRecoveryManager {
       validateData: true,
       autoFix: true,
       maxRetries: 3,
-    },
+    }
   ): Promise<ExportResult> {
     let attempt = 0;
     let lastError: Error | null = null;
@@ -183,6 +195,7 @@ class DataRecoveryManager {
           filename,
           stats: {
             itemCount: items.length,
+            taskCount: 0,
             dataSource: 'DataRecoveryManager',
             exportTime: new Date().toISOString(),
           },
@@ -220,15 +233,16 @@ class DataRecoveryManager {
    * 清理损坏的数据
    */
   private cleanupCorruptedData(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
 
     const keys = Object.keys(localStorage);
     const corruptedKeys = keys.filter(
       (key) =>
         key.includes('corrupted') ||
         (key.includes('backup') &&
-          Date.now() - parseInt(key.split('_').pop() || '0') >
-            this.MAX_BACKUP_AGE),
+          Date.now() - parseInt(key.split('_').pop() || '0') > this.MAX_BACKUP_AGE)
     );
 
     corruptedKeys.forEach((key) => {
@@ -244,7 +258,9 @@ class DataRecoveryManager {
    * 创建数据备份
    */
   private async createBackup(data: unknown): Promise<void> {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
 
     try {
       const backupKey = `${this.BACKUP_PREFIX}${Date.now()}`;
@@ -260,7 +276,9 @@ class DataRecoveryManager {
    * 清理旧备份
    */
   private cleanupOldBackups(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
 
     const keys = Object.keys(localStorage);
     const backupKeys = keys.filter((key) => key.startsWith(this.BACKUP_PREFIX));

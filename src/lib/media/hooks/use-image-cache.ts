@@ -46,7 +46,9 @@ export function useImageCache(options: UseImageCacheOptions): UseImageCacheRetur
   const [error, setError] = useState<string | null>(null);
 
   const fetchCache = useCallback(async () => {
-    if (!tmdbId) return;
+    if (!tmdbId) {
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -73,7 +75,9 @@ export function useImageCache(options: UseImageCacheOptions): UseImageCacheRetur
 
   const refresh = useCallback(
     async (mediaType?: 'movie' | 'tv') => {
-      if (!tmdbId) return;
+      if (!tmdbId) {
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -132,7 +136,9 @@ export function useBatchImageCache(
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!enabled || optionsList.length === 0) return;
+    if (!enabled || optionsList.length === 0) {
+      return;
+    }
 
     const fetchAll = async () => {
       setIsLoading(true);

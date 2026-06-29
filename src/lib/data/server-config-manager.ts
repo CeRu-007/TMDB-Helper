@@ -91,12 +91,12 @@ export class ServerConfigManager {
         serverVersion: Date.now(),
         conflictCount: 0,
         syncInProgress: false,
-      }),
+      }) as unknown as SyncStatus,
       layout_preferences: JSON.stringify({
         layoutType: 'sidebar',
         sidebarCollapsed: false,
         lastUpdated: new Date().toISOString(),
-      }),
+      }) as unknown as LayoutPreferences,
       last_login_username: undefined,
       last_login_remember_me: undefined,
       appearanceSettings: JSON.stringify({
@@ -120,7 +120,7 @@ export class ServerConfigManager {
         includeOriginalTitle: true,
         speechRecognitionModel: 'FunAudioLLM/SenseVoiceSmall',
         enableVideoAnalysis: false,
-      }),
+      }) as unknown as EpisodeGeneratorConfig,
       generalSettings: JSON.stringify({
         useProxy: false,
         proxyUrl: '',
@@ -177,7 +177,7 @@ export class ServerConfigManager {
   static async getConfig(): Promise<ServerConfig> {
     try {
       const config = await configRepository.get<ServerConfig>(this.CONFIG_KEY);
-      
+
       if (!config) {
         const defaultConfig = this.getDefaultConfig();
         await this.saveConfig(defaultConfig);
@@ -237,13 +237,15 @@ export class ServerConfigManager {
   /**
    * 获取特定配置项
    */
-  static async getConfigItem<T extends keyof ServerConfig>(key: T): Promise<ServerConfig[T] | undefined> {
+  static async getConfigItem<T extends keyof ServerConfig>(
+    key: T
+  ): Promise<ServerConfig[T] | undefined> {
     const config = await this.getConfig();
     const value = config[key];
 
     if (typeof value === 'object' && value !== null) {
       try {
-        return JSON.stringify(value);
+        return JSON.stringify(value) as unknown as ServerConfig[T];
       } catch {
         return value;
       }
@@ -255,7 +257,10 @@ export class ServerConfigManager {
   /**
    * 设置特定配置项
    */
-  static async setConfigItem<T extends keyof ServerConfig>(key: T, value: ServerConfig[T]): Promise<void> {
+  static async setConfigItem<T extends keyof ServerConfig>(
+    key: T,
+    value: ServerConfig[T]
+  ): Promise<void> {
     const updates = { [key]: value } as Partial<ServerConfig>;
     await this.updateConfig(updates);
   }

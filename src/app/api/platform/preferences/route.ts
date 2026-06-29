@@ -33,10 +33,7 @@ export async function GET(): Promise<NextResponse> {
     });
   } catch (error) {
     logger.error('[PlatformPreferences] 读取失败:', error);
-    return NextResponse.json(
-      { success: false, error: '读取偏好设置失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: '读取偏好设置失败' }, { status: 500 });
   }
 }
 
@@ -52,7 +49,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const body = (await request.json()) as Partial<PlatformPreferences>;
 
     // 读取当前值，合并更新
-    const current = await configRepository.get<PlatformPreferences>(CONFIG_KEY) ?? defaultPreferences;
+    const current =
+      (await configRepository.get<PlatformPreferences>(CONFIG_KEY)) ?? defaultPreferences;
 
     const updated: PlatformPreferences = {
       favorites: body.favorites ?? current.favorites,
@@ -75,9 +73,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     logger.error('[PlatformPreferences] 保存失败:', error);
-    return NextResponse.json(
-      { success: false, error: '保存偏好设置失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: '保存偏好设置失败' }, { status: 500 });
   }
 }

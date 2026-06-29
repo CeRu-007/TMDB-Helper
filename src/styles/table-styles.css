@@ -159,13 +159,13 @@
 }
 
 /* 确保表头也有明确的宽度 */
-.enhanced-csv-editor th[data-header="overview"] {
+.enhanced-csv-editor th[data-header='overview'] {
   min-width: 300px !important;
   width: 300px !important;
 }
 
-.enhanced-csv-editor th[data-header="backdrop_url"],
-.enhanced-csv-editor th[data-header="poster_url"] {
+.enhanced-csv-editor th[data-header='backdrop_url'],
+.enhanced-csv-editor th[data-header='poster_url'] {
   min-width: 200px !important;
   width: 200px !important;
 }
@@ -207,14 +207,14 @@
 }
 
 /* 修复IE/Edge浏览器的滚动问题 */
-@supports (-ms-ime-align:auto) {
+@supports (-ms-ime-align: auto) {
   .scroll-container {
     -ms-overflow-style: -ms-autohiding-scrollbar !important;
   }
 }
 
 /* 解决表格单元格间隙问题 */
-.enhanced-csv-editor td, 
+.enhanced-csv-editor td,
 .enhanced-csv-editor th {
   padding: 0 !important;
   vertical-align: middle !important;
@@ -295,7 +295,7 @@
   overflow-x: auto !important;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #9CA3AF #E5E7EB;
+  scrollbar-color: #9ca3af #e5e7eb;
 }
 
 /* 表格样式 */
@@ -383,8 +383,8 @@
 }
 
 /* 确保overview列永不换行且支持水平滚动 */
-th[data-header="overview"],
-td[data-column="overview"],
+th[data-header='overview'],
+td[data-column='overview'],
 .overview-cell {
   white-space: nowrap !important;
   overflow: visible !important;
@@ -394,7 +394,7 @@ td[data-column="overview"],
 
 /* CSV文本编辑器样式 */
 .csv-text-editor {
-  font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
   font-size: 14px !important;
   line-height: 1.6 !important;
   tab-size: 2 !important;
@@ -456,7 +456,7 @@ td[data-column="overview"],
   width: 50px !important;
   background-color: var(--muted) !important;
   color: var(--muted-foreground) !important;
-  font-family: "Consolas", "Monaco", "Courier New", monospace !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
   font-size: 14px !important;
   line-height: 1.6 !important;
   padding-top: 1rem !important;
@@ -467,7 +467,10 @@ td[data-column="overview"],
   border-right: 1px solid var(--border) !important;
   z-index: 10 !important;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05) !important;
-  transition: width 0.2s ease, padding 0.2s ease, font-size 0.2s ease !important;
+  transition:
+    width 0.2s ease,
+    padding 0.2s ease,
+    font-size 0.2s ease !important;
 }
 
 /* 紧凑模式下的行号容器 */
@@ -483,7 +486,10 @@ td[data-column="overview"],
   padding: 0 8px !important;
   height: 1.6em !important;
   display: block !important;
-  transition: background-color 0.1s ease, color 0.1s ease, height 0.2s ease !important;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease,
+    height 0.2s ease !important;
   cursor: default !important;
 }
 
@@ -612,28 +618,28 @@ td[data-column="overview"],
 }
 
 /* 特定列宽度设置 */
-.optimized-table th[data-column="episode_number"],
-.optimized-table td[data-column="episode_number"] {
+.optimized-table th[data-column='episode_number'],
+.optimized-table td[data-column='episode_number'] {
   width: 80px !important;
 }
 
-.optimized-table th[data-column="name"],
-.optimized-table td[data-column="name"] {
+.optimized-table th[data-column='name'],
+.optimized-table td[data-column='name'] {
   width: 200px !important;
 }
 
-.optimized-table th[data-column="air_date"],
-.optimized-table td[data-column="air_date"] {
+.optimized-table th[data-column='air_date'],
+.optimized-table td[data-column='air_date'] {
   width: 120px !important;
 }
 
-.optimized-table th[data-column="runtime"],
-.optimized-table td[data-column="runtime"] {
+.optimized-table th[data-column='runtime'],
+.optimized-table td[data-column='runtime'] {
   width: 80px !important;
 }
 
-.optimized-table th[data-column="overview"],
-.optimized-table td[data-column="overview"] {
+.optimized-table th[data-column='overview'],
+.optimized-table td[data-column='overview'] {
   width: 300px !important;
 }
 

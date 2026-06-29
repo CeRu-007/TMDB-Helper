@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { useToast } from "@/lib/hooks/use-toast"
+import { useToast } from '@/lib/hooks/use-toast';
 import {
   Toast,
   ToastClose,
@@ -8,11 +8,11 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from "@/shared/components/ui/toast"
-import { CheckCircle2, Info, AlertTriangle, XCircle } from "lucide-react"
+} from '@/shared/components/ui/toast';
+import { CheckCircle2, Info, AlertTriangle, XCircle } from 'lucide-react';
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts } = useToast();
 
   return (
     <ToastProvider>
@@ -35,20 +35,22 @@ export function Toaster() {
                 )}
               </div>
               <div className="grid gap-1">
-                {title && <ToastTitle className="text-sm font-semibold tracking-tight">{title}</ToastTitle>}
+                {title && (
+                  <ToastTitle className="text-sm font-semibold tracking-tight">{title}</ToastTitle>
+                )}
                 {description && (
-                  <ToastDescription className="text-[13px] leading-relaxed text-muted-foreground">{description}</ToastDescription>
+                  <ToastDescription className="text-[13px] leading-relaxed text-muted-foreground">
+                    {description}
+                  </ToastDescription>
                 )}
-                {action && (
-                  <div className="pt-1">{action}</div>
-                )}
+                {action && <div className="pt-1">{action}</div>}
               </div>
             </div>
             <ToastClose />
           </Toast>
-        )
+        );
       })}
       <ToastViewport />
     </ToastProvider>
-  )
+  );
 }

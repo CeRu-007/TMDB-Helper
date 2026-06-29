@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth/auth-service';
-import {
-  ApplicationError,
-  ErrorHandler,
-} from '@/lib/utils/error-handler';
+import { ApplicationError, ErrorHandler } from '@/lib/utils/error-handler';
 import { authLogger } from '@/lib/utils/logger';
 import { initializeSchema } from '@/lib/database/schema';
 import { getDatabaseAsync } from '@/lib/database/connection';

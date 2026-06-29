@@ -17,7 +17,9 @@ export class ClientConfigManager {
 
   private static isCacheValid(key: string): boolean {
     const expiry = this.cacheExpiry.get(key);
-    if (!expiry) return false;
+    if (!expiry) {
+      return false;
+    }
     return Date.now() < expiry;
   }
 
@@ -61,7 +63,7 @@ export class ClientConfigManager {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -78,13 +80,13 @@ export class ClientConfigManager {
       return data.value;
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       // 特殊处理 AbortError（超时错误）
       if (error instanceof Error && error.name === 'AbortError') {
         logger.warn(`获取配置项超时: ${key}`);
         throw new Error(`Request timeout for key: ${key}`);
       }
-      
+
       throw error;
     }
   }
@@ -123,7 +125,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'set', key, value }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -155,7 +157,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'remove', key }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -171,7 +173,7 @@ export class ClientConfigManager {
       }
 
       logger.warn('删除配置失败:', data.error);
-        return false;
+      return false;
     } catch (error) {
       logger.error('删除配置项失败:', error);
       return false;
@@ -181,7 +183,7 @@ export class ClientConfigManager {
   static async getConfig(): Promise<any> {
     try {
       const response = await fetch(API_ENDPOINT, {
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -190,7 +192,7 @@ export class ClientConfigManager {
       }
 
       const data = await response.json();
-      return data.success ? (data.fullConfig || data.config) : {};
+      return data.success ? data.fullConfig || data.config : {};
     } catch (error) {
       logger.error('获取完整配置失败:', error);
       return {};
@@ -203,7 +205,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', updates }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -220,7 +222,7 @@ export class ClientConfigManager {
       }
 
       logger.warn('更新配置失败:', data.error);
-        return false;
+      return false;
     } catch (error) {
       logger.error('更新配置项失败:', error);
       return false;
@@ -238,11 +240,14 @@ export class ClientConfigManager {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
       return response.ok;
     } catch (error) {
-      logger.info('🔍 [ClientConfigManager] 服务端不可用:', error instanceof Error ? error.message : '网络错误');
+      logger.info(
+        '🔍 [ClientConfigManager] 服务端不可用:',
+        error instanceof Error ? error.message : '网络错误'
+      );
       return false;
     }
   }
@@ -252,7 +257,7 @@ export class ClientConfigManager {
       getItem: (key: string) => this.getItem(key),
       setItem: (key: string, value: string) => this.setItem(key, value),
       removeItem: (key: string) => this.removeItem(key),
-      clear: () => this.clearCache()
+      clear: () => this.clearCache(),
     };
   }
 
@@ -263,10 +268,13 @@ export class ClientConfigManager {
     });
 
     const results = await Promise.all(promises);
-    return results.reduce((acc, { key, value }) => {
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string | null>);
+    return results.reduce(
+      (acc, { key, value }) => {
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string | null>
+    );
   }
 
   static async setItems(items: Record<string, string>): Promise<boolean> {
@@ -276,7 +284,7 @@ export class ClientConfigManager {
   static async getConfigInfo(): Promise<any> {
     try {
       const response = await fetch(`${API_ENDPOINT}?info=true`, {
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -298,7 +306,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'export' }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -320,7 +328,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'import', configJson }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -335,7 +343,7 @@ export class ClientConfigManager {
       }
 
       logger.warn('导入配置失败:', data.error);
-        return false;
+      return false;
     } catch (error) {
       logger.error('导入配置失败:', error);
       return false;
@@ -348,7 +356,7 @@ export class ClientConfigManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reset' }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT)
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT),
       });
 
       if (!response.ok) {
@@ -363,7 +371,7 @@ export class ClientConfigManager {
       }
 
       logger.warn('重置配置失败:', data.error);
-        return false;
+      return false;
     } catch (error) {
       logger.error('重置配置失败:', error);
       return false;

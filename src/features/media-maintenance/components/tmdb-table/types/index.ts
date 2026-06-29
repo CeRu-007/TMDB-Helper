@@ -1,3 +1,4 @@
+export type { CSVData } from '@/types/csv-editor';
 export type {
   CellPosition,
   CellSelection,
@@ -15,4 +16,4 @@ export type {
   UseTMDBTableClipboardReturn,
   BatchInsertOptions,
   BatchModificationInfo,
-} from './table.types'
+} from './table.types';

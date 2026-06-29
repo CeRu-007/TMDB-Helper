@@ -5,8 +5,14 @@
 
 import { getDatabase, transaction } from '../connection';
 import { BaseRepository } from './base.repository';
-import type { ItemRow, SeasonRow, EpisodeRow, DatabaseResult } from '../types';
-import { rowToTMDBItem, tmdbItemToRow } from '../types';
+import {
+  type ItemRow,
+  type SeasonRow,
+  type EpisodeRow,
+  type DatabaseResult,
+  rowToTMDBItem,
+  tmdbItemToRow,
+} from '../types';
 import type { TMDBItem } from '@/types/tmdb-item';
 import { logger } from '@/lib/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,21 +37,19 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
    */
   findByIdWithRelations(id: string): TMDBItem | undefined {
     const db = getDatabase();
-    const item = db
-      .prepare('SELECT * FROM items WHERE id = ? AND deletedAt IS NULL')
-      .get(id) as ItemRow | undefined;
+    const item = db.prepare('SELECT * FROM items WHERE id = ? AND deletedAt IS NULL').get(id) as
+      ItemRow | undefined;
 
-    if (!item) return undefined;
+    if (!item) {
+      return undefined;
+    }
     return this.loadRelations(db, item);
   }
 
   /**
    * 加载关联数据（季和分集）
    */
-  private loadRelations(
-    db: ReturnType<typeof getDatabase>,
-    item: ItemRow,
-  ): TMDBItem {
+  private loadRelations(db: ReturnType<typeof getDatabase>, item: ItemRow): TMDBItem {
     // 加载季信息（带分集）
     const seasons = db
       .prepare('SELECT * FROM seasons WHERE itemId = ? ORDER BY seasonNumber')
@@ -60,9 +64,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
 
     // 加载独立分集（兼容旧数据）
     const standaloneEpisodes = db
-      .prepare(
-        'SELECT * FROM episodes WHERE itemId = ? AND seasonId IS NULL ORDER BY number',
-      )
+      .prepare('SELECT * FROM episodes WHERE itemId = ? AND seasonId IS NULL ORDER BY number')
       .all(item.id) as EpisodeRow[];
 
     return rowToTMDBItem(item, seasonsWithEpisodes, standaloneEpisodes);
@@ -76,7 +78,10 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
 
     try {
       const now = new Date().toISOString();
-      const row: ItemRow = tmdbItemToRow(item, { createdAt: item.createdAt ?? now, updatedAt: now });
+      const row: ItemRow = tmdbItemToRow(item, {
+        createdAt: item.createdAt ?? now,
+        updatedAt: now,
+      });
 
       const insertItem = db.prepare(`
         INSERT INTO items (
@@ -277,7 +282,9 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
 
         // 检查是否实际更新了行
         if (updateResult.changes === 0) {
-          logger.warn('[ItemsRepository] 没有行被更新，项目可能不存在或已被删除:', { itemId: item.id });
+          logger.warn('[ItemsRepository] 没有行被更新，项目可能不存在或已被删除:', {
+            itemId: item.id,
+          });
         }
 
         // 删除旧的季和分集
@@ -466,7 +473,9 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
     const item = db
       .prepare('SELECT * FROM items WHERE tmdbId = ? AND deletedAt IS NULL')
       .get(tmdbId) as ItemRow | undefined;
-    if (!item) return undefined;
+    if (!item) {
+      return undefined;
+    }
     return this.loadRelations(db, item);
   }
 
@@ -477,7 +486,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
     const db = getDatabase();
     const items = db
       .prepare(
-        'SELECT * FROM items WHERE (weekday = ? OR secondWeekday = ?) AND deletedAt IS NULL ORDER BY airTime',
+        'SELECT * FROM items WHERE (weekday = ? OR secondWeekday = ?) AND deletedAt IS NULL ORDER BY airTime'
       )
       .all(weekday, weekday) as ItemRow[];
 

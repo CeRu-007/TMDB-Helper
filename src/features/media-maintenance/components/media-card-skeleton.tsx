@@ -1,4 +1,4 @@
-import { Skeleton } from "@/shared/components/ui/skeleton"
+import { Skeleton } from '@/shared/components/ui/skeleton';
 
 export function MediaCardSkeleton() {
   return (
@@ -12,7 +12,7 @@ export function MediaCardSkeleton() {
         <Skeleton className="h-3 w-1/2" />
       </div>
     </div>
-  )
+  );
 }
 
 export function MediaCardGridSkeleton({ count = 12 }: { count?: number }) {
@@ -22,5 +22,5 @@ export function MediaCardGridSkeleton({ count = 12 }: { count?: number }) {
         <MediaCardSkeleton key={i} />
       ))}
     </div>
-  )
+  );
 }

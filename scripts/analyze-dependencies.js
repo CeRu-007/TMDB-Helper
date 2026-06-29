@@ -23,7 +23,7 @@ const dependencies = Object.keys(packageJson.dependencies || {});
 function getAllFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
 
-  files.forEach(file => {
+  files.forEach((file) => {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
@@ -49,7 +49,7 @@ function extractImports(filePath) {
     /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   ];
 
-  importPatterns.forEach(pattern => {
+  importPatterns.forEach((pattern) => {
     let match;
     while ((match = pattern.exec(content)) !== null) {
       imports.push(match[1]);
@@ -87,9 +87,9 @@ function analyzeDependencies() {
   const usedDependencies = new Set();
 
   // 扫描所有文件提取使用的依赖
-  allFiles.forEach(file => {
+  allFiles.forEach((file) => {
     const imports = extractImports(file);
-    imports.forEach(importPath => {
+    imports.forEach((importPath) => {
       const packageName = parsePackageName(importPath);
       if (packageName) {
         usedDependencies.add(packageName);
@@ -101,7 +101,7 @@ function analyzeDependencies() {
   const unusedDependencies = [];
   const usedDependenciesList = [];
 
-  dependencies.forEach(dep => {
+  dependencies.forEach((dep) => {
     if (usedDependencies.has(dep)) {
       usedDependenciesList.push(dep);
     } else {
@@ -117,7 +117,7 @@ function analyzeDependencies() {
 
   if (unusedDependencies.length > 0) {
     logger.warn('⚠️  可能未使用的依赖:');
-    unusedDependencies.forEach(dep => {
+    unusedDependencies.forEach((dep) => {
       const version = packageJson.dependencies[dep];
       logger.warn(`  - ${dep}@${version}`);
     });
@@ -144,7 +144,7 @@ function analyzeDependencies() {
     used: usedDependenciesList.length,
     unused: unusedDependencies.length,
     unusedDependencies,
-    usedDependencies: usedDependenciesList
+    usedDependencies: usedDependenciesList,
   };
 }
 

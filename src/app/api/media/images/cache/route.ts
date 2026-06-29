@@ -26,19 +26,18 @@ export async function GET(request: NextRequest) {
     const sizeType = (searchParams.get('size') as ImageCacheData['sizeType']) || 'original';
 
     if (!tmdbId || !imageType) {
-      return NextResponse.json(
-        { error: '缺少必需参数: tmdbId 和 type' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必需参数: tmdbId 和 type' }, { status: 400 });
     }
 
     // 验证图片类型
-    const validTypes: ImageCacheData['imageType'][] = ['poster', 'backdrop', 'logo', 'network_logo'];
+    const validTypes: ImageCacheData['imageType'][] = [
+      'poster',
+      'backdrop',
+      'logo',
+      'network_logo',
+    ];
     if (!validTypes.includes(imageType)) {
-      return NextResponse.json(
-        { error: '无效的图片类型' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '无效的图片类型' }, { status: 400 });
     }
 
     // 查询缓存
@@ -93,10 +92,7 @@ export async function POST(request: NextRequest) {
     const { items } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: '缺少必需参数: items（必须是数组）' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必需参数: items（必须是数组）' }, { status: 400 });
     }
 
     const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
@@ -105,7 +101,9 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       const { tmdbId, itemId, posterPath, backdropPath, logoPath } = item;
 
-      if (!tmdbId) continue;
+      if (!tmdbId) {
+        continue;
+      }
 
       // 缓存海报
       if (posterPath) {
@@ -162,10 +160,7 @@ export async function POST(request: NextRequest) {
     const result = imageCacheRepository.batchCacheImages(cacheDataList);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || '缓存失败' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: result.error || '缓存失败' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -198,10 +193,7 @@ export async function DELETE(request: NextRequest) {
     const sizeType = searchParams.get('size') as ImageCacheData['sizeType'] | null;
 
     if (!tmdbId) {
-      return NextResponse.json(
-        { error: '缺少必需参数: tmdbId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必需参数: tmdbId' }, { status: 400 });
     }
 
     const result = imageCacheRepository.invalidateCache(
@@ -211,10 +203,7 @@ export async function DELETE(request: NextRequest) {
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || '删除失败' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: result.error || '删除失败' }, { status: 500 });
     }
 
     return NextResponse.json({

@@ -3,12 +3,12 @@
  * 基于 SQLite 的存储实现，替代原有的文件存储
  */
 
-import { TMDBItem } from '@/types/tmdb-item';
+import type { TMDBItem } from '@/types/tmdb-item';
 import { logger } from '@/lib/utils/logger';
 import { initializeDatabase } from '@/lib/database';
 import { checkAndMigrate } from '@/lib/database/migrations/json-to-sqlite';
 import { itemsRepository } from '@/lib/database/repositories/items.repository';
-import type { DatabaseResult } from './database/types';
+import type { DatabaseResult } from '@/lib/database/types';
 
 // 初始化标志
 let initialized = false;

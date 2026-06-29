@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const catppuccinMochaTheme: ThemeConfig = {
   id: 'catppuccin-mocha',
@@ -39,4 +39,4 @@ export const catppuccinMochaTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

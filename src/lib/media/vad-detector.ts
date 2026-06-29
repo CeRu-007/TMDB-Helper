@@ -3,47 +3,48 @@
  * 使用 Silero VAD 模型检测音频中的语音片段
  */
 
-import type { NonRealTimeVAD } from '@ricky0123/vad'
+// @ts-expect-error - module not installed
+import type { NonRealTimeVAD } from '@ricky0123/vad';
 import { logger } from '@/lib/utils/logger';
 
 // Silero VAD 配置参数
 export interface VADConfig {
   // 语音概率阈值 (0-1)，高于此值认为是语音
-  positiveSpeechThreshold?: number
+  positiveSpeechThreshold?: number;
   // 非语音概率阈值 (0-1)，低于此值认为是非语音
-  negativeSpeechThreshold?: number
+  negativeSpeechThreshold?: number;
   //  redemption 帧数，用于平滑处理
-  redemptionFrames?: number
+  redemptionFrames?: number;
   // 最小语音帧数
-  minSpeechFrames?: number
+  minSpeechFrames?: number;
   // 语音前导帧数
-  preSpeechPadFrames?: number
+  preSpeechPadFrames?: number;
   // 语音后导帧数
-  postSpeechPadFrames?: number
+  postSpeechPadFrames?: number;
   // 帧长 (毫秒)
-  frameDurationMs?: number
+  frameDurationMs?: number;
   // 采样率
-  sampleRate?: number
+  sampleRate?: number;
 }
 
 export interface SpeechSegment {
-  start: number  // 开始时间 (秒)
-  end: number    // 结束时间 (秒)
-  confidence: number
+  start: number; // 开始时间 (秒)
+  end: number; // 结束时间 (秒)
+  confidence: number;
 }
 
 export interface VADResult {
-  segments: SpeechSegment[]
-  audioDuration: number
+  segments: SpeechSegment[];
+  audioDuration: number;
 }
 
 /**
  * VAD 检测器类
  */
 export class VADetector {
-  private config: Required<VADConfig>
-  private vad: NonRealTimeVAD | null = null
-  private loaded: boolean = false
+  private config: Required<VADConfig>;
+  private vad: NonRealTimeVAD | null = null;
+  private loaded: boolean = false;
 
   constructor(config: VADConfig = {}) {
     this.config = {
@@ -54,20 +55,23 @@ export class VADetector {
       preSpeechPadFrames: config.preSpeechPadFrames ?? 3,
       postSpeechPadFrames: config.postSpeechPadFrames ?? 3,
       frameDurationMs: config.frameDurationMs ?? 100,
-      sampleRate: config.sampleRate ?? 16000
-    }
+      sampleRate: config.sampleRate ?? 16000,
+    };
   }
 
   /**
    * 加载 VAD 模型
    */
   async load(): Promise<void> {
-    if (this.loaded) return
+    if (this.loaded) {
+      return;
+    }
 
     try {
       // 动态导入以避免 SSR 问题
-      const vadModule = await import('@ricky0123/vad')
-      
+      // @ts-expect-error - module not installed
+      const vadModule = await import('@ricky0123/vad');
+
       this.vad = await vadModule.NonRealTimeVAD.new({
         positiveSpeechThreshold: this.config.positiveSpeechThreshold,
         negativeSpeechThreshold: this.config.negativeSpeechThreshold,
@@ -76,13 +80,13 @@ export class VADetector {
         preSpeechPadFrames: this.config.preSpeechPadFrames,
         postSpeechPadFrames: this.config.postSpeechPadFrames,
         frameDurationMs: this.config.frameDurationMs,
-      })
+      });
 
-      this.loaded = true
-      logger.debug('VAD', '模型加载完成')
+      this.loaded = true;
+      logger.debug('VAD', '模型加载完成');
     } catch (error) {
-      logger.error('VAD', '模型加载失败', error)
-      throw new Error('VAD 模型加载失败')
+      logger.error('VAD', '模型加载失败', error);
+      throw new Error('VAD 模型加载失败');
     }
   }
 
@@ -93,38 +97,38 @@ export class VADetector {
    */
   async detect(audioFloat32Array: Float32Array): Promise<VADResult> {
     if (!this.loaded || !this.vad) {
-      throw new Error('VAD 尚未加载，请先调用 load()')
+      throw new Error('VAD 尚未加载，请先调用 load()');
     }
 
-    const startTime = performance.now()
+    const startTime = performance.now();
 
     try {
       // 运行 VAD 检测
-      const speechChunks = await this.vad.run(audioFloat32Array)
+      const speechChunks = await this.vad.run(audioFloat32Array);
 
-      const segments: SpeechSegment[] = speechChunks.map((chunk, index) => {
+      const segments: SpeechSegment[] = speechChunks.map((chunk: any, index: any) => {
         return {
           start: chunk.start / this.config.sampleRate,
           end: chunk.end / this.config.sampleRate,
-          confidence: chunk.confidence ?? 1.0
-        }
-      })
+          confidence: chunk.confidence ?? 1.0,
+        };
+      });
 
-      const audioDuration = audioFloat32Array.length / this.config.sampleRate
+      const audioDuration = audioFloat32Array.length / this.config.sampleRate;
 
-      const duration = (performance.now() - startTime) / 1000
+      const duration = (performance.now() - startTime) / 1000;
       logger.info('VAD', '检测完成', {
         segmentCount: segments.length,
-        duration: duration.toFixed(2) + 's'
-      })
+        duration: duration.toFixed(2) + 's',
+      });
 
       return {
         segments,
-        audioDuration
-      }
+        audioDuration,
+      };
     } catch (error) {
-      logger.error('VAD', '检测失败', error)
-      throw error
+      logger.error('VAD', '检测失败', error);
+      throw error;
     }
   }
 
@@ -135,59 +139,57 @@ export class VADetector {
     audioBlob: Blob,
     audioContext: AudioContext
   ): Promise<AudioBuffer> {
-    const arrayBuffer = await audioBlob.arrayBuffer()
-    return audioContext.decodeAudioData(arrayBuffer)
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    return audioContext.decodeAudioData(arrayBuffer);
   }
 
   /**
    * 从 AudioBuffer 提取 Float32Array
    */
   static extractFloat32Array(audioBuffer: AudioBuffer): Float32Array {
-    const channels: Float32Array[] = []
-    
+    const channels: Float32Array[] = [];
+
     // 如果有多声道，混合为单声道
     for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
-      channels.push(audioBuffer.getChannelData(i))
+      channels.push(audioBuffer.getChannelData(i));
     }
-    
+
     // 混合为单声道
-    const mono: Float32Array = new Float32Array(audioBuffer.length)
+    const mono: Float32Array = new Float32Array(audioBuffer.length);
     for (let i = 0; i < audioBuffer.length; i++) {
-      let sum = 0
+      let sum = 0;
       for (let c = 0; c < channels.length; c++) {
-        sum += channels[c][i]
+        sum += channels[c][i];
       }
-      mono[i] = sum / channels.length
+      mono[i] = sum / channels.length;
     }
-    
-    return mono
+
+    return mono;
   }
 
   /**
    * 重采样到指定采样率
    */
-  static resample(
-    audio: Float32Array,
-    fromSampleRate: number,
-    toSampleRate: number
-  ): Float32Array {
-    if (fromSampleRate === toSampleRate) return audio
-
-    const ratio = fromSampleRate / toSampleRate
-    const newLength = Math.round(audio.length / ratio)
-    const result: Float32Array = new Float32Array(newLength)
-
-    for (let i = 0; i < newLength; i++) {
-      const srcIndex = i * ratio
-      const srcIndexFloor = Math.floor(srcIndex)
-      const srcIndexCeil = Math.min(srcIndexFloor + 1, audio.length - 1)
-      const t = srcIndex - srcIndexFloor
-      
-      // 线性插值
-      result[i] = audio[srcIndexFloor] * (1 - t) + audio[srcIndexCeil] * t
+  static resample(audio: Float32Array, fromSampleRate: number, toSampleRate: number): Float32Array {
+    if (fromSampleRate === toSampleRate) {
+      return audio;
     }
 
-    return result
+    const ratio = fromSampleRate / toSampleRate;
+    const newLength = Math.round(audio.length / ratio);
+    const result: Float32Array = new Float32Array(newLength);
+
+    for (let i = 0; i < newLength; i++) {
+      const srcIndex = i * ratio;
+      const srcIndexFloor = Math.floor(srcIndex);
+      const srcIndexCeil = Math.min(srcIndexFloor + 1, audio.length - 1);
+      const t = srcIndex - srcIndexFloor;
+
+      // 线性插值
+      result[i] = audio[srcIndexFloor] * (1 - t) + audio[srcIndexCeil] * t;
+    }
+
+    return result;
   }
 
   /**
@@ -195,11 +197,11 @@ export class VADetector {
    */
   destroy(): void {
     if (this.vad) {
-      this.vad.destroy()
-      this.vad = null
+      this.vad.destroy();
+      this.vad = null;
     }
-    this.loaded = false
+    this.loaded = false;
   }
 }
 
-export default VADetector
+export default VADetector;

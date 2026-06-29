@@ -14,7 +14,7 @@ export function cleanDuplicatePunctuation(text: string): string {
     .replace(/[。]{2,}/g, '。')
     .replace(/[！]{2,}/g, '！')
     .replace(/[？]{2,}/g, '？')
-    .replace(/[，。！？]+[，。！？]+/g, match => match[0])
+    .replace(/[，。！？]+[，。！？]+/g, (match) => match[0]);
 }
 
 /**
@@ -24,10 +24,10 @@ export function cleanDuplicatePunctuation(text: string): string {
  */
 export function cleanBrackets(text: string): string {
   return text
-    .replace(/\[\s*\]/g, '')           // 空的半角方括号
-    .replace(/【\s*】/g, '')           // 空的全角方括号
-    .replace(/\[(.+?)\]/g, '$1')       // 移除非空的半角方括号（保留内容）
-    .replace(/【(.+?)】/g, '$1')       // 移除非空的全角方括号（保留内容）
+    .replace(/\[\s*\]/g, '') // 空的半角方括号
+    .replace(/【\s*】/g, '') // 空的全角方括号
+    .replace(/\[(.+?)\]/g, '$1') // 移除非空的半角方括号（保留内容）
+    .replace(/【(.+?)】/g, '$1'); // 移除非空的全角方括号（保留内容）
 }
 
 /**
@@ -39,7 +39,7 @@ export function cleanTitleBrackets(title: string): string {
   return title
     .replace(/^\[(.+)\]$/, '$1')
     .replace(/^【(.+)】$/, '$1')
-    .trim()
+    .trim();
 }
 
 /**
@@ -48,7 +48,7 @@ export function cleanTitleBrackets(title: string): string {
  * @returns 清理后的文本
  */
 export function cleanExtraNewlines(text: string): string {
-  return text.replace(/\n{3,}/g, '\n\n')
+  return text.replace(/\n{3,}/g, '\n\n');
 }
 
 /**
@@ -57,7 +57,10 @@ export function cleanExtraNewlines(text: string): string {
  * @returns 清理后的文本
  */
 export function cleanPrefix(text: string): string {
-  return text.replace(/^(标题[:：]?\s*|简介[:：]?\s*|描述[:：]?\s*|Description[:：]?\s*|Summary[:：]?\s*)/i, '')
+  return text.replace(
+    /^(标题[:：]?\s*|简介[:：]?\s*|描述[:：]?\s*|Description[:：]?\s*|Summary[:：]?\s*)/i,
+    ''
+  );
 }
 
 /**
@@ -67,18 +70,18 @@ export function cleanPrefix(text: string): string {
  * @returns 清理后的文本
  */
 export function cleanSummaryText(text: string): string {
-  let processed = text
+  let processed = text;
 
   // 1. 移除多余的空行
-  processed = cleanExtraNewlines(processed)
+  processed = cleanExtraNewlines(processed);
 
   // 2. 清理重复的标点符号
-  processed = cleanDuplicatePunctuation(processed)
+  processed = cleanDuplicatePunctuation(processed);
 
   // 3. 清理方括号
-  processed = cleanBrackets(processed)
+  processed = cleanBrackets(processed);
 
-  return processed.trim()
+  return processed.trim();
 }
 
 /**
@@ -89,21 +92,21 @@ export function cleanSummaryText(text: string): string {
  */
 export function cleanTitleText(title: string): string {
   // 1. 移除前缀
-  let cleaned = cleanPrefix(title)
+  let cleaned = cleanPrefix(title);
 
   // 2. 移除引号
-  cleaned = cleaned.replace(/^["'«」『]|["'»』」]$/g, '')
+  cleaned = cleaned.replace(/^["'«」『]|["'»』」]$/g, '');
 
   // 3. 移除标点符号
-  cleaned = cleaned.replace(/[，。、；：]/g, '')
+  cleaned = cleaned.replace(/[，。、；：]/g, '');
 
   // 4. 移除"第X集"
-  cleaned = cleaned.replace(/第\s*\d+\s*[集话]/g, '')
+  cleaned = cleaned.replace(/第\s*\d+\s*[集话]/g, '');
 
   // 5. 清理外层方括号
-  cleaned = cleanTitleBrackets(cleaned)
+  cleaned = cleanTitleBrackets(cleaned);
 
-  return cleaned.trim()
+  return cleaned.trim();
 }
 
 /**
@@ -119,5 +122,5 @@ export function cleanSummaryPrefixAndBrackets(text: string): string {
     .replace(/【(.+?)】/g, '$1')
     .replace(/\[\s*\]/g, '')
     .replace(/【\s*】/g, '')
-    .trim()
+    .trim();
 }

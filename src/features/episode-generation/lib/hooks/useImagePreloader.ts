@@ -14,7 +14,9 @@ interface UseImagePreloaderOptions {
 
 export function useImagePreloader({ urls, priority = 1, onProgress }: UseImagePreloaderOptions) {
   useEffect(() => {
-    if (!urls.length) return;
+    if (!urls.length) {
+      return;
+    }
 
     let loaded = 0;
     const total = urls.length;
@@ -54,7 +56,9 @@ export async function preloadImages(urls: string[]): Promise<number> {
 }
 
 export function getImageUrlsFromPage(): string[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') {
+    return [];
+  }
 
   const images: string[] = [];
   const imgElements = document.querySelectorAll('img');

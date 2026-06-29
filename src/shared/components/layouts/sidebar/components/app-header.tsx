@@ -1,25 +1,25 @@
-import React, { useEffect, useCallback } from "react"
-import { Button } from "@/shared/components/ui/button"
-import { UserAvatar } from "@/shared/components/user-identity-provider"
-import { Settings, Plus, PanelLeftClose, PanelLeftOpen, Bell, Menu, ImageUp } from "lucide-react"
+import React, { useEffect, useCallback } from 'react';
+import { Button } from '@/shared/components/ui/button';
+import { UserAvatar } from '@/shared/components/user-identity-provider';
+import { Settings, Plus, PanelLeftClose, PanelLeftOpen, Bell, Menu, ImageUp } from 'lucide-react';
 
-import Image from "next/image"
-import { useTranslation } from "react-i18next"
-import { logger } from "@/lib/utils/logger"
+import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/utils/logger';
 
-import { useUIStore } from "@/stores/ui-store"
-import { useUploadStore } from "@/stores/upload-store"
-import { realtimeSyncManager } from "@/lib/data/realtime-sync-manager"
+import { useUIStore } from '@/stores/ui-store';
+import { useUploadStore } from '@/stores/upload-store';
+import { realtimeSyncManager } from '@/lib/data/realtime-sync-manager';
 
 interface AppHeaderProps {
-  sidebarCollapsed: boolean
-  onSidebarToggle: () => void
-  onShowSettingsDialog: (section?: string) => void
-  onShowImportDialog: () => void
-  onShowExportDialog: () => void
-  onShowAddDialog: () => void
-  onShowJournalDialog: () => void
-  onShowDashboard: () => void
+  sidebarCollapsed: boolean;
+  onSidebarToggle: () => void;
+  onShowSettingsDialog: (section?: string) => void;
+  onShowImportDialog: () => void;
+  onShowExportDialog: () => void;
+  onShowAddDialog: () => void;
+  onShowJournalDialog: () => void;
+  onShowDashboard: () => void;
 }
 
 export function AppHeader({
@@ -30,43 +30,43 @@ export function AppHeader({
   onShowExportDialog,
   onShowAddDialog,
   onShowJournalDialog,
-  onShowDashboard
+  onShowDashboard,
 }: AppHeaderProps) {
-  const { t } = useTranslation(["settings", "dashboard", "journal", "common"])
-  const journalUnreadCount = useUIStore((s) => s.journalUnreadCount)
-  const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount)
+  const { t } = useTranslation(['settings', 'dashboard', 'journal', 'common']);
+  const journalUnreadCount = useUIStore((s) => s.journalUnreadCount);
+  const setJournalUnreadCount = useUIStore((s) => s.setJournalUnreadCount);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await fetch('/api/journal?unreadCount=true', {
-        cache: 'no-store'
-      })
+        cache: 'no-store',
+      });
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success && typeof data.data?.unreadCount === 'number') {
-          setJournalUnreadCount(data.data.unreadCount)
+          setJournalUnreadCount(data.data.unreadCount);
         }
       }
     } catch (error) {
-      logger.error('[AppHeader] 获取未读数失败:', error)
+      logger.error('[AppHeader] 获取未读数失败:', error);
     }
-  }, [])
+  }, [setJournalUnreadCount]);
 
   useEffect(() => {
-    fetchUnreadCount()
-  }, [])
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   useEffect(() => {
     const handleJournalUpdate = () => {
-      fetchUnreadCount()
-    }
-    realtimeSyncManager.addEventListener('journal_updated', handleJournalUpdate)
-    realtimeSyncManager.addEventListener('journal_read', handleJournalUpdate)
+      fetchUnreadCount();
+    };
+    realtimeSyncManager.addEventListener('journal_updated', handleJournalUpdate);
+    realtimeSyncManager.addEventListener('journal_read', handleJournalUpdate);
     return () => {
-      realtimeSyncManager.removeEventListener('journal_updated', handleJournalUpdate)
-      realtimeSyncManager.removeEventListener('journal_read', handleJournalUpdate)
-    }
-  }, [])
+      realtimeSyncManager.removeEventListener('journal_updated', handleJournalUpdate);
+      realtimeSyncManager.removeEventListener('journal_read', handleJournalUpdate);
+    };
+  }, [fetchUnreadCount]);
 
   return (
     <header className="bg-background/80 backdrop-blur-sm shadow-sm border-b border-border sticky top-0 z-40">
@@ -79,7 +79,11 @@ export function AppHeader({
               size="icon"
               onClick={onSidebarToggle}
               className="mr-3"
-              title={sidebarCollapsed ? t("sidebar.expand", { ns: "settings" }) : t("sidebar.collapse", { ns: "settings" })}
+              title={
+                sidebarCollapsed
+                  ? t('sidebar.expand', { ns: 'settings' })
+                  : t('sidebar.collapse', { ns: 'settings' })
+              }
             >
               {sidebarCollapsed ? (
                 <PanelLeftOpen className="h-5 w-5" />
@@ -91,7 +95,7 @@ export function AppHeader({
             <div className="group">
               <Image
                 src="/tmdb-helper-logo.png"
-                alt={t("appLogoAlt", { ns: "common" })}
+                alt={t('appLogoAlt', { ns: 'common' })}
                 width={160}
                 height={60}
                 className="h-14 w-auto object-contain transform group-hover:scale-105 transition duration-300"
@@ -100,7 +104,9 @@ export function AppHeader({
             </div>
           </div>
 
-          <div className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}>
+          <div
+            className={`absolute inset-y-0 right-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} pointer-events-none`}
+          >
             <div className="h-full max-w-7xl w-full mx-auto px-8 pr-9 flex items-center justify-end pointer-events-auto">
               <div className="flex items-center space-x-2">
                 <Button
@@ -108,7 +114,7 @@ export function AppHeader({
                   size="sm"
                   onClick={() => useUploadStore.getState().toggleOpen()}
                   className="flex items-center"
-                  title={t("title", { ns: "upload-window" })}
+                  title={t('title', { ns: 'upload-window' })}
                 >
                   <ImageUp className="h-4 w-4" />
                 </Button>
@@ -117,7 +123,7 @@ export function AppHeader({
                   size="sm"
                   onClick={onShowJournalDialog}
                   className="flex items-center relative"
-                  title={t("title", { ns: "journal" })}
+                  title={t('title', { ns: 'journal' })}
                 >
                   <Bell className="h-4 w-4" />
                   {journalUnreadCount > 0 && (
@@ -129,7 +135,13 @@ export function AppHeader({
                     </span>
                   )}
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onShowSettingsDialog()} className="flex items-center" title={t("settings.settings")}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onShowSettingsDialog()}
+                  className="flex items-center"
+                  title={t('settings.settings')}
+                >
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -147,7 +159,9 @@ export function AppHeader({
                   size="default"
                 >
                   <Plus className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">{t("addItem", { ns: "nav.maintenance" })}</span>
+                  <span className="hidden md:inline">
+                    {t('addItem', { ns: 'nav.maintenance' })}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -168,7 +182,7 @@ export function AppHeader({
             <div className="group">
               <Image
                 src="/tmdb-helper-logo.png"
-                alt={t("appLogoAlt", { ns: "common" })}
+                alt={t('appLogoAlt', { ns: 'common' })}
                 width={120}
                 height={45}
                 className="h-9 w-auto object-contain"
@@ -182,7 +196,7 @@ export function AppHeader({
               size="sm"
               onClick={() => useUploadStore.getState().toggleOpen()}
               className="min-w-[44px] min-h-[44px] p-0"
-              aria-label={t("title", { ns: "upload-window" })}
+              aria-label={t('title', { ns: 'upload-window' })}
             >
               <ImageUp className="h-4 w-4" />
             </Button>
@@ -191,7 +205,7 @@ export function AppHeader({
               size="sm"
               onClick={onShowJournalDialog}
               className="min-w-[44px] min-h-[44px] p-0 relative"
-              aria-label={t("title", { ns: "journal" })}
+              aria-label={t('title', { ns: 'journal' })}
             >
               <Bell className="h-4 w-4" />
               {journalUnreadCount > 0 && (
@@ -208,7 +222,7 @@ export function AppHeader({
               size="sm"
               onClick={() => onShowSettingsDialog()}
               className="min-w-[44px] min-h-[44px] p-0"
-              aria-label={t("settings.settings")}
+              aria-label={t('settings.settings')}
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -229,5 +243,5 @@ export function AppHeader({
         </div>
       </div>
     </header>
-  )
+  );
 }

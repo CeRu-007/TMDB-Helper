@@ -1,62 +1,56 @@
-"use client"
+'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
-import { Button } from "@/shared/components/ui/button"
-import { MessageSquare, Plus, PanelRight } from "lucide-react"
-import { useUser } from "@/shared/components/user-identity-provider"
-import { useScenarioModels } from "@/lib/hooks/useScenarioModels"
-import { useModelService } from "@/lib/contexts/ModelServiceContext"
-import { Message } from "@/types/ai-chat"
-import { logger } from "@/lib/utils/logger"
-import { useTranslation } from "react-i18next"
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Button } from '@/shared/components/ui/button';
+import { MessageSquare, Plus, PanelRight } from 'lucide-react';
+import { useUser } from '@/shared/components/user-identity-provider';
+import { useScenarioModels } from '@/lib/hooks/useScenarioModels';
+import { useModelService } from '@/lib/contexts/ModelServiceContext';
+import { Message } from '@/types/ai-chat';
+import { logger } from '@/lib/utils/logger';
+import { useTranslation } from 'react-i18next';
 
-import { useMobile } from "@/shared/hooks/use-mobile"
-import { useAiChatHistory } from "@/features/ai/lib/hooks/use-ai-chat-history"
-import { useAiStreamResponse } from "@/features/ai/lib/hooks/use-ai-stream-response"
-import { useAiMessageActions } from "@/features/ai/lib/hooks/use-ai-message-actions"
-import { useSubtitleTask } from "@/features/ai/lib/hooks/use-subtitle-task"
-import { useFileUpload } from "@/lib/hooks/use-file-upload"
-import { useAiChatHandlers } from "@/features/ai/lib/hooks/use-ai-chat-handlers"
-import { validateSuggestions } from "@/lib/utils/ai-chat-helpers"
+import { useMobile } from '@/shared/hooks/use-mobile';
+import { useAiChatHistory } from '@/features/ai/lib/hooks/use-ai-chat-history';
+import { useAiStreamResponse } from '@/features/ai/lib/hooks/use-ai-stream-response';
+import { useAiMessageActions } from '@/features/ai/lib/hooks/use-ai-message-actions';
+import { useSubtitleTask } from '@/features/ai/lib/hooks/use-subtitle-task';
+import { useFileUpload } from '@/lib/hooks/use-file-upload';
+import { useAiChatHandlers } from '@/features/ai/lib/hooks/use-ai-chat-handlers';
+import { validateSuggestions } from '@/lib/utils/ai-chat-helpers';
 
-import { ChatSidebar } from "./chat-sidebar"
-import { ChatMessages } from "./chat-messages"
-import { ChatEmptyState } from "./chat-empty-state"
-import { ChatInput } from "./chat-input"
+import { ChatSidebar } from './chat-sidebar';
+import { ChatMessages } from './chat-messages';
+import { ChatEmptyState } from './chat-empty-state';
+import { ChatInput } from './chat-input';
 
 export function AiChat() {
-  const { t } = useTranslation('ai-chat')
-  const { userInfo } = useUser()
-  const scenarioModels = useScenarioModels('ai_chat')
-  const { getScenarioModels } = useModelService()
-  
-  const [messages, setMessages] = useState<Message[]>([])
-  const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isInterrupting, setIsInterrupting] = useState(false)
-  const [mainAbortController, setMainAbortController] = useState<AbortController | null>(null)
-  const [selectedModel, setSelectedModel] = useState<string>('')
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
-  const [editingContent, setEditingContent] = useState('')
-  
-  const isMobile = useMobile()
-  
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { t } = useTranslation('ai-chat');
+  const { userInfo } = useUser();
+  const scenarioModels = useScenarioModels('ai_chat');
+  const { getScenarioModels } = useModelService();
 
-  const { processStream } = useAiStreamResponse()
-  
-  const {
-    chatHistories,
-    currentChatId,
-    createNewChat,
-    switchChat,
-    deleteChat,
-    updateCurrentChat
-  } = useAiChatHistory(messages, setMessages)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInterrupting, setIsInterrupting] = useState(false);
+  const [mainAbortController, setMainAbortController] = useState<AbortController | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+
+  const isMobile = useMobile();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { processStream } = useAiStreamResponse();
+
+  const { chatHistories, currentChatId, createNewChat, switchChat, deleteChat, updateCurrentChat } =
+    useAiChatHistory(messages, setMessages);
 
   const {
     startEditMessage,
@@ -64,8 +58,8 @@ export function AiChat() {
     saveEditedMessage,
     copyMessage,
     deleteMessage,
-    rateMessage
-  } = useAiMessageActions(messages, setMessages, updateCurrentChat)
+    rateMessage,
+  } = useAiMessageActions(messages, setMessages, updateCurrentChat);
 
   const {
     uploadedFileContent,
@@ -78,101 +72,128 @@ export function AiChat() {
     handleDragOver,
     handleDragLeave,
     handleDrop,
-    clearUpload
-  } = useFileUpload()
+    clearUpload,
+  } = useFileUpload();
 
   const scrollToBottom = useCallback((immediate: boolean = false) => {
-    const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
+    const viewport = scrollAreaRef.current?.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    ) as HTMLElement;
     if (viewport) {
-      viewport.scrollTop = viewport.scrollHeight
+      viewport.scrollTop = viewport.scrollHeight;
     } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: immediate ? 'auto' : 'smooth' })
+      messagesEndRef.current?.scrollIntoView({ behavior: immediate ? 'auto' : 'smooth' });
     }
-  }, [])
+  }, []);
 
   const scrollToLatestMessage = useCallback(() => {
-    requestAnimationFrame(() => scrollToBottom(true))
-  }, [scrollToBottom])
+    requestAnimationFrame(() => scrollToBottom(true));
+  }, [scrollToBottom]);
 
-  const getModelInfo = useCallback(async (modelId: string) => {
-    const currentModel = scenarioModels.availableModels.find(m => m.id === modelId)
-    if (!currentModel) throw new Error('请先选择一个AI模型')
-
-    const aiChatData = getScenarioModels('ai_chat')
-    const provider = aiChatData.providers.find(p => p.id === currentModel.providerId)
-    if (!provider) throw new Error('找不到模型提供商配置')
-
-    const apiKey = provider.apiKey
-    if (!apiKey) throw new Error('请先在模型服务中配置API密钥')
-
-    return {
-      apiKey,
-      modelId: currentModel.modelId || currentModel.id,
-      apiBaseUrl: provider.apiBaseUrl
-    }
-  }, [scenarioModels, getScenarioModels])
-
-  const fetchSuggestions = useCallback(async (lastMessage: string) => {
-    const defaultSuggestions = [
-      t('suggestions.explorePlotDetails'),
-      t('suggestions.understandWorldSetting'),
-      t('suggestions.exploreRelatedWorks')
-    ]
-
-    try {
-      logger.info('开始获取建议 (ai-chat)', { lastMessageLength: lastMessage?.length, messagesCount: messages.length })
-
-      const recentMessages = messages
-        .filter(m => !m.isStreaming)
-        .slice(-3)
-        .map(m => ({ role: m.role, content: m.content }))
-
-      const finalMessages = recentMessages.length > 0 ? recentMessages : [{ role: 'user', content: '开始对话' }]
-
-      logger.debug('准备调用建议API', { finalMessagesCount: finalMessages.length, selectedModel })
-
-      const modelInfo = await getModelInfo(selectedModel)
-      logger.debug('获取模型信息成功', { modelId: modelInfo.modelId, hasApiKey: !!modelInfo.apiKey, hasApiBaseUrl: !!modelInfo.apiBaseUrl })
-
-      const response = await fetch('/api/ai/suggestions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: modelInfo.modelId,
-          messages: finalMessages,
-          lastMessage,
-          apiKey: modelInfo.apiKey,
-          apiBaseUrl: modelInfo.apiBaseUrl
-        })
-      })
-
-      if (!response.ok) {
-        logger.warn('获取建议失败', { status: response.status })
-        return defaultSuggestions
+  const getModelInfo = useCallback(
+    async (modelId: string) => {
+      const currentModel = scenarioModels.availableModels.find((m) => m.id === modelId);
+      if (!currentModel) {
+        throw new Error('请先选择一个AI模型');
       }
 
-      const data = await response.json()
-      logger.debug('建议API返回', { success: data.success, hasSuggestions: Array.isArray(data.data?.suggestions) })
-
-      if (!data.success || !Array.isArray(data.data.suggestions)) {
-        logger.warn('建议返回格式错误', { data })
-        return defaultSuggestions
+      const aiChatData = getScenarioModels('ai_chat');
+      const provider = aiChatData.providers.find((p) => p.id === currentModel.providerId);
+      if (!provider) {
+        throw new Error('找不到模型提供商配置');
       }
 
-      const validSuggestions = validateSuggestions(data.data.suggestions)
-      logger.info('获取建议成功', { count: validSuggestions.length, suggestions: validSuggestions })
-      return validSuggestions.length > 0 ? validSuggestions : defaultSuggestions
-    } catch (error) {
-      logger.error('获取建议异常:', error)
-      return defaultSuggestions
-    }
-  }, [messages, selectedModel, getModelInfo])
+      const apiKey = provider.apiKey;
+      if (!apiKey) {
+        throw new Error('请先在模型服务中配置API密钥');
+      }
 
-  const {
-    sendAIRequest,
-    handleRegenerateResponse,
-    handleContinueGeneration
-  } = useAiChatHandlers({
+      return {
+        apiKey,
+        modelId: currentModel.modelId || currentModel.id,
+        apiBaseUrl: provider.apiBaseUrl,
+      };
+    },
+    [scenarioModels, getScenarioModels]
+  );
+
+  const fetchSuggestions = useCallback(
+    async (lastMessage: string) => {
+      const defaultSuggestions = [
+        t('suggestions.explorePlotDetails'),
+        t('suggestions.understandWorldSetting'),
+        t('suggestions.exploreRelatedWorks'),
+      ];
+
+      try {
+        logger.info('开始获取建议 (ai-chat)', {
+          lastMessageLength: lastMessage?.length,
+          messagesCount: messages.length,
+        });
+
+        const recentMessages = messages
+          .filter((m) => !m.isStreaming)
+          .slice(-3)
+          .map((m) => ({ role: m.role, content: m.content }));
+
+        const finalMessages =
+          recentMessages.length > 0 ? recentMessages : [{ role: 'user', content: '开始对话' }];
+
+        logger.debug('准备调用建议API', {
+          finalMessagesCount: finalMessages.length,
+          selectedModel,
+        });
+
+        const modelInfo = await getModelInfo(selectedModel);
+        logger.debug('获取模型信息成功', {
+          modelId: modelInfo.modelId,
+          hasApiKey: !!modelInfo.apiKey,
+          hasApiBaseUrl: !!modelInfo.apiBaseUrl,
+        });
+
+        const response = await fetch('/api/ai/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelInfo.modelId,
+            messages: finalMessages,
+            lastMessage,
+            apiKey: modelInfo.apiKey,
+            apiBaseUrl: modelInfo.apiBaseUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          logger.warn('获取建议失败', { status: response.status });
+          return defaultSuggestions;
+        }
+
+        const data = await response.json();
+        logger.debug('建议API返回', {
+          success: data.success,
+          hasSuggestions: Array.isArray(data.data?.suggestions),
+        });
+
+        if (!data.success || !Array.isArray(data.data.suggestions)) {
+          logger.warn('建议返回格式错误', { data });
+          return defaultSuggestions;
+        }
+
+        const validSuggestions = validateSuggestions(data.data.suggestions);
+        logger.info('获取建议成功', {
+          count: validSuggestions.length,
+          suggestions: validSuggestions,
+        });
+        return validSuggestions.length > 0 ? validSuggestions : defaultSuggestions;
+      } catch (error) {
+        logger.error('获取建议异常:', error);
+        return defaultSuggestions;
+      }
+    },
+    [messages, selectedModel, getModelInfo, t]
+  );
+
+  const { sendAIRequest, handleRegenerateResponse, handleContinueGeneration } = useAiChatHandlers({
     messages,
     setMessages,
     currentChatId,
@@ -186,8 +207,8 @@ export function AiChat() {
     processStream,
     scrollToLatestMessage,
     getModelInfo,
-    fetchSuggestions
-  })
+    fetchSuggestions,
+  });
 
   const { handleSubtitleTask } = useSubtitleTask({
     currentChatId,
@@ -202,99 +223,119 @@ export function AiChat() {
     processStream,
     scrollToLatestMessage,
     updateCurrentChat,
-    fetchSuggestions
-  })
+    fetchSuggestions,
+  });
 
   useEffect(() => {
     if (scenarioModels.availableModels.length > 0) {
-      if (!selectedModel || !scenarioModels.availableModels.find(m => m.id === selectedModel)) {
-        const primaryModel = scenarioModels.getCurrentModel()
-        if (primaryModel) setSelectedModel(primaryModel.id)
+      if (!selectedModel || !scenarioModels.availableModels.find((m) => m.id === selectedModel)) {
+        const primaryModel = scenarioModels.getCurrentModel();
+        if (primaryModel) {
+          setSelectedModel(primaryModel.id);
+        }
       }
     }
-  }, [scenarioModels.availableModels, scenarioModels.primaryModelId, selectedModel])
+  }, [scenarioModels, selectedModel]);
 
   useEffect(() => {
-    if (messages.length === 0) return
-    const hasStreamingMessage = messages.some(m => m.isStreaming)
+    if (messages.length === 0) {
+      return;
+    }
+    const hasStreamingMessage = messages.some((m) => m.isStreaming);
     const rafId = requestAnimationFrame(() => {
-      hasStreamingMessage ? scrollToLatestMessage() : scrollToBottom(false)
-    })
-    return () => cancelAnimationFrame(rafId)
-  }, [messages, scrollToBottom, scrollToLatestMessage])
+      if (hasStreamingMessage) {
+        scrollToLatestMessage();
+      } else {
+        scrollToBottom(false);
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [messages, scrollToBottom, scrollToLatestMessage]);
 
   useEffect(() => {
     if (isMobile) {
-      setIsSidebarCollapsed(true)
+      setIsSidebarCollapsed(true);
     }
-  }, [isMobile])
+  }, [isMobile]);
 
   useEffect(() => {
     return () => {
       if (mainAbortController && !mainAbortController.signal.aborted) {
-        mainAbortController.abort('Component unmounted')
+        mainAbortController.abort('Component unmounted');
       }
-    }
-  }, [mainAbortController])
+    };
+  }, [mainAbortController]);
 
   const handleFileUploadEvent = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) uploadFile(file)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadFile(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSendMessage = async () => {
-    if ((!inputValue.trim() && !uploadedFileContent) || isLoading) return
-    
-    const content = uploadedFileContent && uploadedFileName
-      ? (inputValue.trim() || `${t('subtitleUploaded')}: ${uploadedFileName}`)
-      : inputValue.trim()
-    
-    await sendAIRequest(content, uploadedFileContent, uploadedFileName)
-    setInputValue('')
-    clearUpload()
-  }
+    if ((!inputValue.trim() && !uploadedFileContent) || isLoading) {
+      return;
+    }
+
+    const content =
+      uploadedFileContent && uploadedFileName
+        ? inputValue.trim() || `${t('subtitleUploaded')}: ${uploadedFileName}`
+        : inputValue.trim();
+
+    await sendAIRequest(content, uploadedFileContent, uploadedFileName);
+    setInputValue('');
+    clearUpload();
+  };
 
   const handleQuickReply = async (content: string) => {
-    if (!content.trim() || isLoading) return
-    await sendAIRequest(content)
-  }
+    if (!content.trim() || isLoading) {
+      return;
+    }
+    await sendAIRequest(content);
+  };
 
   const handleInterrupt = useCallback(() => {
     if (mainAbortController && !mainAbortController.signal.aborted) {
-      setIsInterrupting(true)
-      mainAbortController.abort('User interrupted')
+      setIsInterrupting(true);
+      mainAbortController.abort('User interrupted');
     }
-  }, [mainAbortController])
+  }, [mainAbortController]);
 
   const handleStartEdit = (messageId: string, content: string) => {
-    setEditingMessageId(messageId)
-    setEditingContent(content)
-  }
+    setEditingMessageId(messageId);
+    setEditingContent(content);
+  };
 
   const handleCancelEdit = () => {
-    setEditingMessageId(null)
-    setEditingContent('')
-  }
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
 
   const handleSaveEdit = async (messageId: string) => {
     await saveEditedMessage(messageId, async (content, index) => {
-      const messagesBeforeEdit = messages.slice(0, index + 1)
-      setMessages(messagesBeforeEdit)
-      await sendAIRequest(content)
-    })
-    setEditingMessageId(null)
-    setEditingContent('')
-  }
+      const messagesBeforeEdit = messages.slice(0, index + 1);
+      setMessages(messagesBeforeEdit);
+      await sendAIRequest(content);
+    });
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
 
   const handleSubtitleTaskWrapper = (taskKey: string, content: string, fileName: string) => {
-    handleSubtitleTask(taskKey as any, content, fileName)
-    clearUpload()
-    setInputValue('')
-  }
+    handleSubtitleTask(taskKey as any, content, fileName);
+    clearUpload();
+    setInputValue('');
+  };
 
   return (
-    <div className="h-full flex bg-background overflow-hidden relative" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div
+      className="h-full flex bg-background overflow-hidden relative"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {isSidebarCollapsed && (
         <div className="absolute top-3 left-3 z-50 flex items-center gap-2">
           <Button
@@ -388,5 +429,5 @@ export function AiChat() {
         className="hidden"
       />
     </div>
-  )
+  );
 }

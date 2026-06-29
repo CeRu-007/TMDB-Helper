@@ -27,13 +27,14 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   rectSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 const CATEGORY_MY_FAVORITES = 'myFavorites';
 const CATEGORY_RECENTLY_USED = 'recentlyUsed';
-type ExtendedCategoryType = CategoryType | typeof CATEGORY_MY_FAVORITES | typeof CATEGORY_RECENTLY_USED;
+type ExtendedCategoryType =
+  CategoryType | typeof CATEGORY_MY_FAVORITES | typeof CATEGORY_RECENTLY_USED;
 
 interface SortablePlatformCardProps {
   platform: Platform;
@@ -52,8 +53,9 @@ function SortablePlatformCard({
   onToggleFavorite,
   t,
 }: SortablePlatformCardProps): JSX.Element {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: platform.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: platform.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -93,7 +95,7 @@ function SortablePlatformCard({
               ? 'bg-red-50 dark:bg-red-900/30 text-red-500'
               : 'bg-gray-100 dark:bg-slate-700 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-slate-600'
           )}
-          title={isFavorite ? t("removeFromFavorites") : t("addToFavorites")}
+          title={isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
         >
           <Heart className={cn('w-3.5 h-3.5', isFavorite && 'fill-current')} />
         </button>
@@ -107,7 +109,12 @@ function SortablePlatformCard({
 
       <div className="p-3 md:p-4">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className={cn('flex-shrink-0 transition-transform duration-300', !isDragMode && 'group-hover:scale-105')}>
+          <div
+            className={cn(
+              'flex-shrink-0 transition-transform duration-300',
+              !isDragMode && 'group-hover:scale-105'
+            )}
+          >
             {platform.logoUrl ? (
               <PlatformLogo name={platform.name} logoUrl={platform.logoUrl} size="sm" />
             ) : platform.fallbackEmoji ? (
@@ -154,7 +161,9 @@ async function loadPreferencesFromDB(): Promise<{
 }> {
   try {
     const res = await fetch('/api/platform/preferences');
-    if (!res.ok) throw new Error('加载失败');
+    if (!res.ok) {
+      throw new Error('加载失败');
+    }
     const json = await res.json();
     const { favorites = [], order = [], recentlyUsed = [] } = json.data ?? {};
 
@@ -197,7 +206,7 @@ async function savePreferencesToDB(prefs: {
 }
 
 function StreamingPlatformNav(): JSX.Element {
-  const { t } = useTranslation('nav.platforms')
+  const { t } = useTranslation('nav.platforms');
   const [selectedCategory, setSelectedCategory] = useState<ExtendedCategoryType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -231,7 +240,9 @@ function StreamingPlatformNav(): JSX.Element {
 
   function toggleFavorite(platformId: string): void {
     setFavorites((prev) => {
-      const newFavorites = prev.includes(platformId) ? prev.filter((id) => id !== platformId) : [...prev, platformId];
+      const newFavorites = prev.includes(platformId)
+        ? prev.filter((id) => id !== platformId)
+        : [...prev, platformId];
       savePreferencesToDB({
         favorites: newFavorites,
         recentlyUsed,
@@ -271,12 +282,22 @@ function StreamingPlatformNav(): JSX.Element {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (platform) =>
-          platform.name.toLowerCase().includes(query) || platform.description.toLowerCase().includes(query)
+          platform.name.toLowerCase().includes(query) ||
+          platform.description.toLowerCase().includes(query)
       );
     }
 
     return result;
-  }, [selectedCategory, platforms, searchQuery, favorites, recentlyUsed, tMyFavorites, tRecentlyUsed, tAll]);
+  }, [
+    selectedCategory,
+    platforms,
+    searchQuery,
+    favorites,
+    recentlyUsed,
+    tMyFavorites,
+    tRecentlyUsed,
+    tAll,
+  ]);
 
   function handleCategoryChange(category: ExtendedCategoryType): void {
     setSelectedCategory(category);
@@ -328,7 +349,7 @@ function StreamingPlatformNav(): JSX.Element {
             </div>
             <Input
               type="text"
-              placeholder={t("searchPlatforms")}
+              placeholder={t('searchPlatforms')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-14 pl-12 pr-4 text-base bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-gray-200 dark:border-slate-700 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-slate-900/50 focus-visible:ring-2 focus-visible:ring-blue-500/50"
@@ -371,16 +392,18 @@ function StreamingPlatformNav(): JSX.Element {
                 className="flex items-center gap-1 px-2 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-muted-foreground dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                {t("back")}
+                {t('back')}
               </button>
             )}
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {searchQuery
-                  ? t("searchResultsFor", { query: searchQuery })
+                  ? t('searchResultsFor', { query: searchQuery })
                   : selectedCategory === tAll
-                    ? t("allPlatforms")
-                    : selectedCategory === 'all' ? t('all') : t(selectedCategory, { ns: 'nav.platforms' })}
+                    ? t('allPlatforms')
+                    : selectedCategory === 'all'
+                      ? t('all')
+                      : t(selectedCategory, { ns: 'nav.platforms' })}
               </h2>
               <span className="text-sm text-muted-foreground">({filteredPlatforms.length})</span>
             </div>
@@ -396,62 +419,83 @@ function StreamingPlatformNav(): JSX.Element {
             )}
           >
             <ArrowUpDown className="w-4 h-4" />
-            {isDragMode ? t("completeSort") : t("sort")}
+            {isDragMode ? t('completeSort') : t('sort')}
           </button>
         </div>
 
-        {selectedCategory !== tMyFavorites && selectedCategory !== tRecentlyUsed && !searchQuery && (
-          <div className="max-w-7xl mx-auto mb-6">
-            <div className="inline-flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1">
-              <button
-                onClick={() => handleCategoryChange(tMyFavorites)}
-                className={cn(
-                  'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
-                  favorites.length > 0
-                    ? 'bg-red-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Heart className={cn('w-3.5 h-3.5', favorites.length > 0 && 'fill-current')} />
-                <span>{t("myFavorites")}</span>
-                {favorites.length > 0 && (
-                  <span className="ml-0.5 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{favorites.length}</span>
-                )}
-              </button>
+        {selectedCategory !== tMyFavorites &&
+          selectedCategory !== tRecentlyUsed &&
+          !searchQuery && (
+            <div className="max-w-7xl mx-auto mb-6">
+              <div className="inline-flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1">
+                <button
+                  onClick={() => handleCategoryChange(tMyFavorites)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                    favorites.length > 0
+                      ? 'bg-red-500 text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Heart className={cn('w-3.5 h-3.5', favorites.length > 0 && 'fill-current')} />
+                  <span>{t('myFavorites')}</span>
+                  {favorites.length > 0 && (
+                    <span className="ml-0.5 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {favorites.length}
+                    </span>
+                  )}
+                </button>
 
-              <button
-                onClick={() => recentlyUsed.length > 0 && handleCategoryChange(tRecentlyUsed)}
-                className={cn(
-                  'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
-                  recentlyUsed.length > 0
-                    ? 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
-                    : 'text-muted-foreground cursor-default'
-                )}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{t("recentlyUsed")}</span>
-                {recentlyUsed.length > 0 && (
-                  <span className="ml-0.5 text-xs bg-gray-200 dark:bg-slate-600 text-muted-foreground px-1.5 py-0.5 rounded-full">
-                    {recentlyUsed.length}
-                  </span>
-                )}
-              </button>
+                <button
+                  onClick={() => recentlyUsed.length > 0 && handleCategoryChange(tRecentlyUsed)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                    recentlyUsed.length > 0
+                      ? 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
+                      : 'text-muted-foreground cursor-default'
+                  )}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{t('recentlyUsed')}</span>
+                  {recentlyUsed.length > 0 && (
+                    <span className="ml-0.5 text-xs bg-gray-200 dark:bg-slate-600 text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      {recentlyUsed.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {isDragMode && (
           <div className="max-w-7xl mx-auto mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
             <GripVertical className="w-4 h-4" />
-            {t("dragCardsToReorder")}
+            {t('dragCardsToReorder')}
           </div>
         )}
 
         <div className="max-w-7xl mx-auto">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={filteredPlatforms.map((p) => p.id)} strategy={rectSortingStrategy}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={filteredPlatforms.map((p) => p.id)}
+              strategy={rectSortingStrategy}
+            >
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-6">
                 {filteredPlatforms.map((platform) => (
                   <SortablePlatformCard
@@ -471,7 +515,7 @@ function StreamingPlatformNav(): JSX.Element {
 
         {filteredPlatforms.length === 0 && (
           <div className="max-w-7xl mx-auto text-center py-16">
-            <p className="text-muted-foreground mb-4">{t("noMatchingPlatforms")}</p>
+            <p className="text-muted-foreground mb-4">{t('noMatchingPlatforms')}</p>
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -479,7 +523,7 @@ function StreamingPlatformNav(): JSX.Element {
               }}
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
-              {t("clearFilters")}
+              {t('clearFilters')}
             </button>
           </div>
         )}

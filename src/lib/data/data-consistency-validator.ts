@@ -5,8 +5,7 @@
 
 'use client';
 
-import { TMDBItem } from './storage';
-import { StorageManager } from './storage';
+import { TMDBItem, StorageManager } from './storage';
 import { logger } from '@/lib/utils/logger';
 
 export interface ConsistencyCheckResult {
@@ -83,7 +82,9 @@ export class DataConsistencyValidator {
    * 启动验证（只在启动时执行一次，移除定时器）
    */
   public async startPeriodicValidation(): Promise<void> {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     // 只在启动时验证一次
     if (!this.isValidating) {
@@ -91,7 +92,7 @@ export class DataConsistencyValidator {
     }
 
     logger.info(
-      `[DataConsistencyValidator] 已启动定期验证，间隔: ${this.config.checkIntervalMs}ms`,
+      `[DataConsistencyValidator] 已启动定期验证，间隔: ${this.config.checkIntervalMs}ms`
     );
   }
 
@@ -135,18 +136,16 @@ export class DataConsistencyValidator {
 
       try {
         backendItems = await this.getBackendItems();
-        logger.info(
-          `[DataConsistencyValidator] 成功获取后端数据: ${backendItems.length} 个项目`,
-        );
+        logger.info(`[DataConsistencyValidator] 成功获取后端数据: ${backendItems.length} 个项目`);
       } catch (backendError) {
         logger.warn(
           '[DataConsistencyValidator] 后端数据获取失败，使用前端数据作为参考:',
-          backendError,
+          backendError
         );
         backendItems = frontendItems; // 使用前端数据作为参考
         backendDataAvailable = false;
         result.errors.push(
-          `后端数据不可用: ${backendError instanceof Error ? backendError.message : String(backendError)}`,
+          `后端数据不可用: ${backendError instanceof Error ? backendError.message : String(backendError)}`
         );
       }
 
@@ -179,10 +178,7 @@ export class DataConsistencyValidator {
           });
         } else {
           // 检查数据是否一致
-          const conflictFields = this.findConflictFields(
-            frontendItem,
-            backendItem,
-          );
+          const conflictFields = this.findConflictFields(frontendItem, backendItem);
 
           if (conflictFields.length > 0) {
             result.inconsistentItems.push({
@@ -213,17 +209,14 @@ export class DataConsistencyValidator {
 
       // 自动修复不一致
       if (!result.isConsistent && this.config.autoFix) {
-        result.fixedCount = await this.autoFixInconsistencies(
-          result.inconsistentItems,
-        );
+        result.fixedCount = await this.autoFixInconsistencies(result.inconsistentItems);
       }
 
       logger.info(
-        `[DataConsistencyValidator] 验证完成: 检查${result.totalChecked}项，发现${result.inconsistentItems.length}个不一致，修复${result.fixedCount}个`,
+        `[DataConsistencyValidator] 验证完成: 检查${result.totalChecked}项，发现${result.inconsistentItems.length}个不一致，修复${result.fixedCount}个`
       );
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       result.errors.push(errorMessage);
       logger.error('[DataConsistencyValidator] 验证失败:', error);
     } finally {
@@ -240,7 +233,7 @@ export class DataConsistencyValidator {
   private async getFrontendItems(): Promise<TMDBItem[]> {
     try {
       // 直接获取数据（不再使用乐观更新）
-      const items = await StorageManager.getItems();
+      const items = (await StorageManager.getItems()) as TMDBItem[];
       return items;
     } catch (error) {
       logger.error('[DataConsistencyValidator] 获取前端数据失败:', error);
@@ -261,9 +254,7 @@ export class DataConsistencyValidator {
 
       for (const endpoint of endpoints) {
         try {
-          logger.info(
-            `[DataConsistencyValidator] 尝试从 ${endpoint} 获取后端数据`
-          );
+          logger.info(`[DataConsistencyValidator] 尝试从 ${endpoint} 获取后端数据`);
 
           const response = await fetch(endpoint, {
             method: 'GET',
@@ -294,10 +285,7 @@ export class DataConsistencyValidator {
             );
           }
         } catch (endpointError) {
-          logger.warn(
-            `[DataConsistencyValidator] ${endpoint} 请求失败:`,
-            endpointError,
-          );
+          logger.warn(`[DataConsistencyValidator] ${endpoint} 请求失败:`, endpointError);
         }
       }
 
@@ -308,24 +296,18 @@ export class DataConsistencyValidator {
 
       // 回退到本地存储
       logger.info('[DataConsistencyValidator] 回退到本地存储数据');
-      return await StorageManager.getItems();
+      return (await StorageManager.getItems()) as TMDBItem[];
     }
   }
 
   /**
    * 查找冲突字段
    */
-  private findConflictFields(
-    frontendItem: TMDBItem,
-    backendItem: TMDBItem,
-  ): string[] {
+  private findConflictFields(frontendItem: TMDBItem, backendItem: TMDBItem): string[] {
     const conflicts: string[] = [];
 
     // 检查所有字段（排除配置中指定的字段）
-    const allKeys = new Set([
-      ...Object.keys(frontendItem),
-      ...Object.keys(backendItem),
-    ]);
+    const allKeys = new Set([...Object.keys(frontendItem), ...Object.keys(backendItem)]);
 
     for (const key of allKeys) {
       if (this.config.excludeFields.includes(key)) {
@@ -347,20 +329,30 @@ export class DataConsistencyValidator {
    * 深度比较两个值
    */
   private deepEqual(a: unknown, b: unknown): boolean {
-    if (a === b) return true;
+    if (a === b) {
+      return true;
+    }
 
-    if (a == null || b == null) return a === b;
+    if (a === null || b === null) {
+      return a === b;
+    }
 
-    if (typeof a !== typeof b) return false;
+    if (typeof a !== typeof b) {
+      return false;
+    }
 
     if (typeof a === 'object') {
-      const keysA = Object.keys(a);
-      const keysB = Object.keys(b);
+      const aObj = a as Record<string, unknown>;
+      const bObj = b as Record<string, unknown>;
+      const keysA = Object.keys(aObj);
+      const keysB = Object.keys(bObj);
 
-      if (keysA.length !== keysB.length) return false;
+      if (keysA.length !== keysB.length) {
+        return false;
+      }
 
       for (const key of keysA) {
-        if (!keysB.includes(key) || !this.deepEqual(a[key], b[key])) {
+        if (!keysB.includes(key) || !this.deepEqual(aObj[key], bObj[key])) {
           return false;
         }
       }
@@ -375,7 +367,7 @@ export class DataConsistencyValidator {
    * 自动修复不一致
    */
   private async autoFixInconsistencies(
-    inconsistencies: ConsistencyCheckResult['inconsistentItems'],
+    inconsistencies: ConsistencyCheckResult['inconsistentItems']
   ): Promise<number> {
     let fixedCount = 0;
 
@@ -386,10 +378,7 @@ export class DataConsistencyValidator {
           fixedCount++;
         }
       } catch (error) {
-        logger.error(
-          `[DataConsistencyValidator] 修复失败: ${inconsistency.itemId}`,
-          error,
-        );
+        logger.error(`[DataConsistencyValidator] 修复失败: ${inconsistency.itemId}`, error);
       }
     }
 
@@ -400,7 +389,7 @@ export class DataConsistencyValidator {
    * 修复单个不一致
    */
   private async fixSingleInconsistency(
-    inconsistency: ConsistencyCheckResult['inconsistentItems'][0],
+    inconsistency: ConsistencyCheckResult['inconsistentItems'][0]
   ): Promise<boolean> {
     switch (inconsistency.inconsistencyType) {
       case 'missing_backend':
@@ -412,10 +401,7 @@ export class DataConsistencyValidator {
 
       case 'missing_frontend':
         // 后端有，前端没有 - 同步到前端
-        if (
-          this.config.conflictResolution === 'backend_wins' &&
-          inconsistency.backendData
-        ) {
+        if (this.config.conflictResolution === 'backend_wins' && inconsistency.backendData) {
           return await this.syncToFrontend(inconsistency.backendData);
         }
         break;
@@ -439,10 +425,7 @@ export class DataConsistencyValidator {
       }
       return success;
     } catch (error) {
-      logger.error(
-        `[DataConsistencyValidator] 同步到后端失败: ${item.id}`,
-        error,
-      );
+      logger.error(`[DataConsistencyValidator] 同步到后端失败: ${item.id}`, error);
       return false;
     }
   }
@@ -465,9 +448,11 @@ export class DataConsistencyValidator {
    * 解决数据不匹配
    */
   private async resolveDataMismatch(
-    inconsistency: ConsistencyCheckResult['inconsistentItems'][0],
+    inconsistency: ConsistencyCheckResult['inconsistentItems'][0]
   ): Promise<boolean> {
-    if (!inconsistency.backendData) return false;
+    if (!inconsistency.backendData) {
+      return false;
+    }
 
     switch (this.config.conflictResolution) {
       case 'frontend_wins':
@@ -496,10 +481,7 @@ export class DataConsistencyValidator {
     this.validationHistory.unshift(result);
 
     if (this.validationHistory.length > this.maxHistorySize) {
-      this.validationHistory = this.validationHistory.slice(
-        0,
-        this.maxHistorySize,
-      );
+      this.validationHistory = this.validationHistory.slice(0, this.maxHistorySize);
     }
   }
 
@@ -540,26 +522,20 @@ export class DataConsistencyValidator {
     const totalValidations = this.validationHistory.length;
     const totalInconsistencies = this.validationHistory.reduce(
       (sum, result) => sum + result.inconsistentItems.length,
-      0,
+      0
     );
-    const totalFixed = this.validationHistory.reduce(
-      (sum, result) => sum + result.fixedCount,
-      0,
-    );
+    const totalFixed = this.validationHistory.reduce((sum, result) => sum + result.fixedCount, 0);
 
     // 检查最近的验证是否有 API 错误
     const recentValidation = this.validationHistory[0];
     const apiHealthy =
       !recentValidation ||
       recentValidation.errors.length === 0 ||
-      !recentValidation.errors.some((error) =>
-        error.includes('后端数据不可用'),
-      );
+      !recentValidation.errors.some((error) => error.includes('后端数据不可用'));
 
     return {
       totalValidations,
-      averageInconsistencies:
-        totalValidations > 0 ? totalInconsistencies / totalValidations : 0,
+      averageInconsistencies: totalValidations > 0 ? totalInconsistencies / totalValidations : 0,
       totalFixed,
       lastValidationTime: this.lastValidationTime,
       isValidating: this.isValidating,
@@ -599,9 +575,7 @@ export class DataConsistencyValidator {
             url: endpoint,
             status: response.status,
             responseTime,
-            error: response.ok
-              ? undefined
-              : `HTTP ${response.status}: ${response.statusText}`,
+            error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
           };
         } catch (error) {
           const responseTime = Date.now() - startTime;
@@ -612,7 +586,7 @@ export class DataConsistencyValidator {
             error: error instanceof Error ? error.message : String(error),
           };
         }
-      }),
+      })
     );
 
     const endpointResults = results.map((result, index) => {
@@ -623,10 +597,7 @@ export class DataConsistencyValidator {
           url: endpoints[index],
           status: 0,
           responseTime: 0,
-          error:
-            result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason),
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
         };
       }
     });

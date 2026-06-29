@@ -14,10 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { username, password } = body;
 
     if (!username?.trim() || !password?.trim()) {
-      return NextResponse.json(
-        { success: false, error: '用户名和密码不能为空' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: '用户名和密码不能为空' }, { status: 400 });
     }
 
     const result = await AuthService.register(username.trim(), password);
@@ -40,9 +37,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const token = AuthService.generateToken(user, false);
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = sessionDays * 24 * 60 * 60;
-    const isSecure = process.env.COOKIE_SECURE !== undefined
-      ? process.env.COOKIE_SECURE === 'true'
-      : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
+    const isSecure =
+      process.env.COOKIE_SECURE !== undefined
+        ? process.env.COOKIE_SECURE === 'true'
+        : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
 
     const response = NextResponse.json({
       success: true,
@@ -51,7 +49,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     response.cookies.set('auth-token', token, {
-      httpOnly: true, secure: isSecure, sameSite: 'lax', maxAge, path: '/',
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: 'lax',
+      maxAge,
+      path: '/',
     });
 
     return response;

@@ -3,7 +3,9 @@ import { AuthService } from './auth-service';
 import { logger } from '@/lib/utils/logger';
 
 export class AuthMiddleware {
-  static async verifyRequest(request: NextRequest): Promise<{ success: boolean; userId?: string; error?: string }> {
+  static async verifyRequest(
+    request: NextRequest
+  ): Promise<{ success: boolean; userId?: string; error?: string }> {
     try {
       const token = request.cookies.get('auth-token')?.value;
 
@@ -23,9 +25,8 @@ export class AuthMiddleware {
 
       return {
         success: true,
-        userId: decoded.userId
+        userId: decoded.userId,
       };
-
     } catch (error) {
       logger.error('[Auth] 认证中间件错误:', error);
 
@@ -34,10 +35,7 @@ export class AuthMiddleware {
   }
 
   static createAuthErrorResponse(error: string, status: number = 401): NextResponse {
-    return NextResponse.json(
-      { success: false, error },
-      { status }
-    );
+    return NextResponse.json({ success: false, error }, { status });
   }
 
   static withAuth<T extends any[]>(

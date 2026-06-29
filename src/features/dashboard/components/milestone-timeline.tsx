@@ -1,28 +1,32 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { DynamicIcon } from './dynamic-icon'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { DynamicIcon } from './dynamic-icon';
 
 interface MilestoneTimelineProps {
   milestones: Array<{
-    date: string
-    title: string
-    description: string
-    icon: string
-  }>
+    date: string;
+    title: string;
+    description: string;
+    icon: string;
+  }>;
 }
 
 export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
-  const { t } = useTranslation('dashboard')
+  const { t } = useTranslation('dashboard');
 
   if (milestones.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-muted/50 p-4 md:p-5">
-        <h3 className="text-sm font-medium text-foreground mb-3 md:mb-4">{t('milestones.title')}</h3>
-        <div className="flex items-center justify-center h-[120px] text-muted-foreground text-sm">{t('noData')}</div>
+        <h3 className="text-sm font-medium text-foreground mb-3 md:mb-4">
+          {t('milestones.title')}
+        </h3>
+        <div className="flex items-center justify-center h-[120px] text-muted-foreground text-sm">
+          {t('noData')}
+        </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -50,5 +54,5 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

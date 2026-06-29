@@ -21,15 +21,11 @@ export function ErrorState({
   return (
     <div className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg border border-red-200 dark:border-red-800">
       <div className="flex flex-col items-center text-center">
-        {showIcon && (
-          <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
-        )}
+        {showIcon && <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />}
         <h3 className="text-red-600 dark:text-red-300 font-medium mb-1">
           {title || t('errorTitle')}
         </h3>
-        <p className="text-red-500 dark:text-red-400 text-sm mb-4">
-          {message}
-        </p>
+        <p className="text-red-500 dark:text-red-400 text-sm mb-4">{message}</p>
         {onRetry && (
           <Button
             onClick={onRetry}

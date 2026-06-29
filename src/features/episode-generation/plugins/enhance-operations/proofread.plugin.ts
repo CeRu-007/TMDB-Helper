@@ -3,8 +3,8 @@
  * 语法纠错，优化语句
  */
 
-import { BaseEnhanceOperationPlugin } from './base-enhance-operation'
-import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types'
+import { BaseEnhanceOperationPlugin } from './base-enhance-operation';
+import { EnhanceInput, EnhanceConfig, EnhanceOperationType } from './types';
 
 export class ProofreadPlugin extends BaseEnhanceOperationPlugin {
   constructor() {
@@ -17,16 +17,16 @@ export class ProofreadPlugin extends BaseEnhanceOperationPlugin {
       version: '1.0.0',
       author: 'TMDB-Helper',
       isBuiltin: true,
-      tags: ['enhance', 'proofread']
-    })
+      tags: ['enhance', 'proofread'],
+    });
   }
 
-  operationType: EnhanceOperationType = 'proofread'
+  operationType: EnhanceOperationType = 'proofread';
 
   defaultConfig: EnhanceConfig = {
     temperature: 0.3,
-    maxTokens: 1000
-  }
+    maxTokens: 1000,
+  };
 
   buildPrompt(input: EnhanceInput, config?: EnhanceConfig): string {
     return `请对以下影视剧集标题和简介进行语法纠错和语句优化，使其更加通顺流畅：
@@ -56,8 +56,8 @@ export class ProofreadPlugin extends BaseEnhanceOperationPlugin {
 
 请严格按照以下格式输出：
 标题：[纠错后的标题]
-简介：[纠错后的简介]`
+简介：[纠错后的简介]`;
   }
 }
 
-export const proofreadPlugin = new ProofreadPlugin()
+export const proofreadPlugin = new ProofreadPlugin();

@@ -1,24 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import { Shield, Eye, EyeOff, Check, X } from "lucide-react"
-import type { PasswordForm } from "./types"
-import { useTranslation } from "react-i18next"
-import { useMemo } from "react"
-import { validatePassword } from "@/lib/auth/password-validator"
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Shield, Eye, EyeOff, Check, X } from 'lucide-react';
+import type { PasswordForm } from './types';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
+import { validatePassword } from '@/lib/auth/password-validator';
 
 interface SecuritySettingsPanelProps {
-  passwordForm: PasswordForm
-  setPasswordForm: (form: PasswordForm) => void
-  showCurrentPassword: boolean
-  setShowCurrentPassword: (show: boolean) => void
-  showNewPassword: boolean
-  setShowNewPassword: (show: boolean) => void
-  showConfirmPassword: boolean
-  setShowConfirmPassword: (show: boolean) => void
-  passwordChangeLoading: boolean
-  handlePasswordChange: () => Promise<void>
+  passwordForm: PasswordForm;
+  setPasswordForm: (form: PasswordForm) => void;
+  showCurrentPassword: boolean;
+  setShowCurrentPassword: (show: boolean) => void;
+  showNewPassword: boolean;
+  setShowNewPassword: (show: boolean) => void;
+  showConfirmPassword: boolean;
+  setShowConfirmPassword: (show: boolean) => void;
+  passwordChangeLoading: boolean;
+  handlePasswordChange: () => Promise<void>;
 }
 
 export default function SecuritySettingsPanel({
@@ -31,52 +31,55 @@ export default function SecuritySettingsPanel({
   showConfirmPassword,
   setShowConfirmPassword,
   passwordChangeLoading,
-  handlePasswordChange
+  handlePasswordChange,
 }: SecuritySettingsPanelProps) {
-  const { t } = useTranslation("settings")
+  const { t } = useTranslation('settings');
 
-  const passwordStrength = useMemo(() => validatePassword(passwordForm.newPassword), [passwordForm.newPassword])
+  const passwordStrength = useMemo(
+    () => validatePassword(passwordForm.newPassword),
+    [passwordForm.newPassword]
+  );
 
   const strengthColor = {
     weak: 'bg-red-500',
     medium: 'bg-yellow-500',
     strong: 'bg-green-500',
-  }
+  };
 
   const strengthWidth = {
     weak: 'w-1/3',
     medium: 'w-2/3',
     strong: 'w-full',
-  }
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">{t("menu.security")}</h3>
-        <p className="text-sm text-muted-foreground mb-6">
-          {t("securityPanel.securityDesc")}
-        </p>
+        <h3 className="text-lg font-semibold mb-2">{t('menu.security')}</h3>
+        <p className="text-sm text-muted-foreground mb-6">{t('securityPanel.securityDesc')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Shield className="h-5 w-5 mr-2" />
-            {t("securityPanel.passwordChange")}
+            {t('securityPanel.passwordChange')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="currentPassword">{t("securityPanel.currentPassword")}</Label>
+            <Label htmlFor="currentPassword">{t('securityPanel.currentPassword')}</Label>
             <div className="relative mt-1">
               <Input
                 id="currentPassword"
                 name="currentPassword"
-                type={showCurrentPassword ? "text" : "password"}
+                type={showCurrentPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                placeholder={t("securityPanel.enterCurrentPassword")}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                }
+                placeholder={t('securityPanel.enterCurrentPassword')}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -87,28 +90,24 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 disabled={passwordChangeLoading}
-                title={showCurrentPassword ? t("tools.hidePassword") : t("tools.showPassword")}
+                title={showCurrentPassword ? t('tools.hidePassword') : t('tools.showPassword')}
               >
-                {showCurrentPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="newPassword">{t("securityPanel.newPassword")}</Label>
+            <Label htmlFor="newPassword">{t('securityPanel.newPassword')}</Label>
             <div className="relative mt-1">
               <Input
                 id="newPassword"
                 name="newPassword"
-                type={showNewPassword ? "text" : "password"}
+                type={showNewPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                placeholder={t("securityPanel.enterNewPassword")}
+                placeholder={t('securityPanel.enterNewPassword')}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -119,13 +118,9 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowNewPassword(!showNewPassword)}
                 disabled={passwordChangeLoading}
-                title={showNewPassword ? t("tools.hidePassword") : t("tools.showPassword")}
+                title={showNewPassword ? t('tools.hidePassword') : t('tools.showPassword')}
               >
-                {showNewPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
 
@@ -139,40 +134,44 @@ export default function SecuritySettingsPanel({
                   </div>
                 </div>
                 <div className="space-y-1">
-                  {[
-                    { key: 'minLength' as const, label: t("securityPanel.passwordReq1") },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-1.5">
-                      {passwordStrength.checks[key] ? (
-                        <Check className="h-3 w-3 text-green-500 shrink-0" />
-                      ) : (
-                        <X className="h-3 w-3 text-muted-foreground shrink-0" />
-                      )}
-                      <span className={`text-xs ${
-                        passwordStrength.checks[key]
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-muted-foreground'
-                      }`}>
-                        {label}
-                      </span>
-                    </div>
-                  ))}
+                  {[{ key: 'minLength' as const, label: t('securityPanel.passwordReq1') }].map(
+                    ({ key, label }) => (
+                      <div key={key} className="flex items-center gap-1.5">
+                        {passwordStrength.checks[key] ? (
+                          <Check className="h-3 w-3 text-green-500 shrink-0" />
+                        ) : (
+                          <X className="h-3 w-3 text-muted-foreground shrink-0" />
+                        )}
+                        <span
+                          className={`text-xs ${
+                            passwordStrength.checks[key]
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             )}
           </div>
 
           <div>
-            <Label htmlFor="confirmPassword">{t("securityPanel.confirmNewPassword")}</Label>
+            <Label htmlFor="confirmPassword">{t('securityPanel.confirmNewPassword')}</Label>
             <div className="relative mt-1">
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
+                type={showConfirmPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                placeholder={t("securityPanel.enterConfirmPassword")}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                }
+                placeholder={t('securityPanel.enterConfirmPassword')}
                 className="pr-10"
                 disabled={passwordChangeLoading}
               />
@@ -183,13 +182,9 @@ export default function SecuritySettingsPanel({
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={passwordChangeLoading}
-                title={showConfirmPassword ? t("tools.hidePassword") : t("tools.showPassword")}
+                title={showConfirmPassword ? t('tools.hidePassword') : t('tools.showPassword')}
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -197,18 +192,23 @@ export default function SecuritySettingsPanel({
           <div className="flex justify-end pt-4">
             <Button
               onClick={handlePasswordChange}
-              disabled={passwordChangeLoading || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+              disabled={
+                passwordChangeLoading ||
+                !passwordForm.currentPassword ||
+                !passwordForm.newPassword ||
+                !passwordForm.confirmPassword
+              }
               className="min-w-[100px]"
             >
               {passwordChangeLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {t("securityPanel.changing")}
+                  {t('securityPanel.changing')}
                 </>
               ) : (
                 <>
                   <Shield className="h-4 w-4 mr-2" />
-                  {t("securityPanel.changePassword")}
+                  {t('securityPanel.changePassword')}
                 </>
               )}
             </Button>
@@ -216,5 +216,5 @@ export default function SecuritySettingsPanel({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

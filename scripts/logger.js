@@ -22,12 +22,18 @@ class Logger {
   getLogLevelFromEnv() {
     const envLevel = process.env.LOG_LEVEL?.toUpperCase();
     switch (envLevel) {
-      case 'DEBUG': return LogLevel.DEBUG;
-      case 'INFO': return LogLevel.INFO;
-      case 'WARN': return LogLevel.WARN;
-      case 'ERROR': return LogLevel.ERROR;
-      case 'NONE': return LogLevel.NONE;
-      default: return process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
+      case 'DEBUG':
+        return LogLevel.DEBUG;
+      case 'INFO':
+        return LogLevel.INFO;
+      case 'WARN':
+        return LogLevel.WARN;
+      case 'ERROR':
+        return LogLevel.ERROR;
+      case 'NONE':
+        return LogLevel.NONE;
+      default:
+        return process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
     }
   }
 

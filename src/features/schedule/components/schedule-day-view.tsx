@@ -1,27 +1,35 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import { Calendar, Clock, Heart, Play, ChevronLeft, ChevronRight } from 'lucide-react'
-import { ScheduleDay, ScheduleEpisode } from '../types/schedule'
-import { ScheduleImage } from './schedule-image'
-import type { CategoryType } from './schedule-view'
-import { cn } from '@/lib/utils'
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Calendar, Clock, Heart, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ScheduleDay, ScheduleEpisode } from '../types/schedule';
+import { ScheduleImage } from './schedule-image';
+import type { CategoryType } from './schedule-view';
+import { cn } from '@/lib/utils';
 
-const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const WEEKDAY_KEYS = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const;
 
 interface ScheduleDayViewProps {
-  dayData: ScheduleDay
-  selectedDayIndex: number
-  selectedCategory: CategoryType
-  onNavigateDay: (delta: number) => void
-  onSelectEpisode: (episode: ScheduleEpisode) => void
-  followingIds: Set<string>
-  onToggleFollowing: (id: string) => void
+  dayData: ScheduleDay;
+  selectedDayIndex: number;
+  selectedCategory: CategoryType;
+  onNavigateDay: (delta: number) => void;
+  onSelectEpisode: (episode: ScheduleEpisode) => void;
+  followingIds: Set<string>;
+  onToggleFollowing: (id: string) => void;
 }
 
 export function ScheduleDayView({
@@ -31,15 +39,13 @@ export function ScheduleDayView({
   onNavigateDay,
   onSelectEpisode,
   followingIds,
-  onToggleFollowing
+  onToggleFollowing,
 }: ScheduleDayViewProps) {
-  const { t } = useTranslation('schedule')
-  const sortedEpisodes = [...dayData.episodes].sort((a, b) =>
-    a.pubTime.localeCompare(b.pubTime)
-  )
+  const { t } = useTranslation('schedule');
+  const sortedEpisodes = [...dayData.episodes].sort((a, b) => a.pubTime.localeCompare(b.pubTime));
 
-  const handlePrevDay = () => onNavigateDay(-1)
-  const handleNextDay = () => onNavigateDay(1)
+  const handlePrevDay = () => onNavigateDay(-1);
+  const handleNextDay = () => onNavigateDay(1);
 
   if (sortedEpisodes.length === 0) {
     return (
@@ -63,7 +69,12 @@ export function ScheduleDayView({
               {dayData.isToday && (
                 <Badge className="bg-blue-500 max-sm:text-xs">{t('today')}</Badge>
               )}
-              <Badge variant="outline" className="bg-muted text-muted-foreground border-0 max-sm:text-xs">{t('episodeCount', { count: dayData.episodes.length })}</Badge>
+              <Badge
+                variant="outline"
+                className="bg-muted text-muted-foreground border-0 max-sm:text-xs"
+              >
+                {t('episodeCount', { count: dayData.episodes.length })}
+              </Badge>
 
               <Button
                 variant="ghost"
@@ -94,7 +105,7 @@ export function ScheduleDayView({
           </div>
         </div>
       </ScrollArea>
-    )
+    );
   }
 
   return (
@@ -116,9 +127,14 @@ export function ScheduleDayView({
               {dayData.date || WEEKDAYS[dayData.dayOfWeek - 1]}
             </h3>
             {dayData.isToday && (
-              <Badge className="bg-blue-500 max-sm:text-xs">{t("today", { ns: "schedule" })}</Badge>
+              <Badge className="bg-blue-500 max-sm:text-xs">{t('today', { ns: 'schedule' })}</Badge>
             )}
-            <Badge variant="outline" className="bg-muted text-muted-foreground border-0 max-sm:text-xs">{t("episodeCount", { count: dayData.episodes.length, ns: "schedule" })}</Badge>
+            <Badge
+              variant="outline"
+              className="bg-muted text-muted-foreground border-0 max-sm:text-xs"
+            >
+              {t('episodeCount', { count: dayData.episodes.length, ns: 'schedule' })}
+            </Badge>
 
             <Button
               variant="ghost"
@@ -147,26 +163,26 @@ export function ScheduleDayView({
         </div>
       </div>
     </ScrollArea>
-  )
+  );
 }
 
 interface ScheduleTimelineItemProps {
-  episode: ScheduleEpisode
-  isFollowing: boolean
-  onToggleFollowing: () => void
-  onClick: () => void
+  episode: ScheduleEpisode;
+  isFollowing: boolean;
+  onToggleFollowing: () => void;
+  onClick: () => void;
 }
 
-function ScheduleTimelineItem({ 
-  episode, 
-  isFollowing, 
-  onToggleFollowing, 
-  onClick 
+function ScheduleTimelineItem({
+  episode,
+  isFollowing,
+  onToggleFollowing,
+  onClick,
 }: ScheduleTimelineItemProps): React.ReactElement {
-  const { t } = useTranslation('schedule')
+  const { t } = useTranslation('schedule');
   function handleToggleFollowing(e: React.MouseEvent): void {
-    e.stopPropagation()
-    onToggleFollowing()
+    e.stopPropagation();
+    onToggleFollowing();
   }
 
   return (
@@ -200,17 +216,25 @@ function ScheduleTimelineItem({
           </h3>
 
           <div className="flex items-center gap-2 max-sm:gap-1 mb-2 max-sm:mb-1">
-            <span className={cn(
-              "text-xs max-sm:text-[10px] font-medium",
-              episode.published ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
-            )}>
+            <span
+              className={cn(
+                'text-xs max-sm:text-[10px] font-medium',
+                episode.published
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-amber-600 dark:text-amber-400'
+              )}
+            >
               {episode.pubIndex.startsWith('更新') ? episode.pubIndex : `更新至${episode.pubIndex}`}
             </span>
           </div>
 
           <div className="flex flex-wrap gap-1 max-sm:hidden">
-            {episode.types?.map(type => (
-              <Badge key={type} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-muted text-muted-foreground border-0">
+            {episode.types?.map((type) => (
+              <Badge
+                key={type}
+                variant="secondary"
+                className="text-[10px] px-1.5 py-0 h-4 bg-muted text-muted-foreground border-0"
+              >
                 {type}
               </Badge>
             ))}
@@ -235,21 +259,26 @@ function ScheduleTimelineItem({
           <button
             onClick={handleToggleFollowing}
             className={cn(
-              "p-1.5 max-sm:p-1 rounded-full transition-all duration-200",
+              'p-1.5 max-sm:p-1 rounded-full transition-all duration-200',
               isFollowing
-                ? "text-rose-500 bg-rose-50 dark:bg-rose-500/10"
-                : "text-gray-300 hover:text-rose-400 hover:bg-accent"
-            )}>
-            <Heart className={cn("h-4 w-4 max-sm:h-3.5 max-sm:w-3.5", isFollowing && "fill-current")} />
+                ? 'text-rose-500 bg-rose-50 dark:bg-rose-500/10'
+                : 'text-gray-300 hover:text-rose-400 hover:bg-accent'
+            )}
+          >
+            <Heart
+              className={cn('h-4 w-4 max-sm:h-3.5 max-sm:w-3.5', isFollowing && 'fill-current')}
+            />
           </button>
-          <span className={cn(
-            "text-[10px] max-sm:text-[9px]",
-            isFollowing ? "text-rose-500" : "text-gray-400"
-          )}>
+          <span
+            className={cn(
+              'text-[10px] max-sm:text-[9px]',
+              isFollowing ? 'text-rose-500' : 'text-gray-400'
+            )}
+          >
             {isFollowing ? t('categories.following') : t('follow')}
           </span>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -31,10 +31,13 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch {
-      return NextResponse.json({
-        success: false,
-        error: '检查更新失败，请稍后重试',
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '检查更新失败，请稍后重试',
+        },
+        { status: 500 }
+      );
     }
   }
 }

@@ -3,18 +3,18 @@
  */
 
 // 连接管理
-export { 
-  getDatabase, 
-  getDatabaseAsync, 
+export {
+  getDatabase,
+  getDatabaseAsync,
   initDatabaseModule,
-  closeDatabase, 
-  isDatabaseInitialized, 
+  closeDatabase,
+  isDatabaseInitialized,
   isDatabaseInitializedAsync,
-  getDatabasePath, 
-  transaction, 
-  batchInsert, 
+  getDatabasePath,
+  transaction,
+  batchInsert,
   checkDatabaseHealth,
-  checkDatabaseHealthAsync
+  checkDatabaseHealthAsync,
 } from './connection';
 
 // Schema

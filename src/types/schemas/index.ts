@@ -3,4 +3,4 @@
  * 导出所有 Zod schemas
  */
 
-export * from './media.schema'
+export * from './media.schema';

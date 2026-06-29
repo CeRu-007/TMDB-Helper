@@ -1,57 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
-import { logger } from '@/lib/utils/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { spawn } from 'child_process';
+import { logger } from '@/lib/utils/logger';
 
 interface InstallRequest {
-  packages: string[]
-  type: 'python' | 'playwright'
+  packages: string[];
+  type: 'python' | 'playwright';
 }
 
 interface InstallProgress {
-  step: string
-  status: 'running' | 'success' | 'error'
-  output: string
-  progress?: number
+  step: string;
+  status: 'running' | 'success' | 'error';
+  output: string;
+  progress?: number;
+  errorType?: ErrorType;
+  errorDetails?: string;
+  isRetryable?: boolean;
 }
 
 interface EnvironmentInfo {
-  type: 'web' | 'docker' | 'electron'
-  pythonPath?: string
-  hasWritePermission: boolean
-  platform: string
+  type: 'web' | 'docker' | 'electron';
+  pythonPath?: string;
+  hasWritePermission: boolean;
+  platform: string;
 }
 
 // 获取当前运行环境信息
 function getEnvironmentInfo(): EnvironmentInfo {
-  const isDocker = process.env.DOCKER_CONTAINER === 'true'
-  const isElectron = process.env.ELECTRON_BUILD === 'true'
+  const isDocker = process.env.DOCKER_CONTAINER === 'true';
+  const isElectron = process.env.ELECTRON_BUILD === 'true';
 
   if (isDocker) {
     return {
       type: 'docker',
       hasWritePermission: true,
-      platform: process.platform
-    }
+      platform: process.platform,
+    };
   }
 
   if (isElectron) {
     return {
       type: 'electron',
       hasWritePermission: true,
-      platform: process.platform
-    }
+      platform: process.platform,
+    };
   }
 
   return {
     type: 'web',
     hasWritePermission: true,
-    platform: process.platform
-  }
+    platform: process.platform,
+  };
 }
 
 // 获取Python命令列表（根据环境优先级排序）
 function getPythonCommands(env: EnvironmentInfo): string[] {
-  const commands: string[] = []
+  const commands: string[] = [];
 
   // Docker环境优先检查系统 Python
   if (env.type === 'docker') {
@@ -62,41 +65,43 @@ function getPythonCommands(env: EnvironmentInfo): string[] {
       '/usr/local/bin/python',
       'python3',
       'python'
-    )
+    );
   }
   // Windows环境
   else if (env.platform === 'win32') {
-    commands.push('python', 'python3', 'py')
+    commands.push('python', 'python3', 'py');
   }
   // macOS/Linux环境
   else {
-    commands.push('python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3')
+    commands.push('python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3');
   }
 
-  return commands
+  return commands;
 }
 
 // 检查Python是否可用
-async function checkPython(env: EnvironmentInfo): Promise<{ available: boolean; version?: string; path?: string }> {
-  const pythonCommands = getPythonCommands(env)
-  logger.info(`[依赖安装] 检查Python环境，命令列表: ${pythonCommands.join(', ')}`)
+async function checkPython(
+  env: EnvironmentInfo
+): Promise<{ available: boolean; version?: string; path?: string }> {
+  const pythonCommands = getPythonCommands(env);
+  logger.info(`[依赖安装] 检查Python环境，命令列表: ${pythonCommands.join(', ')}`);
 
   for (const cmd of pythonCommands) {
     try {
-      const result = await executeCommand(cmd, ['--version'], { timeout: 5000 })
+      const result = await executeCommand(cmd, ['--version'], { timeout: 5000 });
 
       if (result.success && result.output.includes('Python')) {
-        const version = result.output.trim()
-        logger.info(`[依赖安装] 找到Python: ${cmd}, 版本: ${version}`)
-        return { available: true, version, path: cmd }
+        const version = result.output.trim();
+        logger.info(`[依赖安装] 找到Python: ${cmd}, 版本: ${version}`);
+        return { available: true, version, path: cmd };
       }
     } catch (error) {
-      logger.debug(`[依赖安装] 命令 ${cmd} 不可用:`, error)
+      logger.debug(`[依赖安装] 命令 ${cmd} 不可用:`, error);
     }
   }
 
-  logger.warn('[依赖安装] 未找到可用的Python环境')
-  return { available: false }
+  logger.warn('[依赖安装] 未找到可用的Python环境');
+  return { available: false };
 }
 
 // 错误类型定义
@@ -109,18 +114,18 @@ type ErrorType =
   | 'pip_not_found'
   | 'package_not_found'
   | 'installation_cancelled'
-  | 'unknown'
+  | 'unknown';
 
 interface CommandError {
-  type: ErrorType
-  message: string
-  suggestion: string
-  isRetryable: boolean
+  type: ErrorType;
+  message: string;
+  suggestion: string;
+  isRetryable: boolean;
 }
 
 // 分析错误类型
 function analyzeError(errorOutput: string, exitCode: number | null, command: string): CommandError {
-  const lowerError = errorOutput.toLowerCase()
+  const lowerError = errorOutput.toLowerCase();
 
   // 网络超时
   if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
@@ -128,8 +133,8 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
       type: 'network_timeout',
       message: '网络连接超时，下载依赖包时间过长',
       suggestion: '请检查网络连接，或稍后重试。如果网络较慢，可以尝试更换 pip 镜像源。',
-      isRetryable: true
-    }
+      isRetryable: true,
+    };
   }
 
   // 网络连接错误
@@ -139,14 +144,15 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
     lowerError.includes('network is unreachable') ||
     lowerError.includes('name or service not known') ||
     lowerError.includes('getaddrinfo failed') ||
-    lowerError.includes('ssl') && lowerError.includes('error')
+    (lowerError.includes('ssl') && lowerError.includes('error'))
   ) {
     return {
       type: 'network_connection',
       message: '网络连接失败，无法访问 pip 镜像源',
-      suggestion: '请检查网络连接和 DNS 设置。如果使用代理，请检查代理配置。可以尝试在设置中更换 pip 镜像源。',
-      isRetryable: true
-    }
+      suggestion:
+        '请检查网络连接和 DNS 设置。如果使用代理，请检查代理配置。可以尝试在设置中更换 pip 镜像源。',
+      isRetryable: true,
+    };
   }
 
   // 权限错误
@@ -158,22 +164,20 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
     return {
       type: 'permission_denied',
       message: '权限不足，无法写入安装目录',
-      suggestion: 'Docker 环境通常不会出现此问题。如果是本地部署，请尝试使用 --user 参数安装，或以管理员身份运行。',
-      isRetryable: false
-    }
+      suggestion:
+        'Docker 环境通常不会出现此问题。如果是本地部署，请尝试使用 --user 参数安装，或以管理员身份运行。',
+      isRetryable: false,
+    };
   }
 
   // 磁盘空间不足
-  if (
-    lowerError.includes('no space left on device') ||
-    lowerError.includes('disk full')
-  ) {
+  if (lowerError.includes('no space left on device') || lowerError.includes('disk full')) {
     return {
       type: 'disk_space',
       message: '磁盘空间不足，无法下载和安装依赖',
       suggestion: '请清理磁盘空间，确保至少有 500MB 可用空间。Docker 环境请检查容器存储卷空间。',
-      isRetryable: false
-    }
+      isRetryable: false,
+    };
   }
 
   // Python 未找到
@@ -185,9 +189,10 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
     return {
       type: 'python_not_found',
       message: '未找到 Python 环境',
-      suggestion: '请确保系统已安装 Python 3.8+ 并添加到 PATH 环境变量。Docker 镜像应已包含 Python，请检查容器是否正确运行。',
-      isRetryable: false
-    }
+      suggestion:
+        '请确保系统已安装 Python 3.8+ 并添加到 PATH 环境变量。Docker 镜像应已包含 Python，请检查容器是否正确运行。',
+      isRetryable: false,
+    };
   }
 
   // pip 未找到
@@ -195,19 +200,24 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
     return {
       type: 'pip_not_found',
       message: '未找到 pip 包管理器',
-      suggestion: '请确保 Python 安装包含 pip。可以尝试运行 "python -m ensurepip --upgrade" 安装 pip。',
-      isRetryable: false
-    }
+      suggestion:
+        '请确保 Python 安装包含 pip。可以尝试运行 "python -m ensurepip --upgrade" 安装 pip。',
+      isRetryable: false,
+    };
   }
 
   // 包不存在
-  if (lowerError.includes('could not find a version') || lowerError.includes('no matching distribution')) {
+  if (
+    lowerError.includes('could not find a version') ||
+    lowerError.includes('no matching distribution')
+  ) {
     return {
       type: 'package_not_found',
       message: '找不到指定的包或版本',
-      suggestion: '可能是包名称错误或当前 Python 版本不支持。请检查包名称是否正确，或尝试更换 pip 镜像源。',
-      isRetryable: false
-    }
+      suggestion:
+        '可能是包名称错误或当前 Python 版本不支持。请检查包名称是否正确，或尝试更换 pip 镜像源。',
+      isRetryable: false,
+    };
   }
 
   // 安装被取消
@@ -216,8 +226,8 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
       type: 'installation_cancelled',
       message: '安装过程被中断',
       suggestion: '安装过程被用户或系统中断，请重新尝试安装。',
-      isRetryable: true
-    }
+      isRetryable: true,
+    };
   }
 
   // 未知错误
@@ -225,23 +235,23 @@ function analyzeError(errorOutput: string, exitCode: number | null, command: str
     type: 'unknown',
     message: errorOutput || '安装过程中发生未知错误',
     suggestion: '请查看详细错误信息，或尝试重新安装。如果问题持续存在，请检查系统日志。',
-    isRetryable: true
-  }
+    isRetryable: true,
+  };
 }
 
 interface ExecuteOptions {
-  cwd?: string
-  timeout?: number
-  env?: Record<string, string>
+  cwd?: string;
+  timeout?: number;
+  env?: Record<string, string>;
 }
 
 interface ExecuteResult {
-  success: boolean
-  output: string
-  error?: string
-  errorType?: ErrorType
-  errorDetails?: CommandError
-  exitCode?: number | null
+  success: boolean;
+  output: string;
+  error?: string;
+  errorType?: ErrorType;
+  errorDetails?: CommandError;
+  exitCode?: number | null;
 }
 
 async function executeCommand(
@@ -250,54 +260,56 @@ async function executeCommand(
   options: ExecuteOptions = {}
 ): Promise<ExecuteResult> {
   return new Promise((resolve) => {
-    const { cwd, timeout = 30000, env = {} } = options
+    const { cwd, timeout = 30000, env = {} } = options;
 
-    logger.debug(`[依赖安装] 执行命令: ${command} ${args.join(' ')}`)
+    logger.debug(`[依赖安装] 执行命令: ${command} ${args.join(' ')}`);
 
     const childProcess = spawn(command, args, {
       cwd,
       shell: true,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, ...env }
-    })
+      env: { ...process.env, ...env },
+    });
 
-    let output = ''
-    let errorOutput = ''
-    let timeoutId: NodeJS.Timeout | null = null
-    let isTimeout = false
+    let output = '';
+    let errorOutput = '';
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isTimeout = false;
 
     // 设置超时
     if (timeout > 0) {
       timeoutId = setTimeout(() => {
-        isTimeout = true
-        logger.warn(`[依赖安装] 命令执行超时: ${command}`)
-        childProcess.kill('SIGTERM')
+        isTimeout = true;
+        logger.warn(`[依赖安装] 命令执行超时: ${command}`);
+        childProcess.kill('SIGTERM');
         // 5秒后强制终止
         setTimeout(() => {
           if (!childProcess.killed) {
-            childProcess.kill('SIGKILL')
+            childProcess.kill('SIGKILL');
           }
-        }, 5000)
-      }, timeout)
+        }, 5000);
+      }, timeout);
     }
 
     childProcess.stdout?.on('data', (data: Buffer) => {
-      const text = data.toString('utf-8')
-      output += text
-      logger.debug(`[依赖安装] 输出: ${text.substring(0, 200)}`)
-    })
+      const text = data.toString('utf-8');
+      output += text;
+      logger.debug(`[依赖安装] 输出: ${text.substring(0, 200)}`);
+    });
 
     childProcess.stderr?.on('data', (data: Buffer) => {
-      const text = data.toString('utf-8')
-      errorOutput += text
-      logger.debug(`[依赖安装] 错误输出: ${text.substring(0, 200)}`)
-    })
+      const text = data.toString('utf-8');
+      errorOutput += text;
+      logger.debug(`[依赖安装] 错误输出: ${text.substring(0, 200)}`);
+    });
 
     childProcess.on('close', (code) => {
-      if (timeoutId) clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
-      const success = code === 0
-      logger.debug(`[依赖安装] 命令结束，退出码: ${code}`)
+      const success = code === 0;
+      logger.debug(`[依赖安装] 命令结束，退出码: ${code}`);
 
       // 如果是超时导致的失败
       if (isTimeout && !success) {
@@ -305,26 +317,26 @@ async function executeCommand(
           type: 'network_timeout',
           message: '命令执行超时，操作未完成',
           suggestion: '网络较慢或操作耗时较长，请稍后重试。',
-          isRetryable: true
-        }
+          isRetryable: true,
+        };
         resolve({
           success: false,
           output: output.trim(),
           error: errorOutput.trim() || '命令执行超时',
           errorType: 'network_timeout',
           errorDetails: timeoutError,
-          exitCode: code
-        })
-        return
+          exitCode: code,
+        });
+        return;
       }
 
       // 分析错误类型
-      let errorDetails: CommandError | undefined
-      let errorType: ErrorType | undefined
+      let errorDetails: CommandError | undefined;
+      let errorType: ErrorType | undefined;
 
       if (!success && (errorOutput || code !== 0)) {
-        errorDetails = analyzeError(errorOutput, code, command)
-        errorType = errorDetails.type
+        errorDetails = analyzeError(errorOutput, code, command);
+        errorType = errorDetails.type;
       }
 
       resolve({
@@ -333,16 +345,18 @@ async function executeCommand(
         error: errorOutput.trim() || undefined,
         errorType,
         errorDetails,
-        exitCode: code
-      })
-    })
+        exitCode: code,
+      });
+    });
 
     childProcess.on('error', (error) => {
-      if (timeoutId) clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
-      logger.error(`[依赖安装] 命令执行错误:`, error)
+      logger.error(`[依赖安装] 命令执行错误:`, error);
 
-      const errorDetails = analyzeError(error.message, null, command)
+      const errorDetails = analyzeError(error.message, null, command);
 
       resolve({
         success: false,
@@ -350,20 +364,22 @@ async function executeCommand(
         error: error.message,
         errorType: errorDetails.type,
         errorDetails,
-        exitCode: null
-      })
-    })
-  })
+        exitCode: null,
+      });
+    });
+  });
 }
 
 // 检查包是否已安装
 async function checkPackageInstalled(packageName: string, pythonCmd: string): Promise<boolean> {
   try {
-    const result = await executeCommand(pythonCmd, ['-m', 'pip', 'show', packageName], { timeout: 10000 })
-    return result.success
+    const result = await executeCommand(pythonCmd, ['-m', 'pip', 'show', packageName], {
+      timeout: 10000,
+    });
+    return result.success;
   } catch (error) {
-    logger.debug(`[依赖安装] 检查包 ${packageName} 失败:`, error)
-    return false
+    logger.debug(`[依赖安装] 检查包 ${packageName} 失败:`, error);
+    return false;
   }
 }
 
@@ -371,21 +387,19 @@ async function checkPackageInstalled(packageName: string, pythonCmd: string): Pr
 function getPipInstallArgs(env: EnvironmentInfo, packageName: string): string[] {
   // Python 3.11+ (PEP 668) 强制要求 --break-system-packages 标志
   // --user 确保安装到用户目录，避免权限问题
-  const commonArgs: string[] = [
-    '-m', 'pip', 'install',
-    '--user',
-    '--break-system-packages',
-  ]
+  const commonArgs: string[] = ['-m', 'pip', 'install', '--user', '--break-system-packages'];
 
   // 添加国内镜像源（针对中国用户优化）
   const pipArgs = [
     ...commonArgs,
-    '-i', 'https://pypi.tuna.tsinghua.edu.cn/simple',
-    '--trusted-host', 'pypi.tuna.tsinghua.edu.cn',
+    '-i',
+    'https://pypi.tuna.tsinghua.edu.cn/simple',
+    '--trusted-host',
+    'pypi.tuna.tsinghua.edu.cn',
     packageName,
-  ]
+  ];
 
-  return pipArgs
+  return pipArgs;
 }
 
 // 检查系统 Chromium（非 Playwright 安装的）
@@ -395,22 +409,22 @@ async function checkSystemChromium(): Promise<{ available: boolean; path?: strin
     '/usr/bin/chromium',
     '/usr/lib/chromium/chromium',
     '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable'
-  ]
+    '/usr/bin/google-chrome-stable',
+  ];
 
   for (const chromiumPath of systemChromiumPaths) {
     try {
-      const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 })
+      const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 });
       if (result.success) {
-        logger.info(`[依赖安装] 找到系统 Chromium: ${chromiumPath}`)
-        return { available: true, path: chromiumPath }
+        logger.info(`[依赖安装] 找到系统 Chromium: ${chromiumPath}`);
+        return { available: true, path: chromiumPath };
       }
     } catch (error) {
-      logger.debug(`[依赖安装] 路径 ${chromiumPath} 不存在`)
+      logger.debug(`[依赖安装] 路径 ${chromiumPath} 不存在`);
     }
   }
 
-  return { available: false }
+  return { available: false };
 }
 
 // 安装Python包
@@ -419,42 +433,42 @@ async function installPythonPackages(
   pythonCmd: string,
   env: EnvironmentInfo
 ): Promise<InstallProgress[]> {
-  const results: InstallProgress[] = []
+  const results: InstallProgress[] = [];
 
   for (const pkg of packages) {
     // 首先检查是否已安装
-    const isInstalled = await checkPackageInstalled(pkg, pythonCmd)
+    const isInstalled = await checkPackageInstalled(pkg, pythonCmd);
 
     if (isInstalled) {
       results.push({
         step: `检查 ${pkg}`,
         status: 'success',
         output: `${pkg} 已安装`,
-        progress: 100
-      })
-      continue
+        progress: 100,
+      });
+      continue;
     }
 
     results.push({
       step: `安装 ${pkg}`,
       status: 'running',
       output: `正在安装 ${pkg}...`,
-      progress: 0
-    })
+      progress: 0,
+    });
 
-    const args = getPipInstallArgs(env, pkg)
-    logger.info(`[依赖安装] 开始安装 ${pkg}，参数: ${args.join(' ')}`)
+    const args = getPipInstallArgs(env, pkg);
+    logger.info(`[依赖安装] 开始安装 ${pkg}，参数: ${args.join(' ')}`);
 
-    const result = await executeCommand(pythonCmd, args, { timeout: 120000 })
+    const result = await executeCommand(pythonCmd, args, { timeout: 120000 });
 
     if (result.success) {
       results[results.length - 1] = {
         step: `安装 ${pkg}`,
         status: 'success',
         output: `${pkg} 安装成功`,
-        progress: 100
-      }
-      logger.info(`[依赖安装] ${pkg} 安装成功`)
+        progress: 100,
+      };
+      logger.info(`[依赖安装] ${pkg} 安装成功`);
     } else {
       results[results.length - 1] = {
         step: `安装 ${pkg}`,
@@ -463,13 +477,13 @@ async function installPythonPackages(
         errorType: result.errorType,
         errorDetails: result.errorDetails?.message,
         isRetryable: result.errorDetails?.isRetryable,
-        progress: 0
-      }
-      logger.error(`[依赖安装] ${pkg} 安装失败:`, result.error || result.output)
+        progress: 0,
+      };
+      logger.error(`[依赖安装] ${pkg} 安装失败:`, result.error || result.output);
     }
   }
 
-  return results
+  return results;
 }
 
 // 检查 Playwright Chromium 浏览器是否已安装
@@ -481,26 +495,28 @@ async function checkPlaywrightChromium(): Promise<{ available: boolean; path?: s
     '/app/data/.cache/ms-playwright',
     '/root/.cache/ms-playwright',
     '/app/.cache/ms-playwright',
-    '/home/nextjs/.cache/ms-playwright'
-  ].filter(Boolean) as string[]
-  
+    '/home/nextjs/.cache/ms-playwright',
+  ].filter(Boolean) as string[];
+
   for (const browsersPath of possiblePaths) {
     try {
       // 检查 chromium-* 目录是否存在
-      const result = await executeCommand('ls', ['-d', `${browsersPath}/chromium-*`], { timeout: 5000 })
+      const result = await executeCommand('ls', ['-d', `${browsersPath}/chromium-*`], {
+        timeout: 5000,
+      });
       if (result.success && result.output) {
-        const chromiumDir = result.output.trim().split('\n')[0]
-        const chromeExecutable = `${chromiumDir}/chrome-linux/chrome`
-        
+        const chromiumDir = result.output.trim().split('\n')[0];
+        const chromeExecutable = `${chromiumDir}/chrome-linux/chrome`;
+
         // 检查 chrome 可执行文件是否存在
-        const execCheck = await executeCommand('ls', ['-la', chromeExecutable], { timeout: 5000 })
+        const execCheck = await executeCommand('ls', ['-la', chromeExecutable], { timeout: 5000 });
         if (execCheck.success) {
-          logger.info(`[依赖安装] 找到 Playwright Chromium: ${chromeExecutable}`)
-          return { available: true, path: chromeExecutable }
+          logger.info(`[依赖安装] 找到 Playwright Chromium: ${chromeExecutable}`);
+          return { available: true, path: chromeExecutable };
         }
       }
     } catch (error) {
-      logger.debug(`[依赖安装] 路径 ${browsersPath} 未找到 Chromium`)
+      logger.debug(`[依赖安装] 路径 ${browsersPath} 未找到 Chromium`);
     }
   }
 
@@ -508,53 +524,58 @@ async function checkPlaywrightChromium(): Promise<{ available: boolean; path?: s
   const systemChromiumPaths = [
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
-    '/usr/lib/chromium/chromium'
-  ]
+    '/usr/lib/chromium/chromium',
+  ];
 
   for (const chromiumPath of systemChromiumPaths) {
     try {
-      const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 })
+      const result = await executeCommand('ls', ['-la', chromiumPath], { timeout: 5000 });
       if (result.success) {
-        logger.info(`[依赖安装] 找到系统 Chromium: ${chromiumPath}`)
-        return { available: true, path: chromiumPath }
+        logger.info(`[依赖安装] 找到系统 Chromium: ${chromiumPath}`);
+        return { available: true, path: chromiumPath };
       }
     } catch (error) {
-      logger.debug(`[依赖安装] 路径 ${chromiumPath} 不存在`)
+      logger.debug(`[依赖安装] 路径 ${chromiumPath} 不存在`);
     }
   }
 
-  return { available: false }
+  return { available: false };
 }
 
 // 安装Playwright浏览器
-async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo): Promise<InstallProgress[]> {
-  const results: InstallProgress[] = []
+async function installPlaywrightBrowsers(
+  pythonCmd: string,
+  env: EnvironmentInfo
+): Promise<InstallProgress[]> {
+  const results: InstallProgress[] = [];
 
   results.push({
     step: '安装 Playwright 浏览器',
     status: 'running',
     output: '正在检查 Chromium 浏览器...',
-    progress: 0
-  })
+    progress: 0,
+  });
 
-  logger.info('[依赖安装] 开始安装 Playwright Chromium 浏览器')
+  logger.info('[依赖安装] 开始安装 Playwright Chromium 浏览器');
 
   // 首先检查是否已有 Chromium
-  const playwrightChromium = await checkPlaywrightChromium()
+  const playwrightChromium = await checkPlaywrightChromium();
 
   if (playwrightChromium.available) {
-    const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd)
-    const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], { timeout: 10000 })
+    const pipPlaywright = await checkPackageInstalled('playwright', pythonCmd);
+    const nodePlaywrightCheck = await executeCommand('npx', ['playwright', '--version'], {
+      timeout: 10000,
+    });
 
     if (pipPlaywright && nodePlaywrightCheck.success) {
       results[0] = {
         step: '配置 Playwright 浏览器',
         status: 'success',
         output: `已配置：Playwright Chromium (${playwrightChromium.path})，Python Playwright 已安装，Node.js Playwright: ${nodePlaywrightCheck.output.trim()}`,
-        progress: 100
-      }
-      logger.info('[依赖安装] Python/Node.js Playwright 和 Chromium 已配置')
-      return results
+        progress: 100,
+      };
+      logger.info('[依赖安装] Python/Node.js Playwright 和 Chromium 已配置');
+      return results;
     }
   }
 
@@ -563,77 +584,77 @@ async function installPlaywrightBrowsers(pythonCmd: string, env: EnvironmentInfo
     step: '下载 Playwright Chromium',
     status: 'running',
     output: '正在下载 Chromium 浏览器（这可能需要几分钟）...',
-    progress: 10
-  }
+    progress: 10,
+  };
 
   // 使用 playwright install chromium 下载浏览器
-  const args = ['-m', 'playwright', 'install', 'chromium']
+  const args = ['-m', 'playwright', 'install', 'chromium'];
 
   const result = await executeCommand(pythonCmd, args, {
-    timeout: 600000  // 10分钟超时，下载浏览器可能需要较长时间
-  })
+    timeout: 600000, // 10分钟超时，下载浏览器可能需要较长时间
+  });
 
   if (result.success) {
     // 再次检查是否安装成功
-    const checkAgain = await checkPlaywrightChromium()
+    const checkAgain = await checkPlaywrightChromium();
     if (checkAgain.available) {
       results[0] = {
         step: '安装 Playwright 浏览器',
         status: 'success',
         output: `Chromium 浏览器安装成功: ${checkAgain.path}`,
-        progress: 100
-      }
-      logger.info('[依赖安装] Playwright Chromium 安装成功')
+        progress: 100,
+      };
+      logger.info('[依赖安装] Playwright Chromium 安装成功');
     } else {
       results[0] = {
         step: '安装 Playwright 浏览器',
         status: 'success',
         output: 'Chromium 浏览器安装成功（路径检测可能不准确，但应该可用）',
-        progress: 100
-      }
-      logger.info('[依赖安装] Playwright Chromium 安装成功（路径未确认）')
+        progress: 100,
+      };
+      logger.info('[依赖安装] Playwright Chromium 安装成功（路径未确认）');
     }
   } else {
     results[0] = {
       step: '安装 Playwright 浏览器',
       status: 'error',
       output: `Chromium 浏览器安装失败: ${result.error || result.output || '未知错误'}`,
-      progress: 0
-    }
-    logger.error('[依赖安装] Playwright Chromium 安装失败:', result.error || result.output)
+      progress: 0,
+    };
+    logger.error('[依赖安装] Playwright Chromium 安装失败:', result.error || result.output);
   }
 
-  return results
+  return results;
 }
 
 // GET 请求处理 - 检查依赖状态
 export async function GET() {
   try {
-    const env = getEnvironmentInfo()
-    logger.info(`[依赖安装] 检查依赖状态，环境: ${env.type}`)
+    const env = getEnvironmentInfo();
+    logger.info(`[依赖安装] 检查依赖状态，环境: ${env.type}`);
 
     // 检查Python环境
-    const pythonCheck = await checkPython(env)
+    const pythonCheck = await checkPython(env);
 
     if (!pythonCheck.available) {
       return NextResponse.json({
         success: false,
         error: '未找到Python环境，请先安装Python',
         environment: env.type,
-        platform: env.platform
-      })
+        platform: env.platform,
+      });
     }
 
     // 检查各个包的安装状态
-    const packages = ['playwright', 'python-dateutil', 'Pillow', 'bordercrop']
-    const pythonCmd = pythonCheck.path!
-    const packageStatus: Record<string, boolean> = {}
+    const packages = ['playwright', 'python-dateutil', 'Pillow', 'bordercrop'];
+    const pythonCmd = pythonCheck.path!;
+    const packageStatus: Record<string, boolean> = {};
 
     for (const pkg of packages) {
-      packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd)
+      packageStatus[pkg] = await checkPackageInstalled(pkg, pythonCmd);
     }
 
-    logger.info(`[依赖安装] 依赖状态检查完成:`, packageStatus)
+    logger.info(`[依赖安装] 依赖状态检查完成:`, packageStatus);
 
     return NextResponse.json({
       success: true,
@@ -641,54 +662,54 @@ export async function GET() {
         python: pythonCheck,
         packages: packageStatus,
         environment: env.type,
-        platform: env.platform
-      }
-    })
+        platform: env.platform,
+      },
+    });
   } catch (error) {
-    logger.error('[依赖安装] 检查依赖状态失败:', error)
+    logger.error('[依赖安装] 检查依赖状态失败:', error);
     return NextResponse.json({
       success: false,
-      error: `检查依赖状态失败: ${error instanceof Error ? error.message : '未知错误'}`
-    })
+      error: `检查依赖状态失败: ${error instanceof Error ? error.message : '未知错误'}`,
+    });
   }
 }
 
 // POST 请求处理 - 安装依赖
 export async function POST(request: NextRequest) {
   try {
-    const body: InstallRequest = await request.json()
-    const { packages, type } = body
+    const body: InstallRequest = await request.json();
+    const { packages, type } = body;
 
-    const env = getEnvironmentInfo()
-    logger.info(`[依赖安装] 开始安装依赖，类型: ${type}，环境: ${env.type}`)
+    const env = getEnvironmentInfo();
+    logger.info(`[依赖安装] 开始安装依赖，类型: ${type}，环境: ${env.type}`);
 
     // 检查Python环境
-    const pythonCheck = await checkPython(env)
+    const pythonCheck = await checkPython(env);
 
     if (!pythonCheck.available) {
       return NextResponse.json({
         success: false,
         error: '未找到Python环境，请先安装Python',
-        environment: env.type
-      })
+        environment: env.type,
+      });
     }
 
-    const pythonCmd = pythonCheck.path!
-    let results: InstallProgress[] = []
+    const pythonCmd = pythonCheck.path!;
+    let results: InstallProgress[] = [];
 
     if (type === 'python') {
-      results = await installPythonPackages(packages, pythonCmd, env)
+      results = await installPythonPackages(packages, pythonCmd, env);
     } else if (type === 'playwright') {
-      results = await installPlaywrightBrowsers(pythonCmd, env)
+      results = await installPlaywrightBrowsers(pythonCmd, env);
     }
 
     const summary = {
       total: results.length,
-      success: results.filter(r => r.status === 'success').length,
-      failed: results.filter(r => r.status === 'error').length
-    }
+      success: results.filter((r) => r.status === 'success').length,
+      failed: results.filter((r) => r.status === 'error').length,
+    };
 
-    logger.info(`[依赖安装] 安装完成:`, summary)
+    logger.info(`[依赖安装] 安装完成:`, summary);
 
     // 始终返回 success: true（API 调用本身成功），由前端根据 data.results 判断单个包状态
     return NextResponse.json({
@@ -696,14 +717,14 @@ export async function POST(request: NextRequest) {
       data: {
         results,
         summary,
-        environment: env.type
-      }
-    })
+        environment: env.type,
+      },
+    });
   } catch (error) {
-    logger.error('[依赖安装] 安装依赖失败:', error)
+    logger.error('[依赖安装] 安装依赖失败:', error);
     return NextResponse.json({
       success: false,
-      error: `安装依赖失败: ${error instanceof Error ? error.message : '未知错误'}`
-    })
+      error: `安装依赖失败: ${error instanceof Error ? error.message : '未知错误'}`,
+    });
   }
 }

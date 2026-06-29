@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,37 +8,41 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog"
-import { Button } from "@/shared/components/ui/button"
-import { Textarea } from "@/shared/components/ui/textarea"
-import { Label } from "@/shared/components/ui/label"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Alert, AlertDescription } from "@/shared/components/ui/alert"
-import { Info, Search, Zap, Wand2, MousePointer, Eye } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Label } from '@/shared/components/ui/label';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { Info, Search, Zap, Wand2, MousePointer, Eye } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface BatchEditDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  value: string
-  onSave: (value: string) => void
-  onBatchSave?: (matchInfo: { pattern: string, replaceWith: string, affectedRows: number[] }) => void
-  allColumnData?: { rowIndex: number, value: string }[]
-  currentRowIndex?: number
-  columnName?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  value: string;
+  onSave: (value: string) => void;
+  onBatchSave?: (matchInfo: {
+    pattern: string;
+    replaceWith: string;
+    affectedRows: number[];
+  }) => void;
+  allColumnData?: { rowIndex: number; value: string }[];
+  currentRowIndex?: number;
+  columnName?: string;
 }
 
 interface DuplicatePattern {
-  pattern: string
-  count: number
-  occurrences: number[]
+  pattern: string;
+  count: number;
+  occurrences: number[];
 }
 
-type ViewMode = 'edit' | 'batch-auto' | 'batch-manual'
-type ManualMatchMode = 'text' | 'position'
+type ViewMode = 'edit' | 'batch-auto' | 'batch-manual';
+type ManualMatchMode = 'text' | 'position';
 
-type TextSelection = { start: number, end: number, text: string }
+type TextSelection = { start: number; end: number; text: string };
 
 // 通用的文本高亮渲染函数
 function renderHighlightedText(
@@ -47,61 +51,70 @@ function renderHighlightedText(
   matchType: 'prefix' | 'suffix' | 'text' | 'position' = 'text',
   selection?: TextSelection
 ): React.ReactNode {
-  if (!text) return text
-  if (!matchText && matchType !== 'position') return text
+  if (!text) {
+    return text;
+  }
+  if (!matchText && matchType !== 'position') {
+    return text;
+  }
 
-  let before = ''
-  let match = ''
-  let after = ''
+  let before = '';
+  let match = '';
+  let after = '';
 
   switch (matchType) {
     case 'prefix':
       if (text.startsWith(matchText)) {
-        match = matchText
-        after = text.substring(matchText.length)
+        match = matchText;
+        after = text.substring(matchText.length);
       } else {
-        return text
+        return text;
       }
-      break
+      break;
 
     case 'suffix':
       if (text.endsWith(matchText)) {
-        before = text.substring(0, text.length - matchText.length)
-        match = matchText
+        before = text.substring(0, text.length - matchText.length);
+        match = matchText;
       } else {
-        return text
+        return text;
       }
-      break
+      break;
 
     case 'text':
-      const index = text.indexOf(matchText)
-      if (index === -1) return text
-      before = text.substring(0, index)
-      match = matchText
-      after = text.substring(index + matchText.length)
-      break
+      const index = text.indexOf(matchText);
+      if (index === -1) {
+        return text;
+      }
+      before = text.substring(0, index);
+      match = matchText;
+      after = text.substring(index + matchText.length);
+      break;
 
     case 'position':
-      if (!selection) return text
-      const { start, end } = selection
-      if (start >= end || end > text.length) return text
-      before = text.substring(0, start)
-      match = text.substring(start, end)
-      after = text.substring(end)
-      break
+      if (!selection) {
+        return text;
+      }
+      const { start, end } = selection;
+      if (start >= end || end > text.length) {
+        return text;
+      }
+      before = text.substring(0, start);
+      match = text.substring(start, end);
+      after = text.substring(end);
+      break;
   }
 
-  const highlightClass = "bg-red-100 text-red-700 line-through decoration-red-500 decoration-2 px-0.5 rounded"
+  const highlightClass =
+    'bg-red-100 text-red-700 line-through decoration-red-500 decoration-2 px-0.5 rounded';
 
   return (
     <>
       {before}
-      <span className={highlightClass}>
-        {match}
-      </span>
+      <span className={highlightClass}>{match}</span>
       {after}
     </>
-  )
+  );
 }
 
 export default function BatchEditDialog({
@@ -112,47 +125,52 @@ export default function BatchEditDialog({
   onBatchSave,
   allColumnData = [],
   currentRowIndex = -1,
-  columnName
+  columnName,
 }: BatchEditDialogProps) {
-  const { t } = useTranslation('media')
-  const effectiveColumnName = columnName || t("batchEdit.columnContent")
-  const [editValue, setEditValue] = useState(value)
-  const [viewMode, setViewMode] = useState<ViewMode>('edit')
-  const [selectedPattern, setSelectedPattern] = useState<DuplicatePattern | null>(null)
-  const [manualSelection, setManualSelection] = useState<{ start: number, end: number, text: string } | null>(null)
-  const [manualMatchMode, setManualMatchMode] = useState<ManualMatchMode>('text')
-  const [replaceWith, setReplaceWith] = useState("")
-  const [affectedRows, setAffectedRows] = useState<number[]>([])
+  const { t } = useTranslation('media');
+  const effectiveColumnName = columnName || t('batchEdit.columnContent');
+  const [editValue, setEditValue] = useState(value);
+  const [viewMode, setViewMode] = useState<ViewMode>('edit');
+  const [selectedPattern, setSelectedPattern] = useState<DuplicatePattern | null>(null);
+  const [manualSelection, setManualSelection] = useState<{
+    start: number;
+    end: number;
+    text: string;
+  } | null>(null);
+  const [manualMatchMode, setManualMatchMode] = useState<ManualMatchMode>('text');
+  const [replaceWith, setReplaceWith] = useState('');
+  const [affectedRows, setAffectedRows] = useState<number[]>([]);
 
   // 当对话框打开时，更新编辑值
   useEffect(() => {
     if (open) {
-      setEditValue(value)
-      setViewMode('edit')
-      setSelectedPattern(null)
-      setManualSelection(null)
-      setManualMatchMode('text')
-      setReplaceWith("")
-      setAffectedRows([])
+      setEditValue(value);
+      setViewMode('edit');
+      setSelectedPattern(null);
+      setManualSelection(null);
+      setManualMatchMode('text');
+      setReplaceWith('');
+      setAffectedRows([]);
     }
-  }, [open, value])
+  }, [open, value]);
 
   // 计算受影响的行
   const affectedRowsMap = useMemo(() => {
     const result = {
       auto: [] as number[],
       manualText: [] as number[],
-      manualPosition: [] as number[]
-    }
+      manualPosition: [] as number[],
+    };
 
     // 自动模式：匹配前缀或后缀
     if (selectedPattern) {
       result.auto = allColumnData
-        .filter(({ value }) => value && (
-          value.endsWith(selectedPattern.pattern) ||
-          value.startsWith(selectedPattern.pattern)
-        ))
-        .map(({ rowIndex }) => rowIndex)
+        .filter(
+          ({ value }) =>
+            value &&
+            (value.endsWith(selectedPattern.pattern) || value.startsWith(selectedPattern.pattern))
+        )
+        .map(({ rowIndex }) => rowIndex);
     }
 
     // 手动模式
@@ -160,159 +178,182 @@ export default function BatchEditDialog({
       // 文本匹配
       result.manualText = allColumnData
         .filter(({ value }) => value && value.includes(manualSelection.text))
-        .map(({ rowIndex }) => rowIndex)
+        .map(({ rowIndex }) => rowIndex);
 
       // 位置匹配
-      const { start, end } = manualSelection
+      const { start, end } = manualSelection;
       result.manualPosition = allColumnData
         .filter(({ value }) => value && start < end && end <= value.length)
-        .map(({ rowIndex }) => rowIndex)
+        .map(({ rowIndex }) => rowIndex);
     }
 
-    return result
-  }, [selectedPattern, manualSelection, allColumnData])
+    return result;
+  }, [selectedPattern, manualSelection, allColumnData]);
 
-  const autoAffectedRows = affectedRowsMap.auto
-  const manualTextAffectedRows = affectedRowsMap.manualText
-  const manualPositionAffectedRows = affectedRowsMap.manualPosition
+  const autoAffectedRows = affectedRowsMap.auto;
+  const manualTextAffectedRows = affectedRowsMap.manualText;
+  const manualPositionAffectedRows = affectedRowsMap.manualPosition;
 
   // 获取当前受影响的行
   const currentAffectedRows = useMemo(() => {
-    if (viewMode === 'batch-auto') return autoAffectedRows
-    if (viewMode === 'batch-manual') {
-      return manualMatchMode === 'text' ? manualTextAffectedRows : manualPositionAffectedRows
+    if (viewMode === 'batch-auto') {
+      return autoAffectedRows;
     }
-    return []
-  }, [viewMode, manualMatchMode, autoAffectedRows, manualTextAffectedRows, manualPositionAffectedRows])
+    if (viewMode === 'batch-manual') {
+      return manualMatchMode === 'text' ? manualTextAffectedRows : manualPositionAffectedRows;
+    }
+    return [];
+  }, [
+    viewMode,
+    manualMatchMode,
+    autoAffectedRows,
+    manualTextAffectedRows,
+    manualPositionAffectedRows,
+  ]);
 
   // 更新受影响的行
   useEffect(() => {
-    setAffectedRows(currentAffectedRows)
-  }, [currentAffectedRows])
+    setAffectedRows(currentAffectedRows);
+  }, [currentAffectedRows]);
 
   // 检测重复模式 - 查找在多个文本中出现的前缀或后缀
   const duplicatePatterns = useMemo(() => {
     if (viewMode === 'edit' || allColumnData.length === 0) {
-      return []
+      return [];
     }
 
-    const patterns = new Map<string, DuplicatePattern>()
+    const patterns = new Map<string, DuplicatePattern>();
 
     // 收集所有可能的模式
     allColumnData.forEach(({ value: text }) => {
-      if (!text || text.length < 5) return
+      if (!text || text.length < 5) {
+        return;
+      }
 
-      const minLength = 3
-      const maxLength = Math.min(100, text.length)
+      const minLength = 3;
+      const maxLength = Math.min(100, text.length);
 
       for (let len = minLength; len <= maxLength; len++) {
         // 检测后缀
-        const suffix = text.slice(-len)
-        if (suffix.trim()) addPattern(suffix, patterns, allColumnData, 'ends')
+        const suffix = text.slice(-len);
+        if (suffix.trim()) {
+          addPattern(suffix, patterns, allColumnData, 'ends');
+        }
 
         // 检测前缀
-        const prefix = text.slice(0, len)
-        if (prefix.trim()) addPattern(prefix, patterns, allColumnData, 'starts')
+        const prefix = text.slice(0, len);
+        if (prefix.trim()) {
+          addPattern(prefix, patterns, allColumnData, 'starts');
+        }
       }
-    })
+    });
 
     return Array.from(patterns.values())
-      .filter(p => p.count >= 2)
+      .filter((p) => p.count >= 2)
       .sort((a, b) => {
         // 优先按出现次数排序，其次按模式长度排序
-        if (b.count !== a.count) return b.count - a.count
-        return b.pattern.length - a.pattern.length
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+        return b.pattern.length - a.pattern.length;
       })
-      .slice(0, 15)
-  }, [viewMode, allColumnData, currentRowIndex])
+      .slice(0, 15);
+  }, [viewMode, allColumnData]);
 
   // 辅助函数：添加模式到集合
   function addPattern(
     pattern: string,
     patterns: Map<string, DuplicatePattern>,
-    data: { rowIndex: number, value: string }[],
+    data: { rowIndex: number; value: string }[],
     matchType: 'starts' | 'ends'
   ) {
-    let count = 0
-    const occurrences: number[] = []
+    let count = 0;
+    const occurrences: number[] = [];
 
     data.forEach(({ rowIndex, value }) => {
       if (value && (matchType === 'starts' ? value.startsWith(pattern) : value.endsWith(pattern))) {
-        count++
-        occurrences.push(rowIndex)
+        count++;
+        occurrences.push(rowIndex);
       }
-    })
+    });
 
     if (count >= 2) {
       patterns.set(pattern, {
         pattern,
         count,
-        occurrences
-      })
+        occurrences,
+      });
     }
   }
 
   const handleSave = () => {
     if (viewMode !== 'edit' && affectedRows.length > 0 && onBatchSave) {
-      const pattern = viewMode === 'batch-auto' ? selectedPattern?.pattern : manualSelection?.text || ''
+      const pattern =
+        viewMode === 'batch-auto' ? selectedPattern?.pattern : manualSelection?.text || '';
       onBatchSave({
-        pattern: pattern,
+        pattern: pattern ?? '',
         replaceWith: replaceWith,
-        affectedRows
-      })
+        affectedRows,
+      });
     } else {
-      onSave(editValue)
+      onSave(editValue);
     }
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   const handleCancel = () => {
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   const handlePatternSelect = (pattern: DuplicatePattern) => {
-    setSelectedPattern(pattern)
-    setReplaceWith("")
-  }
+    setSelectedPattern(pattern);
+    setReplaceWith('');
+  };
 
   const handleTextSelection = () => {
-    const selection = window.getSelection()
+    const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0)
-      const selectedText = range.toString()
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
       if (selectedText) {
-        const container = document.getElementById('manualSelectTextarea')
+        const container = document.getElementById('manualSelectTextarea');
         if (container && container.contains(range.commonAncestorContainer)) {
-          const textContent = container.innerText || ''
-          const start = textContent.indexOf(selectedText)
+          const textContent = container.innerText || '';
+          const start = textContent.indexOf(selectedText);
           if (start !== -1) {
-            setManualSelection({ start, end: start + selectedText.length, text: selectedText })
+            setManualSelection({ start, end: start + selectedText.length, text: selectedText });
           }
         }
       }
     }
-  }
+  };
 
-  const isBatchMode = viewMode !== 'edit'
-  const currentAffectedCount = currentAffectedRows.length
+  const isBatchMode = viewMode !== 'edit';
+  const currentAffectedCount = currentAffectedRows.length;
 
   // 获取预览数据 - 只返回受影响的行数据
   const previewData = useMemo(() => {
-    if (!isBatchMode || currentAffectedRows.length === 0) return []
+    if (!isBatchMode || currentAffectedRows.length === 0) {
+      return [];
+    }
 
     return allColumnData
       .filter(({ rowIndex }) => currentAffectedRows.includes(rowIndex))
-      .slice(0, 10)
-  }, [isBatchMode, currentAffectedRows, allColumnData])
+      .slice(0, 10);
+  }, [isBatchMode, currentAffectedRows, allColumnData]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden p-0">
         {/* 头部 */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-lg">{t('batchEdit.editTitle', { name: effectiveColumnName })}</DialogTitle>
+          <DialogTitle className="text-lg">
+            {t('batchEdit.editTitle', { name: effectiveColumnName })}
+          </DialogTitle>
           <DialogDescription className="text-sm">
-            {isBatchMode ? t('batchEdit.batchDescription', { name: effectiveColumnName }) : t('batchEdit.editDescription', { name: effectiveColumnName })}
+            {isBatchMode
+              ? t('batchEdit.batchDescription', { name: effectiveColumnName })
+              : t('batchEdit.editDescription', { name: effectiveColumnName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -323,7 +364,7 @@ export default function BatchEditDialog({
               <button
                 onClick={() => setViewMode('edit')}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all',
                   viewMode === 'edit'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
@@ -335,7 +376,7 @@ export default function BatchEditDialog({
               <button
                 onClick={() => setViewMode('batch-auto')}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all',
                   viewMode === 'batch-auto'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
@@ -347,7 +388,7 @@ export default function BatchEditDialog({
               <button
                 onClick={() => setViewMode('batch-manual')}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
+                  'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all',
                   viewMode === 'batch-manual'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
@@ -361,7 +402,10 @@ export default function BatchEditDialog({
         )}
 
         {/* 内容区域 */}
-        <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div
+          className="px-6 py-4 overflow-y-auto flex-1 min-h-0"
+          style={{ maxHeight: 'calc(90vh - 200px)' }}
+        >
           {/* 普通编辑模式 */}
           {viewMode === 'edit' && (
             <div className="space-y-3">
@@ -403,7 +447,7 @@ export default function BatchEditDialog({
                             key={index}
                             onClick={() => handlePatternSelect(pattern)}
                             className={cn(
-                              "w-full flex items-center justify-between p-3 rounded-md text-left transition-all",
+                              'w-full flex items-center justify-between p-3 rounded-md text-left transition-all',
                               selectedPattern?.pattern === pattern.pattern
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted/50 hover:bg-muted'
@@ -414,12 +458,14 @@ export default function BatchEditDialog({
                                 ? pattern.pattern.slice(0, 50) + '...'
                                 : pattern.pattern}
                             </span>
-                            <span className={cn(
-                              "text-xs px-2 py-1 rounded-full shrink-0",
-                              selectedPattern?.pattern === pattern.pattern
-                                ? 'bg-primary-foreground/20'
-                                : 'bg-background'
-                            )}>
+                            <span
+                              className={cn(
+                                'text-xs px-2 py-1 rounded-full shrink-0',
+                                selectedPattern?.pattern === pattern.pattern
+                                  ? 'bg-primary-foreground/20'
+                                  : 'bg-background'
+                              )}
+                            >
                               {pattern.count}
                             </span>
                           </button>
@@ -482,7 +528,9 @@ export default function BatchEditDialog({
                   {manualSelection ? (
                     <>
                       {value.substring(0, manualSelection.start)}
-                      <mark className="bg-yellow-200 px-1 rounded">{value.substring(manualSelection.start, manualSelection.end)}</mark>
+                      <mark className="bg-yellow-200 px-1 rounded">
+                        {value.substring(manualSelection.start, manualSelection.end)}
+                      </mark>
                       {value.substring(manualSelection.end)}
                     </>
                   ) : (
@@ -491,7 +539,11 @@ export default function BatchEditDialog({
                 </div>
                 {manualSelection && (
                   <p className="text-xs text-muted-foreground">
-                    {t('batchEdit.selected')}: "{manualSelection.text.length > 30 ? manualSelection.text.slice(0, 30) + '...' : manualSelection.text}"
+                    {t('batchEdit.selected')}: "
+                    {manualSelection.text.length > 30
+                      ? manualSelection.text.slice(0, 30) + '...'
+                      : manualSelection.text}
+                    "
                   </p>
                 )}
               </div>
@@ -505,7 +557,7 @@ export default function BatchEditDialog({
                       <button
                         onClick={() => setManualMatchMode('text')}
                         className={cn(
-                          "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                          'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                           manualMatchMode === 'text'
                             ? 'bg-background text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
@@ -516,7 +568,7 @@ export default function BatchEditDialog({
                       <button
                         onClick={() => setManualMatchMode('position')}
                         className={cn(
-                          "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                          'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                           manualMatchMode === 'position'
                             ? 'bg-background text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
@@ -553,31 +605,41 @@ export default function BatchEditDialog({
               <div className="flex items-center gap-2 mb-3">
                 <Eye className="h-4 w-4 text-muted-foreground" />
                 <Label className="text-sm font-medium">
-                  {t('batchEdit.preview')} ({t('batchEdit.affectedRows', { count: currentAffectedCount })})
+                  {t('batchEdit.preview')} (
+                  {t('batchEdit.affectedRows', { count: currentAffectedCount })})
                 </Label>
               </div>
               <ScrollArea className="h-[200px] border rounded-lg bg-muted/20">
                 <div className="p-3 space-y-3">
                   {previewData.map(({ rowIndex, value: text }) => (
                     <div key={rowIndex} className="text-sm">
-                      <div className="text-xs text-muted-foreground mb-1">{t("batchEdit.rowLabel", { row: rowIndex + 1 })}</div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {t('batchEdit.rowLabel', { row: rowIndex + 1 })}
+                      </div>
                       <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                         {viewMode === 'batch-auto' && selectedPattern
                           ? (() => {
                               // 检查是前缀还是后缀
                               if (text.startsWith(selectedPattern.pattern)) {
-                                return renderHighlightedText(text, selectedPattern.pattern, 'prefix')
+                                return renderHighlightedText(
+                                  text,
+                                  selectedPattern.pattern,
+                                  'prefix'
+                                );
                               } else if (text.endsWith(selectedPattern.pattern)) {
-                                return renderHighlightedText(text, selectedPattern.pattern, 'suffix')
+                                return renderHighlightedText(
+                                  text,
+                                  selectedPattern.pattern,
+                                  'suffix'
+                                );
                               }
-                              return text
+                              return text;
                             })()
                           : viewMode === 'batch-manual' && manualSelection
                             ? manualMatchMode === 'text'
                               ? renderHighlightedText(text, manualSelection.text, 'text')
                               : renderHighlightedText(text, '', 'position', manualSelection)
-                            : text
-                        }
+                            : text}
                       </div>
                     </div>
                   ))}
@@ -603,14 +665,13 @@ export default function BatchEditDialog({
           <Button variant="outline" onClick={handleCancel}>
             {t('batchEdit.cancel')}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isBatchMode && currentAffectedCount === 0}
-          >
-            {isBatchMode ? t('batchEdit.batchModify', { count: currentAffectedCount }) : t('batchEdit.save')}
+          <Button onClick={handleSave} disabled={isBatchMode && currentAffectedCount === 0}>
+            {isBatchMode
+              ? t('batchEdit.batchModify', { count: currentAffectedCount })
+              : t('batchEdit.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,35 +1,54 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { Button } from '@/shared/components/ui/button'
-import { Calendar, Film, CalendarRange, BarChart2, Plus, LayoutGrid, Sparkles, Tv, Baby, Popcorn, Ticket } from 'lucide-react'
-import { WeekdayNavigation } from './weekday-navigation'
-import { MediaNewsSection } from './media-news-section'
-import { ProgressSection } from './progress-section'
-import { WeeklyScheduleSection } from './weekly-schedule-section'
-import { UseHomeStateReturn } from '@/stores/hooks'
-import { UseMediaNewsReturn } from '@/features/media-news/lib/hooks/use-media-news'
-import { useTranslation } from 'react-i18next'
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Button } from '@/shared/components/ui/button';
+import {
+  Calendar,
+  Film,
+  CalendarRange,
+  BarChart2,
+  Plus,
+  LayoutGrid,
+  Sparkles,
+  Tv,
+  Baby,
+  Popcorn,
+  Ticket,
+} from 'lucide-react';
+import { WeekdayNavigation } from './weekday-navigation';
+import { MediaNewsSection } from '@/features/media-news';
+import { ProgressSection } from './progress-section';
+import { WeeklyScheduleSection } from './weekly-schedule-section';
+import { UseHomeStateReturn } from '@/stores/hooks';
+import { UseMediaNewsReturn } from '@/lib/hooks/use-media-news';
+import { useTranslation } from 'react-i18next';
 
 interface HomeContentProps {
-  homeState: UseHomeStateReturn
-  mediaNews: UseMediaNewsReturn
+  homeState: UseHomeStateReturn;
+  mediaNews: UseMediaNewsReturn;
 }
 
-const categories = [
-  { id: "all", key: "all" },
-  { id: "anime", key: "anime" },
-  { id: "tv", key: "tv" },
-  { id: "kids", key: "kids" },
-  { id: "variety", key: "variety" },
-  { id: "short", key: "short" },
-]
+const categories: Array<{ id: string; name: string; icon: React.ReactNode }> = [
+  { id: 'all', name: 'all', icon: <LayoutGrid className="h-4 w-4" /> },
+  { id: 'anime', name: 'anime', icon: <Sparkles className="h-4 w-4" /> },
+  { id: 'tv', name: 'tv', icon: <Tv className="h-4 w-4" /> },
+  { id: 'kids', name: 'kids', icon: <Baby className="h-4 w-4" /> },
+  { id: 'variety', name: 'variety', icon: <Popcorn className="h-4 w-4" /> },
+  { id: 'short', name: 'short', icon: <Ticket className="h-4 w-4" /> },
+];
 
 export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
-  const { t } = useTranslation('media')
-  const containerClasses = "mx-auto px-6"
+  const { t } = useTranslation('media');
+  const [selectedRegion, setSelectedRegion] = useState('CN');
+  const containerClasses = 'mx-auto px-6';
 
   return (
     <main className="flex-1">
@@ -69,15 +88,8 @@ export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center">
-                            <span className="mr-2">
-                              {category.id === 'all' && <LayoutGrid className="h-4 w-4" />}
-                              {category.id === 'anime' && <Sparkles className="h-4 w-4" />}
-                              {category.id === 'tv' && <Tv className="h-4 w-4" />}
-                              {category.id === 'kids' && <Baby className="h-4 w-4" />}
-                              {category.id === 'variety' && <Popcorn className="h-4 w-4" />}
-                              {category.id === 'short' && <Ticket className="h-4 w-4" />}
-                            </span>
-                            <span>{t(`categoryNames.${category.key}`)}</span>
+                            <span className="mr-2">{category.icon}</span>
+                            <span>{t(`categoryNames.${category.name}`)}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -104,9 +116,9 @@ export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
                 error={mediaNews.upcomingError}
                 lastUpdated={mediaNews.upcomingLastUpdated}
                 isMissingApiKey={mediaNews.isMissingApiKey}
-                selectedRegion={homeState.selectedRegion}
-                onRegionChange={homeState.setSelectedRegion}
-                onRefresh={() => mediaNews.fetchUpcomingItems(homeState.selectedRegion, false)}
+                selectedRegion={selectedRegion}
+                onRegionChange={setSelectedRegion}
+                onRefresh={() => mediaNews.fetchUpcomingItems(selectedRegion, false)}
                 onShowSettings={() => homeState.setShowSettingsDialog(true)}
               />
             </TabsContent>
@@ -120,29 +132,23 @@ export function HomeContent({ homeState, mediaNews }: HomeContentProps) {
                 error={mediaNews.recentError}
                 lastUpdated={mediaNews.recentLastUpdated}
                 isMissingApiKey={mediaNews.isMissingApiKey}
-                selectedRegion={homeState.selectedRegion}
-                onRegionChange={homeState.setSelectedRegion}
-                onRefresh={() => mediaNews.fetchRecentItems(homeState.selectedRegion, false)}
+                selectedRegion={selectedRegion}
+                onRegionChange={setSelectedRegion}
+                onRefresh={() => mediaNews.fetchRecentItems(selectedRegion, false)}
                 onShowSettings={() => homeState.setShowSettingsDialog(true)}
               />
             </TabsContent>
 
             <TabsContent value="weekly" className="space-y-6">
-              <WeeklyScheduleSection
-                homeState={homeState}
-                categories={categories}
-              />
+              <WeeklyScheduleSection homeState={homeState} categories={categories} />
             </TabsContent>
 
             <TabsContent value="progress" className="space-y-6">
-              <ProgressSection
-                homeState={homeState}
-                categories={categories}
-              />
+              <ProgressSection homeState={homeState} categories={categories} />
             </TabsContent>
           </Tabs>
         </div>
       </div>
     </main>
-  )
+  );
 }

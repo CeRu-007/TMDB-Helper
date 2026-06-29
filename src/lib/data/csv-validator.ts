@@ -41,7 +41,9 @@ export class CsvValidator {
     this.validateHeaders(data, result);
 
     // 如果表头不合法，直接返回结果，不继续验证行数据
-    if (!result.valid) return result;
+    if (!result.valid) {
+      return result;
+    }
 
     // 验证行数据
     this.validateRows(data, result);
@@ -76,9 +78,7 @@ export class CsvValidator {
     }
 
     // 检查表头中是否有空字段
-    const emptyHeaders = data.headers.filter(
-      (header) => !header || header.trim() === '',
-    );
+    const emptyHeaders = data.headers.filter((header) => !header || header.trim() === '');
     if (emptyHeaders.length > 0) {
       result.warnings.push(`表头中发现${emptyHeaders.length}个空字段`);
     }
@@ -97,7 +97,7 @@ export class CsvValidator {
 
     if (duplicateHeaders.length > 0) {
       result.warnings.push(
-        `表头中发现${duplicateHeaders.length}个重复字段: ${duplicateHeaders.join(', ')}`,
+        `表头中发现${duplicateHeaders.length}个重复字段: ${duplicateHeaders.join(', ')}`
       );
     }
   }
@@ -169,10 +169,7 @@ export class CsvValidator {
    * @param validationResult 验证结果，如果未提供则会先进行验证
    * @returns 修复后的CSV数据
    */
-  public fixCsvData(
-    data: CSVData,
-    validationResult?: ValidationResult,
-  ): CSVData {
+  public fixCsvData(data: CSVData, validationResult?: ValidationResult): CSVData {
     // 如果未提供验证结果，先进行验证
     const result = validationResult || this.validate(data);
 
@@ -183,17 +180,11 @@ export class CsvValidator {
     };
 
     // 修复表头问题
-    if (
-      !data.headers ||
-      !Array.isArray(data.headers) ||
-      data.headers.length === 0
-    ) {
+    if (!data.headers || !Array.isArray(data.headers) || data.headers.length === 0) {
       // 尝试从行数据中推断表头
       const maxCols =
         data.rows && Array.isArray(data.rows) && data.rows.length > 0
-          ? Math.max(
-              ...data.rows.map((row) => (Array.isArray(row) ? row.length : 0)),
-            )
+          ? Math.max(...data.rows.map((row) => (Array.isArray(row) ? row.length : 0)))
           : 1;
 
       fixedData.headers = Array(maxCols)
@@ -202,7 +193,7 @@ export class CsvValidator {
     } else {
       // 使用原表头，但确保每个表头都是字符串类型
       fixedData.headers = data.headers.map((header) =>
-        header === undefined || header === null ? '' : String(header),
+        header === undefined || header === null ? '' : String(header)
       );
     }
 
@@ -221,13 +212,8 @@ export class CsvValidator {
         const fixedRow = Array(fixedData.headers.length).fill('');
 
         // 复制原行数据，但不超过表头长度
-        for (
-          let i = 0;
-          i < Math.min(row.length, fixedData.headers.length);
-          i++
-        ) {
-          fixedRow[i] =
-            row[i] === undefined || row[i] === null ? '' : String(row[i]);
+        for (let i = 0; i < Math.min(row.length, fixedData.headers.length); i++) {
+          fixedRow[i] = row[i] === undefined || row[i] === null ? '' : String(row[i]);
         }
 
         return fixedRow;

@@ -1,15 +1,15 @@
-import React from 'react'
-import { Markdown } from "@/shared/components/ui/markdown"
-import { Loader2, Paperclip } from "lucide-react"
-import { useTranslation } from "react-i18next"
+import React from 'react';
+import { Markdown } from '@/shared/components/ui/markdown';
+import { Loader2, Paperclip } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface MessageContentProps {
-  content: string
-  type?: 'text' | 'file' | 'episode-summary'
-  fileName?: string
-  isStreaming?: boolean
-  isEdited?: boolean
-  role: 'user' | 'assistant'
+  content: string;
+  type?: 'text' | 'file' | 'episode-summary';
+  fileName?: string;
+  isStreaming?: boolean;
+  isEdited?: boolean;
+  role: 'user' | 'assistant';
 }
 
 export function MessageContent({
@@ -18,9 +18,9 @@ export function MessageContent({
   fileName,
   isStreaming,
   isEdited,
-  role
+  role,
 }: MessageContentProps) {
-  const { t } = useTranslation("ai-chat")
+  const { t } = useTranslation('ai-chat');
   if (role === 'user') {
     if (type === 'file') {
       return (
@@ -31,15 +31,15 @@ export function MessageContent({
           </div>
           <div className="whitespace-pre-wrap break-words">{content}</div>
         </div>
-      )
+      );
     }
 
     return (
       <div className="whitespace-pre-wrap break-words">
         {content}
-        {isEdited && <span className="text-xs text-blue-200 ml-2">{t("edited")}</span>}
+        {isEdited && <span className="text-xs text-blue-200 ml-2">{t('edited')}</span>}
       </div>
-    )
+    );
   }
 
   // Assistant message
@@ -55,13 +55,15 @@ export function MessageContent({
           {isStreaming && (
             <div className="flex items-center gap-2 text-muted-foreground mt-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{t("generatingReply")}</span>
+              <span>{t('generatingReply')}</span>
             </div>
           )}
-          {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">{t("edited")}</span>}
+          {!isStreaming && isEdited && (
+            <span className="text-xs text-gray-400 ml-2">{t('edited')}</span>
+          )}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -70,10 +72,12 @@ export function MessageContent({
       {isStreaming && (
         <div className="flex items-center gap-2 text-muted-foreground mt-2">
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span>{t("generatingReply")}</span>
+          <span>{t('generatingReply')}</span>
         </div>
       )}
-      {!isStreaming && isEdited && <span className="text-xs text-gray-400 ml-2">{t("edited")}</span>}
+      {!isStreaming && isEdited && (
+        <span className="text-xs text-gray-400 ml-2">{t('edited')}</span>
+      )}
     </div>
-  )
+  );
 }

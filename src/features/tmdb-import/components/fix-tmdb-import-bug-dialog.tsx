@@ -1,12 +1,18 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/shared/components/ui/dialog"
-import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Badge } from "@/shared/components/ui/badge"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Alert, AlertDescription } from "@/shared/components/ui/alert"
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/shared/components/ui/dialog';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Badge } from '@/shared/components/ui/badge';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -17,19 +23,22 @@ import {
   RefreshCw,
   Settings,
   Wrench,
-  X
-} from "lucide-react"
-import { toast } from "@/shared/components/ui/use-toast"
+  X,
+} from 'lucide-react';
+import { toast } from '@/shared/components/ui/use-toast';
 
 interface FixTMDBImportBugDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export default function FixTMDBImportBugDialog({ open, onOpenChange }: FixTMDBImportBugDialogProps) {
-  const [fixing, setFixing] = useState(false)
-  const [fixed, setFixed] = useState(false)
-  const [fixResult, setFixResult] = useState<string>("")
+export default function FixTMDBImportBugDialog({
+  open,
+  onOpenChange,
+}: FixTMDBImportBugDialogProps) {
+  const [fixing, setFixing] = useState(false);
+  const [fixed, setFixed] = useState(false);
+  const [fixResult, setFixResult] = useState<string>('');
 
   // 修复脚本内容
   const fixScript = `# TMDB-Import 中文字符解析错误修复补丁
@@ -133,16 +142,16 @@ def fixed_episode_comparison(episoideID, episoideNumber):
     except Exception as e:
         logging.error(f"集数比较时发生错误: {e}")
         return False
-`
+`;
 
   // 执行修复
   const handleFix = async () => {
-    setFixing(true)
-    setFixResult("")
+    setFixing(true);
+    setFixResult('');
 
     try {
       // 模拟修复过程
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // 调用修复API
       const response = await fetch('/api/external/fix-tmdb-import-bug', {
@@ -152,63 +161,62 @@ def fixed_episode_comparison(episoideID, episoideNumber):
         },
         body: JSON.stringify({
           action: 'apply_fix',
-          fixType: 'chinese_character_parsing'
-        })
-      })
+          fixType: 'chinese_character_parsing',
+        }),
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setFixed(true)
-        setFixResult("修复成功！已应用中文字符解析错误修复补丁。")
+        setFixed(true);
+        setFixResult('修复成功！已应用中文字符解析错误修复补丁。');
         toast({
-          title: "修复成功",
-          description: "TMDB导入中文字符解析错误已修复",
-        })
+          title: '修复成功',
+          description: 'TMDB导入中文字符解析错误已修复',
+        });
       } else {
-        throw new Error(result.error || "修复失败")
+        throw new Error(result.error || '修复失败');
       }
     } catch (error: unknown) {
-
-      setFixResult(`修复失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      setFixResult(`修复失败: ${error instanceof Error ? error.message : '未知错误'}`);
       toast({
-        title: "修复失败",
-        description: error instanceof Error ? error.message : "无法应用修复补丁",
-        variant: "destructive"
-      })
+        title: '修复失败',
+        description: error instanceof Error ? error.message : '无法应用修复补丁',
+        variant: 'destructive',
+      });
     } finally {
-      setFixing(false)
+      setFixing(false);
     }
-  }
+  };
 
   // 手动修复指南
   const manualFixSteps = [
     {
       step: 1,
-      title: "定位问题文件",
-      description: "找到 TMDB-Import-master/tmdb-import/importors/episode.py 文件"
+      title: '定位问题文件',
+      description: '找到 TMDB-Import-master/tmdb-import/importors/episode.py 文件',
     },
     {
       step: 2,
-      title: "备份原文件",
-      description: "创建 episode.py 的备份副本，以防修复失败"
+      title: '备份原文件',
+      description: '创建 episode.py 的备份副本，以防修复失败',
     },
     {
       step: 3,
-      title: "修改代码",
-      description: "在第162行附近找到 int(episoideID) 和 int(episoideNumber) 的比较"
+      title: '修改代码',
+      description: '在第162行附近找到 int(episoideID) 和 int(episoideNumber) 的比较',
     },
     {
       step: 4,
-      title: "应用修复",
-      description: "将原始的 int() 转换替换为安全的转换函数"
+      title: '应用修复',
+      description: '将原始的 int() 转换替换为安全的转换函数',
     },
     {
       step: 5,
-      title: "测试修复",
-      description: "重新运行TMDB导入任务，验证修复效果"
-    }
-  ]
+      title: '测试修复',
+      description: '重新运行TMDB导入任务，验证修复效果',
+    },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,11 +242,10 @@ def fixed_episode_comparison(episoideID, episoideNumber):
               <div className="space-y-2">
                 <p className="font-medium">检测到 TMDB 导入中文字符解析错误</p>
                 <p className="text-sm">
-                  错误原因：在解析网页数据时，程序尝试将中文剧情描述转换为集数编号，导致 ValueError 异常。
+                  错误原因：在解析网页数据时，程序尝试将中文剧情描述转换为集数编号，导致 ValueError
+                  异常。
                 </p>
-                <p className="text-sm">
-                  影响：无法正常导入包含中文描述的剧集数据。
-                </p>
+                <p className="text-sm">影响：无法正常导入包含中文描述的剧集数据。</p>
               </div>
             </AlertDescription>
           </Alert>
@@ -258,11 +265,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
                 </p>
 
                 <div className="space-y-3">
-                  <Button
-                    onClick={handleFix}
-                    disabled={fixing || fixed}
-                    className="w-full"
-                  >
+                  <Button onClick={handleFix} disabled={fixing || fixed} className="w-full">
                     {fixing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -282,8 +285,12 @@ def fixed_episode_comparison(episoideID, episoideNumber):
                   </Button>
 
                   {fixResult && (
-                    <Alert className={fixed ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-                      <AlertDescription className={fixed ? "text-green-700" : "text-red-700"}>
+                    <Alert
+                      className={
+                        fixed ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      }
+                    >
+                      <AlertDescription className={fixed ? 'text-green-700' : 'text-red-700'}>
                         {fixResult}
                       </AlertDescription>
                     </Alert>
@@ -320,9 +327,7 @@ def fixed_episode_comparison(episoideID, episoideNumber):
                         </div>
                         <div className="flex-1">
                           <h4 className="text-sm font-medium">{step.title}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {step.description}
-                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
                         </div>
                       </div>
                     ))}
@@ -356,11 +361,11 @@ def fixed_episode_comparison(episoideID, episoideNumber):
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText(fixScript)
+                navigator.clipboard.writeText(fixScript);
                 toast({
-                  title: "已复制",
-                  description: "修复代码已复制到剪贴板",
-                })
+                  title: '已复制',
+                  description: '修复代码已复制到剪贴板',
+                });
               }}
             >
               <Download className="h-4 w-4 mr-2" />
@@ -369,18 +374,12 @@ def fixed_episode_comparison(episoideID, episoideNumber):
           </div>
 
           <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4 mr-2" />
               关闭
             </Button>
             {!fixed && (
-              <Button
-                onClick={handleFix}
-                disabled={fixing}
-              >
+              <Button onClick={handleFix} disabled={fixing}>
                 {fixing ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -393,5 +392,5 @@ def fixed_episode_comparison(episoideID, episoideNumber):
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,158 +1,163 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { WeekdayNavigation } from './weekday-navigation'
-import { useData } from '@/shared/components/client-data-provider'
-import { TMDBItem } from '@/lib/data/storage'
-import MediaCard from '@/features/media-maintenance/components/media-card'
-import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton'
-import { useInfiniteScroll } from '@/lib/hooks/use-infinite-scroll'
-import { UseHomeStateReturn } from '@/stores/hooks'
-import { Skeleton } from '@/shared/components/ui/skeleton'
-import { useTranslation } from 'react-i18next'
+import React from 'react';
+import { WeekdayNavigation } from './weekday-navigation';
+import { useData } from '@/shared/components/client-data-provider';
+import { TMDBItem } from '@/lib/data/storage';
+import MediaCard from '@/features/media-maintenance/components/media-card';
+import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton';
+import { useInfiniteScroll } from '@/lib/hooks/use-infinite-scroll';
+import { UseHomeStateReturn } from '@/stores/hooks';
+import { Skeleton } from '@/shared/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 interface WeeklyScheduleSectionProps {
-  homeState: UseHomeStateReturn
-  categories: Array<{ id: string; name: string; icon: React.ReactNode }>
+  homeState: UseHomeStateReturn;
+  categories: Array<{ id: string; name: string; icon: React.ReactNode }>;
 }
 
 // 分类筛选策略
 const categoryFilters = {
-  anime: (title: string, notes: string) =>
-    title.includes("动漫") || notes.includes("动漫"),
+  anime: (title: string, notes: string) => title.includes('动漫') || notes.includes('动漫'),
   tv: (title: string, notes: string, mediaType?: string) =>
-    mediaType === "tv" &&
-    !title.includes("动漫") && !notes.includes("动漫") &&
-    !title.includes("综艺") && !notes.includes("综艺"),
-  kids: (title: string, notes: string) =>
-    title.includes("少儿") || notes.includes("少儿"),
-  variety: (title: string, notes: string) =>
-    title.includes("综艺") || notes.includes("综艺"),
-  short: (title: string, notes: string) =>
-    title.includes("短剧") || notes.includes("短剧"),
+    mediaType === 'tv' &&
+    !title.includes('动漫') &&
+    !notes.includes('动漫') &&
+    !title.includes('综艺') &&
+    !notes.includes('综艺'),
+  kids: (title: string, notes: string) => title.includes('少儿') || notes.includes('少儿'),
+  variety: (title: string, notes: string) => title.includes('综艺') || notes.includes('综艺'),
+  short: (title: string, notes: string) => title.includes('短剧') || notes.includes('短剧'),
 } as const;
 
-export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleSectionProps): JSX.Element {
-  const { t } = useTranslation('media')
-  const { items, loading } = useData()
+export function WeeklyScheduleSection({
+  homeState,
+  categories,
+}: WeeklyScheduleSectionProps): JSX.Element {
+  const { t } = useTranslation('media');
+  const { items, loading } = useData();
 
   function handleCardClick(itemId: string): void {
-    const item = items.find(function(i: TMDBItem) {
-      return i.id === itemId
-    })
+    const item = items.find(function (i: TMDBItem) {
+      return i.id === itemId;
+    });
 
     if (item) {
-      homeState.setSelectedItem(item)
+      homeState.setSelectedItem(item);
     }
   }
 
   function filterItemsByCategory(itemsToFilter: TMDBItem[]): TMDBItem[] {
-    if (homeState.selectedCategory === "all") {
-      return itemsToFilter
+    if (homeState.selectedCategory === 'all') {
+      return itemsToFilter;
     }
 
-    return itemsToFilter.filter(function(item: TMDBItem) {
+    return itemsToFilter.filter(function (item: TMDBItem) {
       if (item.category) {
-        return item.category === homeState.selectedCategory
+        return item.category === homeState.selectedCategory;
       }
 
-      const title = item.title.toLowerCase()
-      const notes = item.notes?.toLowerCase() || ""
-      const category = homeState.selectedCategory as keyof typeof categoryFilters
+      const title = item.title.toLowerCase();
+      const notes = item.notes?.toLowerCase() || '';
+      const category = homeState.selectedCategory as keyof typeof categoryFilters;
 
-      const filter = categoryFilters[category]
+      const filter = categoryFilters[category];
       if (!filter) {
-        return true
+        return true;
       }
 
       if (category === 'tv') {
-        return filter(title, notes, item.mediaType)
+        return filter(title, notes, item.mediaType);
       }
 
-      return filter(title, notes)
-    })
+      return filter(title, notes);
+    });
   }
 
   function getItemsByDay(itemsToFilter: TMDBItem[], day: number): TMDBItem[] {
-    return itemsToFilter.filter(function(item: TMDBItem) {
+    return itemsToFilter.filter(function (item: TMDBItem) {
       return (
         item.weekday === day ||
         (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
-      )
-    })
+      );
+    });
   }
 
   function getFilteredItems(itemsToFilter: TMDBItem[]): TMDBItem[] {
-    const filteredByCategory = filterItemsByCategory(itemsToFilter)
+    const filteredByCategory = filterItemsByCategory(itemsToFilter);
 
-    if (homeState.selectedDayFilter === "recent") {
-      const jsWeekday = new Date().getDay()
+    if (homeState.selectedDayFilter === 'recent') {
+      const jsWeekday = new Date().getDay();
 
       function getDayDifference(targetWeekday: number): number {
-        const safeTarget = targetWeekday % 7
-        let diff = safeTarget - jsWeekday
+        const safeTarget = targetWeekday % 7;
+        let diff = safeTarget - jsWeekday;
 
         if (diff < 0) {
-          diff += 7
+          diff += 7;
         }
 
-        return diff
+        return diff;
       }
 
       function getNearestWeekday(item: TMDBItem): number {
-        const primaryDiff = getDayDifference(item.weekday)
+        const primaryDiff = getDayDifference(item.weekday!);
 
         if (typeof item.secondWeekday === 'number') {
-          const secondDiff = getDayDifference(item.secondWeekday)
-          return secondDiff < primaryDiff ? item.secondWeekday : item.weekday
+          const secondDiff = getDayDifference(item.secondWeekday);
+          return secondDiff < primaryDiff ? item.secondWeekday! : item.weekday!;
         }
 
-        return item.weekday
+        return item.weekday!;
       }
 
       function isToday(item: TMDBItem): boolean {
-        return item.weekday === jsWeekday || item.secondWeekday === jsWeekday
+        return item.weekday === jsWeekday || item.secondWeekday === jsWeekday;
       }
 
-      return filteredByCategory.sort(function(a, b) {
-        const timeA = new Date(a.updatedAt).getTime()
-        const timeB = new Date(b.updatedAt).getTime()
+      return filteredByCategory.sort(function (a, b) {
+        const timeA = new Date(a.updatedAt).getTime();
+        const timeB = new Date(b.updatedAt).getTime();
 
-        const aIsToday = isToday(a)
-        const bIsToday = isToday(b)
+        const aIsToday = isToday(a);
+        const bIsToday = isToday(b);
 
         if (aIsToday !== bIsToday) {
-          return aIsToday ? -1 : 1
+          return aIsToday ? -1 : 1;
         }
 
         if (aIsToday && bIsToday) {
-          return timeB - timeA
+          return timeB - timeA;
         }
 
-        const aDayDiff = getDayDifference(getNearestWeekday(a))
-        const bDayDiff = getDayDifference(getNearestWeekday(b))
+        const aDayDiff = getDayDifference(getNearestWeekday(a));
+        const bDayDiff = getDayDifference(getNearestWeekday(b));
 
         if (aDayDiff !== bDayDiff) {
-          return aDayDiff - bDayDiff
+          return aDayDiff - bDayDiff;
         }
 
-        return timeB - timeA
-      })
+        return timeB - timeA;
+      });
     }
 
-    const filteredItems = getItemsByDay(filteredByCategory, homeState.selectedDayFilter)
+    const filteredItems = getItemsByDay(filteredByCategory, homeState.selectedDayFilter);
 
-    return filteredItems.sort(function(a, b) {
-      const timeA = new Date(a.updatedAt).getTime()
-      const timeB = new Date(b.updatedAt).getTime()
-      return timeB - timeA
-    })
+    return filteredItems.sort(function (a, b) {
+      const timeA = new Date(a.updatedAt).getTime();
+      const timeB = new Date(b.updatedAt).getTime();
+      return timeB - timeA;
+    });
   }
 
-  const ongoingItems = items.filter((item) => item.status === "ongoing")
-  const filteredItems = getFilteredItems(ongoingItems)
+  const ongoingItems = items.filter((item) => item.status === 'ongoing');
+  const filteredItems = getFilteredItems(ongoingItems);
 
-  const { visibleItems: filteredVisible, sentinelRef, hasMore } = useInfiniteScroll(filteredItems, 24)
+  const {
+    visibleItems: filteredVisible,
+    sentinelRef,
+    hasMore,
+  } = useInfiniteScroll(filteredItems, 24);
 
   if (loading) {
     return (
@@ -164,7 +169,7 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
         </div>
         <MediaCardGridSkeleton count={12} />
       </div>
-    )
+    );
   }
 
   return (
@@ -174,6 +179,7 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
         selectedDayFilter={homeState.selectedDayFilter}
         onDayFilterChange={homeState.setSelectedDayFilter}
         filteredItems={ongoingItems}
+        allItems={items}
         categories={categories}
         selectedCategory={homeState.selectedCategory}
       />
@@ -184,33 +190,36 @@ export function WeeklyScheduleSection({ homeState, categories }: WeeklyScheduleS
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-2 md:gap-x-6 gap-y-2 md:gap-y-4">
             {filteredVisible.map((item) => (
               <div key={item.id} className="w-[99%] mx-auto transform scale-[0.99] origin-top-left">
-                <MediaCard
-                  item={item}
-                  itemId={item.id}
-                  onItemClick={handleCardClick}
-                />
+                <MediaCard item={item} itemId={item.id} onItemClick={handleCardClick} />
               </div>
             ))}
           </div>
-          {hasMore && (
-            <div ref={sentinelRef} className="h-4" />
-          )}
+          {hasMore && <div ref={sentinelRef} className="h-4" />}
         </>
       ) : (
         <div className="text-center py-8">
           <div className="text-muted-foreground mb-4">
-            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <svg
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
             </svg>
           </div>
           <p className="text-muted-foreground">
-            {homeState.selectedDayFilter === "recent"
+            {homeState.selectedDayFilter === 'recent'
               ? t('noRecentUpdates')
-              : t('noContentForDate')
-            }
+              : t('noContentForDate')}
           </p>
         </div>
       )}
     </div>
-  )
+  );
 }

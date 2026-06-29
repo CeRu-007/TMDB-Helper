@@ -100,4 +100,4 @@ export const content = `# 原始电影语言
 # 口语语言
 
 仅原始版本中使用的主要语言。无对话电影使用"No Language"。
-`
+`;

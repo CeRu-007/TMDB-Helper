@@ -10,7 +10,7 @@ class TaskQueue {
   private isProcessing = false;
 
   async enqueue(task: TaskItem): Promise<void> {
-    const existingInQueue = this.queue.find(t => t.id === task.id);
+    const existingInQueue = this.queue.find((t) => t.id === task.id);
     if (existingInQueue) {
       logger.debug(`[TaskQueue] 任务已在队列中，跳过重复入队: ${task.id}`);
       return;
@@ -32,7 +32,9 @@ class TaskQueue {
 
     while (this.queue.length > 0) {
       const task = this.queue.shift();
-      if (!task) continue;
+      if (!task) {
+        continue;
+      }
 
       try {
         await task.execute();

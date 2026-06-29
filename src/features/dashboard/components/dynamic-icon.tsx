@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import React from 'react'
-import * as PhosphorIcons from '@phosphor-icons/react'
-import type { IconWeight } from '@phosphor-icons/react'
+import React from 'react';
+import * as PhosphorIcons from '@phosphor-icons/react';
+import type { IconWeight } from '@phosphor-icons/react';
 
 interface DynamicIconProps {
-  name: string
-  className?: string
-  size?: number
-  weight?: IconWeight
+  name: string;
+  className?: string;
+  size?: number;
+  weight?: IconWeight;
 }
 
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
@@ -42,12 +42,12 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   compass: PhosphorIcons.Compass,
   footprints: PhosphorIcons.Footprints,
   lock: PhosphorIcons.Lock,
-}
+};
 
 export function DynamicIcon({ name, className, size = 16, weight = 'regular' }: DynamicIconProps) {
-  const IconComponent = ICON_MAP[name]
+  const IconComponent = ICON_MAP[name];
   if (!IconComponent) {
-    return <PhosphorIcons.Circle className={className} size={size} weight={weight} />
+    return <PhosphorIcons.Circle className={className} size={size} weight={weight} />;
   }
-  return <IconComponent className={className} size={size} weight={weight} />
+  return <IconComponent className={className} size={size} weight={weight} />;
 }

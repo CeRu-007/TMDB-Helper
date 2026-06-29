@@ -1,8 +1,14 @@
-import React, { useRef } from 'react'
-import { Button } from "@/shared/components/ui/button"
-import { Badge } from "@/shared/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { AutoResizeTextarea } from "./auto-resize-textarea"
+import React, { useRef } from 'react';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { AutoResizeTextarea } from './auto-resize-textarea';
 import {
   Send,
   Paperclip,
@@ -11,51 +17,51 @@ import {
   Pause,
   X,
   ChevronRight,
-  Upload
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { SUPPORTED_SUBTITLE_FORMATS } from "@/lib/utils/ai-chat-constants"
-import { useTranslation } from "react-i18next"
+  Upload,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SUPPORTED_SUBTITLE_FORMATS } from '@/lib/utils/ai-chat-constants';
+import { useTranslation } from 'react-i18next';
 
 // Scenario models type
 interface ScenarioModelsConfig {
-  selectedModelIds: string[]
-  primaryModelId: string
+  selectedModelIds: string[];
+  primaryModelId: string;
   availableModels: Array<{
-    id: string
-    displayName: string
-    providerId: string
-    modelId: string
-  }>
-  isLoading: boolean
-  error: string | null
-  getCurrentModel: () => any
-  getSelectedModels: () => any[]
+    id: string;
+    displayName: string;
+    providerId: string;
+    modelId: string;
+  }>;
+  isLoading: boolean;
+  error: string | null;
+  getCurrentModel: () => any;
+  getSelectedModels: () => any[];
 }
 
 interface ChatInputProps {
-  inputValue: string
-  isLoading: boolean
-  isInterrupting: boolean
-  isDragOver: boolean
-  uploadedFileName: string | null
-  uploadedFileContent: string | null
-  isUploading: boolean
-  uploadProgress: number
-  selectedModel: string
-  scenarioModels: ScenarioModelsConfig
-  onInputChange: (value: string) => void
-  onSendMessage: () => void
-  onInterrupt: () => void
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
-  onCancelUpload: () => void
-  onModelChange: (modelId: string) => void
-  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
-  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void
-  onDrop: (e: React.DragEvent<HTMLDivElement>) => void
-  onSubtitleTask: (taskKey: string, content: string, fileName: string) => void
-  fileInputRef: React.RefObject<HTMLInputElement>
-  textareaRef: React.RefObject<HTMLTextAreaElement>
+  inputValue: string;
+  isLoading: boolean;
+  isInterrupting: boolean;
+  isDragOver: boolean;
+  uploadedFileName: string | null;
+  uploadedFileContent: string | null;
+  isUploading: boolean;
+  uploadProgress: number;
+  selectedModel: string;
+  scenarioModels: ScenarioModelsConfig;
+  onInputChange: (value: string) => void;
+  onSendMessage: () => void;
+  onInterrupt: () => void;
+  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onCancelUpload: () => void;
+  onModelChange: (modelId: string) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onSubtitleTask: (taskKey: string, content: string, fileName: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
 export function ChatInput({
@@ -80,9 +86,9 @@ export function ChatInput({
   onDrop,
   onSubtitleTask,
   fileInputRef,
-  textareaRef
+  textareaRef,
 }: ChatInputProps) {
-  const { t } = useTranslation('ai-chat')
+  const { t } = useTranslation('ai-chat');
 
   return (
     <div className="bg-background p-3 md:p-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-6 overflow-hidden">
@@ -130,14 +136,18 @@ export function ChatInput({
                       </Button>
                     </div>
                   </div>
-                  
+
                   {!isUploading && uploadedFileContent && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       <button
                         className="px-4 py-2 bg-muted hover:bg-accent border border-border rounded-xl text-sm font-medium"
                         onClick={() => {
                           if (uploadedFileContent && uploadedFileName) {
-                            onSubtitleTask('generateSummary', uploadedFileContent, uploadedFileName)
+                            onSubtitleTask(
+                              'generateSummary',
+                              uploadedFileContent,
+                              uploadedFileName
+                            );
                           }
                         }}
                       >
@@ -148,7 +158,7 @@ export function ChatInput({
                         className="px-4 py-2 bg-muted hover:bg-accent border border-border rounded-xl text-sm font-medium"
                         onClick={() => {
                           if (uploadedFileContent && uploadedFileName) {
-                            onSubtitleTask('analyzePlot', uploadedFileContent, uploadedFileName)
+                            onSubtitleTask('analyzePlot', uploadedFileContent, uploadedFileName);
                           }
                         }}
                       >
@@ -158,7 +168,7 @@ export function ChatInput({
                   )}
                 </div>
               )}
-              
+
               <AutoResizeTextarea
                 ref={textareaRef}
                 value={inputValue}
@@ -167,8 +177,8 @@ export function ChatInput({
                 className="w-full border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400 text-base py-2"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    onSendMessage()
+                    e.preventDefault();
+                    onSendMessage();
                   }
                 }}
                 disabled={isLoading}
@@ -178,9 +188,7 @@ export function ChatInput({
                 <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-2xl pointer-events-none">
                   <div className="text-center">
                     <Upload className="w-12 h-12 text-primary mx-auto mb-2" />
-                    <p className="text-primary font-medium">
-                      {t('dragSubtitleFile')}
-                    </p>
+                    <p className="text-primary font-medium">{t('dragSubtitleFile')}</p>
                     <p className="text-primary/70 text-sm mt-1">
                       {t('supportedFormats', { formats: SUPPORTED_SUBTITLE_FORMATS.join(', ') })}
                     </p>
@@ -188,7 +196,7 @@ export function ChatInput({
                 </div>
               )}
             </div>
-            
+
             <div className="px-6 pb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button
@@ -204,12 +212,12 @@ export function ChatInput({
                 {scenarioModels.isLoading ? (
                   <div className="h-10 px-3 py-2 flex items-center text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {t("loading")}
+                    {t('loading')}
                   </div>
                 ) : scenarioModels.error ? (
                   <div className="h-10 px-3 py-2 flex items-center text-sm text-red-500">
                     <AlertCircle className="w-4 h-4 mr-2" />
-                    {t("loadFailed")}
+                    {t('loadFailed')}
                   </div>
                 ) : (
                   <Select
@@ -219,24 +227,27 @@ export function ChatInput({
                   >
                     <SelectTrigger className="h-10 px-3 py-2 border-none bg-transparent hover:bg-gray-200 dark:hover:bg-accent rounded-full data-[placeholder]:text-gray-500 focus:ring-0 focus:ring-offset-0 [&>svg]:w-4 [&>svg]:h-4 flex items-center gap-1 text-sm [&>svg]:text-gray-500">
                       <span className="font-medium truncate max-w-[120px]">
-                        {scenarioModels.availableModels.find(m => m.id === selectedModel)?.displayName || t("selectModel")}
+                        {scenarioModels.availableModels.find((m) => m.id === selectedModel)
+                          ?.displayName || t('selectModel')}
                       </span>
                     </SelectTrigger>
                     <SelectContent className="min-w-[200px]">
                       {scenarioModels.availableModels.length === 0 ? (
-                        <div className="p-2 text-sm text-gray-500">
-                          {t("noAvailableModels")}
-                        </div>
+                        <div className="p-2 text-sm text-gray-500">{t('noAvailableModels')}</div>
                       ) : (
                         scenarioModels.getSelectedModels().map((model) => (
                           <SelectItem key={model.id} value={model.id} className="py-1.5">
                             <div className="flex items-center gap-2">
                               <div>
                                 <div className="font-medium text-sm">{model.displayName}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">{model.description || model.modelId}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  {model.description || model.modelId}
+                                </div>
                               </div>
                               {model.id === scenarioModels.primaryModelId && (
-                                <Badge variant="secondary" className="text-xs">{t("mainModel")}</Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {t('mainModel')}
+                                </Badge>
                               )}
                             </div>
                           </SelectItem>
@@ -251,12 +262,12 @@ export function ChatInput({
                 size="sm"
                 variant="ghost"
                 className={cn(
-                  "min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 rounded-full transition-all duration-200 relative z-10",
+                  'min-w-[44px] min-h-[44px] h-10 w-10 p-0 flex-shrink-0 rounded-full transition-all duration-200 relative z-10',
                   isLoading
-                    ? "hover:bg-red-50 dark:hover:bg-red-950/30 text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
-                    : (inputValue.trim() || uploadedFileContent)
-                    ? "hover:bg-blue-50 dark:hover:bg-blue-950/30 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                    : "text-muted-foreground cursor-not-allowed"
+                    ? 'hover:bg-red-50 dark:hover:bg-red-950/30 text-muted-foreground hover:text-red-600 dark:hover:text-red-400'
+                    : inputValue.trim() || uploadedFileContent
+                      ? 'hover:bg-blue-50 dark:hover:bg-blue-950/30 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400'
+                      : 'text-muted-foreground cursor-not-allowed'
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -266,7 +277,7 @@ export function ChatInput({
                     onSendMessage();
                   }
                 }}
-                disabled={(!inputValue.trim() && !uploadedFileContent) && !isLoading}
+                disabled={!inputValue.trim() && !uploadedFileContent && !isLoading}
               >
                 {isLoading ? (
                   isInterrupting ? (
@@ -283,5 +294,5 @@ export function ChatInput({
         </div>
       </div>
     </div>
-  )
+  );
 }

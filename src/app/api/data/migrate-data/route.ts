@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         error: '数据迁移失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         error: '获取迁移状态失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -78,10 +78,7 @@ export async function DELETE(request: NextRequest) {
   try {
     // 仅在开发环境中允许
     if (process.env.NODE_ENV !== 'development') {
-      return NextResponse.json(
-        { error: '此操作仅在开发环境中可用' },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: '此操作仅在开发环境中可用' }, { status: 403 });
     }
 
     const userId = await AuthService.getUserIdFromRequest(request);
@@ -105,7 +102,7 @@ export async function DELETE(request: NextRequest) {
         error: '清理用户数据失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

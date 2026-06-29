@@ -1,1 +1,26 @@
-{"extends": ["next/core-web-vitals"], "parserOptions": {"ecmaVersion": 2020, "sourceType": "module"}, "rules": {"no-console": ["warn", {"allow": ["warn", "error"]}], "prefer-const": "warn", "no-var": "error", "eqeqeq": "warn", "curly": "warn", "no-debugger": "error", "no-alert": "warn", "no-unused-expressions": "warn", "react-hooks/rules-of-hooks": "error", "react-hooks/exhaustive-deps": "warn", "react/no-unescaped-entities": "off", "@next/next/no-img-element": "warn", "no-duplicate-imports": "warn", "react/jsx-no-undef": "warn", "react/display-name": "warn", "react/no-children-prop": "warn"}, "settings": {"next": {"rootDir": "."}}}
+{
+  "extends": ["next/core-web-vitals"],
+  "parserOptions": { "ecmaVersion": 2020, "sourceType": "module" },
+  "rules": {
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "prefer-const": "warn",
+    "no-var": "error",
+    "eqeqeq": "warn",
+    "curly": "warn",
+    "no-debugger": "error",
+    "no-alert": "warn",
+    "no-unused-expressions": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-img-element": "warn",
+    "no-duplicate-imports": "warn",
+    "react/jsx-no-undef": "warn",
+    "react/display-name": "warn",
+    "react/no-children-prop": "warn"
+  },
+  "settings": { "next": { "rootDir": "." } },
+  "overrides": [
+    { "files": ["electron/**/*.js"], "rules": { "@typescript-eslint/no-var-requires": "off" } }
+  ]
+}

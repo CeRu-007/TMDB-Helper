@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const oceanTheme: ThemeConfig = {
   id: 'ocean',
@@ -39,4 +39,4 @@ export const oceanTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

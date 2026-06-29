@@ -18,30 +18,25 @@ export interface ValidationResult<T> {
  * 安全验证函数
  * 验证数据是否符合指定的 Zod 模式
  */
-export function safeValidate<T>(
-  data: unknown,
-  schema: ZodSchema<T>
-): ValidationResult<T> {
+export function safeValidate<T>(data: unknown, schema: ZodSchema<T>): ValidationResult<T> {
   try {
     const validatedData = schema.parse(data);
     return {
       success: true,
-      data: validatedData
+      data: validatedData,
     };
   } catch (error) {
     if (error instanceof ZodError) {
-      const errors = error.errors.map(err =>
-        `${err.path.join('.')}: ${err.message}`
-      );
+      const errors = error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
       return {
         success: false,
-        errors
+        errors,
       };
     }
 
     return {
       success: false,
-      errors: ['Unknown validation error']
+      errors: ['Unknown validation error'],
     };
   }
 }
@@ -50,18 +45,11 @@ export function safeValidate<T>(
  * 断言验证函数
  * 验证数据，如果失败则抛出错误
  */
-export function assertValid<T>(
-  data: unknown,
-  schema: ZodSchema<T>,
-  errorMessage?: string
-): T {
+export function assertValid<T>(data: unknown, schema: ZodSchema<T>, errorMessage?: string): T {
   const result = safeValidate(data, schema);
 
   if (!result.success) {
-    throw new Error(
-      errorMessage ||
-      `Validation failed: ${result.errors?.join(', ')}`
-    );
+    throw new Error(errorMessage || `Validation failed: ${result.errors?.join(', ')}`);
   }
 
   return result.data!;
@@ -78,36 +66,38 @@ export const commonSchemas = {
   url: z.string().url(),
 
   // API 响应格式
-  apiResponse: <T>(dataSchema: ZodSchema<T>) => z.object({
-    success: z.boolean(),
-    data: dataSchema.optional(),
-    error: z.string().optional(),
-    details: z.unknown().optional(),
-    timestamp: z.string().optional()
-  }),
+  apiResponse: <T>(dataSchema: ZodSchema<T>) =>
+    z.object({
+      success: z.boolean(),
+      data: dataSchema.optional(),
+      error: z.string().optional(),
+      details: z.unknown().optional(),
+      timestamp: z.string().optional(),
+    }),
 
   // 分页响应
-  paginatedResponse: <T>(itemSchema: ZodSchema<T>) => z.object({
-    data: z.array(itemSchema),
-    total: z.number(),
-    page: z.number(),
-    pageSize: z.number(),
-    hasNext: z.boolean(),
-    hasPrev: z.boolean()
-  }),
+  paginatedResponse: <T>(itemSchema: ZodSchema<T>) =>
+    z.object({
+      data: z.array(itemSchema),
+      total: z.number(),
+      page: z.number(),
+      pageSize: z.number(),
+      hasNext: z.boolean(),
+      hasPrev: z.boolean(),
+    }),
 
   // 数据库记录
   databaseRecord: z.object({
     id: z.union([z.string(), z.number()]),
     createdAt: z.union([z.string().datetime(), z.date()]).optional(),
-    updatedAt: z.union([z.string().datetime(), z.date()]).optional()
+    updatedAt: z.union([z.string().datetime(), z.date()]).optional(),
   }),
 
   // 错误对象
   error: z.object({
     message: z.string(),
     stack: z.string().optional(),
-    code: z.union([z.string(), z.number()]).optional()
+    code: z.union([z.string(), z.number()]).optional(),
   }),
 
   // 媒体项目
@@ -118,7 +108,7 @@ export const commonSchemas = {
     overview: z.string().optional(),
     releaseDate: z.string().optional(),
     posterPath: z.string().optional(),
-    backdropPath: z.string().optional()
+    backdropPath: z.string().optional(),
   }),
 
   // 用户信息
@@ -127,7 +117,7 @@ export const commonSchemas = {
     username: z.string(),
     email: z.string().email(),
     avatar: z.string().optional(),
-    role: z.enum(['admin', 'user']).optional()
+    role: z.enum(['admin', 'user']).optional(),
   }),
 
   // 任务配置
@@ -137,16 +127,14 @@ export const commonSchemas = {
     type: z.string(),
     enabled: z.boolean(),
     schedule: z.string().optional(),
-    config: z.record(z.unknown()).optional()
-  })
+    config: z.record(z.unknown()).optional(),
+  }),
 };
 
 /**
  * API 请求验证中间件
  */
-export function validateRequest<T>(
-  schema: ZodSchema<T>
-) {
+export function validateRequest<T>(schema: ZodSchema<T>) {
   return (data: unknown): T => {
     return assertValid(data, schema, 'Invalid request data');
   };
@@ -160,7 +148,7 @@ export function validateApiResponse<T>(
   dataSchema: ZodSchema<T>
 ): ValidationResult<T> {
   const responseSchema = commonSchemas.apiResponse(dataSchema);
-  return safeValidate(data, responseSchema);
+  return safeValidate(data, responseSchema) as ValidationResult<T>;
 }
 
 /**
@@ -194,7 +182,7 @@ export const envSchemas = {
   apiKey: z.string().min(1),
   port: z.string().transform(Number).pipe(z.number().positive()),
   nodeEnv: z.enum(['development', 'production', 'test']),
-  logLevel: z.enum(['error', 'warn', 'info', 'debug'])
+  logLevel: z.enum(['error', 'warn', 'info', 'debug']),
 };
 
 /**
@@ -237,7 +225,7 @@ export function validatePartial<T>(
   data: unknown,
   schema: ZodSchema<T>
 ): ValidationResult<Partial<T>> {
-  const partialSchema = schema.partial();
+  const partialSchema = (schema as any).partial();
   return safeValidate(data, partialSchema);
 }
 
@@ -267,14 +255,14 @@ export function validateDeep<T>(
 ): ValidationResult<T> {
   const { strict = false, allowUnknown = true } = options;
 
-  let finalSchema = schema;
+  let finalSchema = schema as any;
 
   if (strict) {
-    finalSchema = schema.strict();
+    finalSchema = (schema as any).strict();
   }
 
   if (!allowUnknown) {
-    finalSchema = schema.passthrough();
+    finalSchema = (schema as any).passthrough();
   }
 
   return safeValidate(data, finalSchema);
@@ -301,13 +289,15 @@ export async function validateAsync<T>(
       if (!isValid) {
         return {
           success: false,
-          errors: ['Async validation failed']
+          errors: ['Async validation failed'],
         };
       }
     } catch (error) {
       return {
         success: false,
-        errors: [`Async validation error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [
+          `Async validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        ],
       };
     }
   }

@@ -1,188 +1,225 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Clock, Play, Loader2, Info, Terminal, Activity, Ban, HelpCircle } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import { logger } from "@/lib/utils/logger"
-import type { TMDBItem } from "@/types/tmdb-item"
-import type { ScheduleTask, ScheduleLog, FieldCleanup, PlatformSourceConfig } from "@/types/schedule"
-import { getCronDescription, getNextRunTime, validateCronExpression, getRecommendations } from "@/lib/utils/cron-utils"
-import { Button } from "@/shared/components/ui/button"
-import { Switch } from "@/shared/components/ui/switch"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import { Badge } from "@/shared/components/ui/badge"
-import { Checkbox } from "@/shared/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { LanguageSelector } from "@/shared/components/ui/language-selector"
-import { getInitialLanguage } from "@/lib/i18n"
-import { SeasonPicker } from "@/shared/components/ui/season-picker"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Clock, Play, Loader2, Info, Terminal, Activity, Ban, HelpCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/utils/logger';
+import type { TMDBItem } from '@/types/tmdb-item';
+import type {
+  ScheduleTask,
+  ScheduleLog,
+  FieldCleanup,
+  PlatformSourceConfig,
+} from '@/types/schedule';
+import {
+  getCronDescription,
+  getNextRunTime,
+  validateCronExpression,
+  getRecommendations,
+} from '@/lib/utils/cron-utils';
+import { Button } from '@/shared/components/ui/button';
+import { Switch } from '@/shared/components/ui/switch';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Badge } from '@/shared/components/ui/badge';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { LanguageSelector } from '@/shared/components/ui/language-selector';
+import { getInitialLanguage } from '@/lib/i18n';
+import { SeasonPicker } from '@/shared/components/ui/season-picker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/components/ui/tooltip';
 
 interface ScheduleTabProps {
-  item: TMDBItem
+  item: TMDBItem;
 }
 
 interface LogEntry {
-  type: "stdout" | "stderr" | "info" | "success" | "error"
-  message: string
-  timestamp: string
+  type: 'stdout' | 'stderr' | 'info' | 'success' | 'error';
+  message: string;
+  timestamp: string;
 }
 
 export function ScheduleTab({ item }: ScheduleTabProps) {
-  const { t } = useTranslation("schedule")
-  const isCompleted = item.status === "completed"
-  const [task, setTask] = useState<ScheduleTask | null>(null)
-  const [logs, setLogs] = useState<ScheduleLog[]>([])
-  const [terminalLogs, setTerminalLogs] = useState<LogEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [executing, setExecuting] = useState(false)
-  const [cronInput, setCronInput] = useState("")
-  const [cronDescription, setCronDescription] = useState("")
-  const [nextRunTime, setNextRunTime] = useState("")
-  const [isValidCron, setIsValidCron] = useState(true)
-  const [enabled, setEnabled] = useState(false)
-  const [headless, setHeadless] = useState(true)
-  const [incremental, setIncremental] = useState(true)
-  const [autoImport, setAutoImport] = useState(false)
-  const [tmdbSeason, setTmdbSeason] = useState(1)
-  const [tmdbLanguage, setTmdbLanguage] = useState(getInitialLanguage())
-  const [tmdbAutoResponse, setTmdbAutoResponse] = useState("w")
+  const { t } = useTranslation('schedule');
+  const isCompleted = item.status === 'completed';
+  const [task, setTask] = useState<ScheduleTask | null>(null);
+  const [logs, setLogs] = useState<ScheduleLog[]>([]);
+  const [terminalLogs, setTerminalLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [cronInput, setCronInput] = useState('');
+  const [cronDescription, setCronDescription] = useState('');
+  const [nextRunTime, setNextRunTime] = useState('');
+  const [isValidCron, setIsValidCron] = useState(true);
+  const [enabled, setEnabled] = useState(false);
+  const [headless, setHeadless] = useState(true);
+  const [incremental, setIncremental] = useState(true);
+  const [autoImport, setAutoImport] = useState(false);
+  const [tmdbSeason, setTmdbSeason] = useState(1);
+  const [tmdbLanguage, setTmdbLanguage] = useState(getInitialLanguage());
+  const [tmdbAutoResponse, setTmdbAutoResponse] = useState('w');
   const [fieldCleanup, setFieldCleanup] = useState<FieldCleanup>({
     name: false,
     air_date: false,
     runtime: false,
     overview: false,
     backdrop: false,
-  })
-  const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false)
-  const [platformUrl, setPlatformUrl] = useState(item.defaultPlatformUrl || item.platformUrls?.[0] || "")
-  const [multiPlatformMode, setMultiPlatformMode] = useState(false)
-  const [platformConfigs, setPlatformConfigs] = useState<PlatformSourceConfig[]>([])
-  const terminalRef = useRef<HTMLDivElement>(null)
-  const isUserScrolling = useRef(false)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  });
+  const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false);
+  const [platformUrl, setPlatformUrl] = useState(
+    item.defaultPlatformUrl || item.platformUrls?.[0] || ''
+  );
+  const [multiPlatformMode, setMultiPlatformMode] = useState(false);
+  const [platformConfigs, setPlatformConfigs] = useState<PlatformSourceConfig[]>([]);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const isUserScrolling = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const addLog = useCallback((type: LogEntry["type"], message: string) => {
+  const addLog = useCallback((type: LogEntry['type'], message: string) => {
     setTerminalLogs((prev) => [
       ...prev,
       { type, message, timestamp: new Date().toLocaleTimeString() },
-    ])
-  }, [])
+    ]);
+  }, []);
 
   const loadTask = useCallback(async () => {
     try {
-      const response = await fetch(`/api/schedule/tasks?itemId=${item.id}`)
-      const data = await response.json()
+      const response = await fetch(`/api/schedule/tasks?itemId=${item.id}`);
+      const data = await response.json();
 
       if (data.success && data.data) {
-        setTask(data.data)
-        setCronInput(data.data.cron)
-        setCronDescription(getCronDescription(data.data.cron))
-        setNextRunTime(getNextRunTime(data.data.cron))
-        setIsValidCron(validateCronExpression(data.data.cron))
-        setEnabled(data.data.enabled)
-        setHeadless(data.data.headless)
-        setIncremental(data.data.incremental)
-        setAutoImport(data.data.autoImport)
-        setTmdbSeason(data.data.tmdbSeason || 1)
-        setTmdbLanguage(data.data.tmdbLanguage || 'zh-CN')
-        setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w')
-        setFieldCleanup(data.data.fieldCleanup)
-        setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false)
-        setPlatformUrl(data.data.platformUrl || item.defaultPlatformUrl || item.platformUrls?.[0] || "")
+        setTask(data.data);
+        setCronInput(data.data.cron);
+        setCronDescription(getCronDescription(data.data.cron));
+        setNextRunTime(getNextRunTime(data.data.cron));
+        setIsValidCron(validateCronExpression(data.data.cron));
+        setEnabled(data.data.enabled);
+        setHeadless(data.data.headless);
+        setIncremental(data.data.incremental);
+        setAutoImport(data.data.autoImport);
+        setTmdbSeason(data.data.tmdbSeason || 1);
+        setTmdbLanguage(data.data.tmdbLanguage || 'zh-CN');
+        setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w');
+        setFieldCleanup(data.data.fieldCleanup);
+        setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false);
+        setPlatformUrl(
+          data.data.platformUrl || item.defaultPlatformUrl || item.platformUrls?.[0] || ''
+        );
 
         if (data.data.platformConfigs && data.data.platformConfigs.length > 0) {
-          setPlatformConfigs(data.data.platformConfigs)
-          setMultiPlatformMode(true)
+          setPlatformConfigs(data.data.platformConfigs);
+          setMultiPlatformMode(true);
         } else {
           const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
             url,
             enabled: true,
-            keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false },
-          }))
-          setPlatformConfigs(initialConfigs)
-          setMultiPlatformMode(false)
+            keepFields: {
+              name: false,
+              air_date: false,
+              runtime: false,
+              overview: false,
+              backdrop: false,
+            },
+          }));
+          setPlatformConfigs(initialConfigs);
+          setMultiPlatformMode(false);
         }
 
-        const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`)
-        const logsData = await logsResponse.json()
+        const logsResponse = await fetch(`/api/schedule/logs?taskId=${data.data.id}&limit=10`);
+        const logsData = await logsResponse.json();
         if (logsData.success) {
-          setLogs(logsData.data)
+          setLogs(logsData.data);
         }
       } else {
-        setCronInput("0 2 * * *")
-        setCronDescription(getCronDescription("0 2 * * *"))
-        setNextRunTime(getNextRunTime("0 2 * * *"))
+        setCronInput('0 2 * * *');
+        setCronDescription(getCronDescription('0 2 * * *'));
+        setNextRunTime(getNextRunTime('0 2 * * *'));
       }
     } catch (error) {
-      logger.error("[ScheduleTab] Failed to load task:", error)
+      logger.error('[ScheduleTab] Failed to load task:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [item.id])
+  }, [item.id, item.defaultPlatformUrl, item.platformUrls]);
 
   useEffect(() => {
-    loadTask()
-  }, [loadTask])
+    loadTask();
+  }, [loadTask]);
 
   useEffect(() => {
-    if (!terminalRef.current) return
+    if (!terminalRef.current) {
+      return;
+    }
 
     const handleScroll = () => {
-      if (!terminalRef.current) return
-      const { scrollTop, scrollHeight, clientHeight } = terminalRef.current
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+      if (!terminalRef.current) {
+        return;
+      }
+      const { scrollTop, scrollHeight, clientHeight } = terminalRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
       if (!isAtBottom) {
-        isUserScrolling.current = true
+        isUserScrolling.current = true;
         if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current)
+          clearTimeout(scrollTimeoutRef.current);
         }
         scrollTimeoutRef.current = setTimeout(() => {
-          isUserScrolling.current = false
-        }, 3000)
+          isUserScrolling.current = false;
+        }, 3000);
       } else {
-        isUserScrolling.current = false
+        isUserScrolling.current = false;
       }
-    }
+    };
 
-    const terminal = terminalRef.current
-    terminal.addEventListener("scroll", handleScroll)
+    const terminal = terminalRef.current;
+    terminal.addEventListener('scroll', handleScroll);
     return () => {
-      terminal.removeEventListener("scroll", handleScroll)
+      terminal.removeEventListener('scroll', handleScroll);
       if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
+        clearTimeout(scrollTimeoutRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   useEffect(() => {
     if (terminalRef.current && !isUserScrolling.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
-  }, [terminalLogs])
+  }, [terminalLogs]);
 
   const handleCronChange = (value: string) => {
-    setCronInput(value)
-    const valid = validateCronExpression(value)
-    setIsValidCron(valid)
+    setCronInput(value);
+    const valid = validateCronExpression(value);
+    setIsValidCron(valid);
     if (valid) {
-      setCronDescription(getCronDescription(value))
-      setNextRunTime(getNextRunTime(value))
+      setCronDescription(getCronDescription(value));
+      setNextRunTime(getNextRunTime(value));
     } else {
-      setCronDescription(t("invalidCron"))
-      setNextRunTime("")
+      setCronDescription(t('invalidCron'));
+      setNextRunTime('');
     }
-  }
+  };
 
   const handleSave = async () => {
-    if (!isValidCron) return
+    if (!isValidCron) {
+      return;
+    }
 
-    setSaving(true)
+    setSaving(true);
     try {
-      const method = task ? "PUT" : "POST"
+      const method = task ? 'PUT' : 'POST';
       const body = task
         ? {
             id: task.id,
@@ -213,66 +250,66 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
             checkMetadataCompleteness,
             platformUrl: multiPlatformMode ? platformConfigs[0]?.url : platformUrl,
             platformConfigs: multiPlatformMode ? platformConfigs : [],
-          }
+          };
 
-      const response = await fetch("/api/schedule/tasks", {
+      const response = await fetch('/api/schedule/tasks', {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
       if (data.success && data.data) {
-        setTask(data.data)
-        addLog("success", t("configSaved"))
+        setTask(data.data);
+        addLog('success', t('configSaved'));
       } else {
-        addLog("error", `${t("saveFailed")}: ${data.error}`)
+        addLog('error', `${t('saveFailed')}: ${data.error}`);
       }
     } catch (error) {
-      logger.error("[ScheduleTab] Failed to save:", error)
-      addLog("error", t("saveFailed"))
+      logger.error('[ScheduleTab] Failed to save:', error);
+      addLog('error', t('saveFailed'));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleExecute = async () => {
-    setExecuting(true)
-    setTerminalLogs([])
-    addLog("info", t("startExecution"))
+    setExecuting(true);
+    setTerminalLogs([]);
+    addLog('info', t('startExecution'));
 
     try {
-      const response = await fetch("/api/schedule/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/schedule/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId: item.id }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        addLog("success", result.message)
+        addLog('success', result.message);
         if (result.logs && Array.isArray(result.logs)) {
           result.logs.forEach((log: { type: string; message: string }) => {
-            addLog(log.type as LogEntry["type"], log.message)
-          })
+            addLog(log.type as LogEntry['type'], log.message);
+          });
         }
       } else {
-        addLog("error", result.error || t("executionFailed"))
+        addLog('error', result.error || t('executionFailed'));
       }
 
-      await loadTask()
+      await loadTask();
     } catch (error) {
-      logger.error("[ScheduleTab] Execution failed:", error)
-      addLog("error", t("executionFailed"))
+      logger.error('[ScheduleTab] Execution failed:', error);
+      addLog('error', t('executionFailed'));
     } finally {
-      setExecuting(false)
+      setExecuting(false);
     }
-  }
+  };
 
   const handleRecommendationClick = (cron: string) => {
-    handleCronChange(cron)
-  }
+    handleCronChange(cron);
+  };
 
   const recommendations = getRecommendations({
     weekday: item.weekday,
@@ -280,29 +317,29 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     airTime: item.airTime,
     isDailyUpdate: item.isDailyUpdate,
     currentTime: new Date(),
-  })
+  });
 
-  const getLogColor = (type: LogEntry["type"]) => {
+  const getLogColor = (type: LogEntry['type']) => {
     switch (type) {
-      case "stdout":
-        return "text-green-400"
-      case "stderr":
-        return "text-red-400"
-      case "success":
-        return "text-green-400"
-      case "error":
-        return "text-red-400"
+      case 'stdout':
+        return 'text-green-400';
+      case 'stderr':
+        return 'text-red-400';
+      case 'success':
+        return 'text-green-400';
+      case 'error':
+        return 'text-red-400';
       default:
-        return "text-blue-400"
+        return 'text-blue-400';
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-40">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
@@ -314,32 +351,34 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4" />
-                  <Label>{t("enableSchedule")}</Label>
+                  <Label>{t('enableSchedule')}</Label>
                 </div>
-                <Switch checked={isCompleted ? false : enabled} onCheckedChange={setEnabled} disabled={isCompleted} />
+                <Switch
+                  checked={isCompleted ? false : enabled}
+                  onCheckedChange={setEnabled}
+                  disabled={isCompleted}
+                />
               </div>
 
               {isCompleted && (
                 <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50 text-muted-foreground text-xs">
                   <Ban className="h-4 w-4 flex-shrink-0" />
-                  <span>{t("completedItemDisabled")}</span>
+                  <span>{t('completedItemDisabled')}</span>
                 </div>
               )}
 
               {enabled && !isCompleted && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="cron">{t("executionTime")}</Label>
+                    <Label htmlFor="cron">{t('executionTime')}</Label>
                     <Input
                       id="cron"
                       value={cronInput}
                       onChange={(e) => handleCronChange(e.target.value)}
                       placeholder="0 2 * * *"
-                      className={!isValidCron ? "border-red-500" : ""}
+                      className={!isValidCron ? 'border-red-500' : ''}
                     />
-                    {!isValidCron && (
-                      <p className="text-xs text-red-500">{t("invalidCron")}</p>
-                    )}
+                    {!isValidCron && <p className="text-xs text-red-500">{t('invalidCron')}</p>}
                     {isValidCron && cronDescription && (
                       <p className="text-xs text-muted-foreground flex items-center">
                         <Info className="h-3 w-3 mr-1" />
@@ -349,7 +388,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t("smartRecommend")}</Label>
+                    <Label>{t('smartRecommend')}</Label>
                     <div className="flex flex-wrap gap-2">
                       {recommendations.map((rec, index) => (
                         <Button
@@ -358,7 +397,14 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                           size="sm"
                           onClick={() => handleRecommendationClick(rec.cron)}
                           className="text-xs h-7"
-                          title={rec.descriptionKey ? t(rec.descriptionKey, { time: rec.description, day: rec.weekday || '' }) : rec.description}
+                          title={
+                            rec.descriptionKey
+                              ? t(rec.descriptionKey, {
+                                  time: rec.description,
+                                  day: rec.weekday || '',
+                                })
+                              : rec.description
+                          }
                         >
                           {rec.labelKey ? t(rec.labelKey) : rec.label}
                         </Button>
@@ -370,7 +416,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                     <div className="flex items-center justify-between py-3 border-t border-b border-border/50">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium text-foreground">{t("nextRun")}</span>
+                        <span className="text-sm font-medium text-foreground">{t('nextRun')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{nextRunTime}</span>
@@ -381,31 +427,31 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   )}
 
                   <div className="space-y-2">
-                    <Label>{t("runMode")}</Label>
+                    <Label>{t('runMode')}</Label>
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        variant={!headless ? "default" : "outline"}
+                        variant={!headless ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setHeadless(false)}
-                        className={`flex-1 h-7 text-xs ${!headless ? "bg-green-600 hover:bg-green-700" : ""}`}
+                        className={`flex-1 h-7 text-xs ${!headless ? 'bg-green-600 hover:bg-green-700' : ''}`}
                       >
                         <Terminal className="h-3 w-3 mr-1" />
-                        {t("foreground")}
+                        {t('foreground')}
                       </Button>
                       <Button
                         type="button"
-                        variant={headless ? "default" : "outline"}
+                        variant={headless ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setHeadless(true)}
-                        className={`flex-1 h-7 text-xs ${headless ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                        className={`flex-1 h-7 text-xs ${headless ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                       >
                         <Activity className="h-3 w-3 mr-1" />
-                        {t("background")}
+                        {t('background')}
                       </Button>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {headless ? t("backgroundTip") : t("foregroundTip")}
+                      {headless ? t('backgroundTip') : t('foregroundTip')}
                     </p>
                   </div>
 
@@ -413,7 +459,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {item.platformUrls && item.platformUrls.length > 1 && (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Label>{t("dataSourceMode")}</Label>
+                        <Label>{t('dataSourceMode')}</Label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -421,8 +467,12 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 <HelpCircle className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
-                              <p className="text-xs">{t("dataSourceModeHelp")}</p>
+                            <TooltipContent
+                              side="right"
+                              sideOffset={5}
+                              className="max-w-xs z-[9999]"
+                            >
+                              <p className="text-xs">{t('dataSourceModeHelp')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -430,35 +480,45 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                       <div className="flex gap-2">
                         <Button
                           type="button"
-                          variant={!multiPlatformMode ? "default" : "outline"}
+                          variant={!multiPlatformMode ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setMultiPlatformMode(false)}
-                          className={`flex-1 h-7 text-xs ${!multiPlatformMode ? "bg-green-600 hover:bg-green-700" : ""}`}
+                          className={`flex-1 h-7 text-xs ${!multiPlatformMode ? 'bg-green-600 hover:bg-green-700' : ''}`}
                         >
-                          {t("singlePlatformMode")}
+                          {t('singlePlatformMode')}
                         </Button>
                         <Button
                           type="button"
-                          variant={multiPlatformMode ? "default" : "outline"}
+                          variant={multiPlatformMode ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => {
                             if (!multiPlatformMode && platformConfigs.length === 0) {
-                              const initialConfigs: PlatformSourceConfig[] = (item.platformUrls || []).map((url) => ({
+                              const initialConfigs: PlatformSourceConfig[] = (
+                                item.platformUrls || []
+                              ).map((url) => ({
                                 url,
                                 enabled: true,
-                                keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false },
-                              }))
-                              setPlatformConfigs(initialConfigs)
+                                keepFields: {
+                                  name: false,
+                                  air_date: false,
+                                  runtime: false,
+                                  overview: false,
+                                  backdrop: false,
+                                },
+                              }));
+                              setPlatformConfigs(initialConfigs);
                             }
-                            setMultiPlatformMode(true)
+                            setMultiPlatformMode(true);
                           }}
-                          className={`flex-1 h-7 text-xs ${multiPlatformMode ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                          className={`flex-1 h-7 text-xs ${multiPlatformMode ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                         >
-                          {t("multiPlatformMode")}
+                          {t('multiPlatformMode')}
                         </Button>
                       </div>
                       <p className="text-[10px] text-muted-foreground">
-                        {multiPlatformMode ? t("multiPlatformModeDesc") : t("singlePlatformModeDesc")}
+                        {multiPlatformMode
+                          ? t('multiPlatformModeDesc')
+                          : t('singlePlatformModeDesc')}
                       </p>
                     </div>
                   )}
@@ -467,7 +527,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {multiPlatformMode && platformConfigs.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Label>{t("platformSources")}</Label>
+                        <Label>{t('platformSources')}</Label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -475,8 +535,12 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 <HelpCircle className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
-                              <p className="text-xs">{t("platformSourcesHelp")}</p>
+                            <TooltipContent
+                              side="right"
+                              sideOffset={5}
+                              className="max-w-xs z-[9999]"
+                            >
+                              <p className="text-xs">{t('platformSourcesHelp')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -491,40 +555,53 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                   id={`platform-${idx}`}
                                   checked={config.enabled}
                                   onCheckedChange={(checked) => {
-                                    const newConfigs = [...platformConfigs]
-                                    newConfigs[idx] = { ...config, enabled: checked === true }
-                                    setPlatformConfigs(newConfigs)
+                                    const newConfigs = [...platformConfigs];
+                                    newConfigs[idx] = { ...config, enabled: checked === true };
+                                    setPlatformConfigs(newConfigs);
                                   }}
                                 />
-                                <Label htmlFor={`platform-${idx}`} className="text-xs font-mono break-all">
+                                <Label
+                                  htmlFor={`platform-${idx}`}
+                                  className="text-xs font-mono break-all"
+                                >
                                   {config.url}
                                 </Label>
                               </div>
                               <span className="text-[10px] text-muted-foreground">
-                                {idx === 0 ? t("primarySource") : `${t("source")} ${idx + 1}`}
+                                {idx === 0 ? t('primarySource') : `${t('source')} ${idx + 1}`}
                               </span>
                             </div>
 
                             {/* 保留字段配置 */}
                             {config.enabled && (
                               <div className="pl-6 space-y-1">
-                                <Label className="text-[10px] text-muted-foreground">{t("keepFields")}</Label>
+                                <Label className="text-[10px] text-muted-foreground">
+                                  {t('keepFields')}
+                                </Label>
                                 <div className="flex flex-wrap gap-2">
-                                  {(['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const).map(field => (
+                                  {(
+                                    ['name', 'air_date', 'runtime', 'overview', 'backdrop'] as const
+                                  ).map((field) => (
                                     <div key={field} className="flex items-center space-x-1">
                                       <Checkbox
                                         id={`field-${idx}-${field}`}
                                         checked={config.keepFields[field]}
                                         onCheckedChange={(checked) => {
-                                          const newConfigs = [...platformConfigs]
+                                          const newConfigs = [...platformConfigs];
                                           newConfigs[idx] = {
                                             ...config,
-                                            keepFields: { ...config.keepFields, [field]: checked === true },
-                                          }
-                                          setPlatformConfigs(newConfigs)
+                                            keepFields: {
+                                              ...config.keepFields,
+                                              [field]: checked === true,
+                                            },
+                                          };
+                                          setPlatformConfigs(newConfigs);
                                         }}
                                       />
-                                      <Label htmlFor={`field-${idx}-${field}`} className="text-[10px]">
+                                      <Label
+                                        htmlFor={`field-${idx}-${field}`}
+                                        className="text-[10px]"
+                                      >
                                         {field}
                                       </Label>
                                     </div>
@@ -542,7 +619,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {!multiPlatformMode && item.platformUrls && item.platformUrls.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Label>{t("platformUrl", { ns: "media" })}</Label>
+                        <Label>{t('platformUrl', { ns: 'media' })}</Label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -550,8 +627,12 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 <HelpCircle className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
-                              <p className="text-xs">{t("platformUrlHelp", { ns: "media" })}</p>
+                            <TooltipContent
+                              side="right"
+                              sideOffset={5}
+                              className="max-w-xs z-[9999]"
+                            >
+                              <p className="text-xs">{t('platformUrlHelp', { ns: 'media' })}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -572,14 +653,14 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                         </SelectContent>
                       </Select>
                       <p className="text-[10px] text-muted-foreground">
-                        {t("platformUrlScheduleTip", { ns: "media" })}
+                        {t('platformUrlScheduleTip', { ns: 'media' })}
                       </p>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="autoImport">{t("autoImportTmdb")}</Label>
+                      <Label htmlFor="autoImport">{t('autoImportTmdb')}</Label>
                     </div>
                     <Switch id="autoImport" checked={autoImport} onCheckedChange={setAutoImport} />
                   </div>
@@ -587,28 +668,21 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   {autoImport && (
                     <div className="space-y-2 pl-4 border-l-2 border-muted">
                       <div className="flex flex-wrap items-center gap-3">
-                        <SeasonPicker
-                          value={tmdbSeason}
-                          onChange={setTmdbSeason}
-                        />
+                        <SeasonPicker value={tmdbSeason} onChange={setTmdbSeason} />
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs whitespace-nowrap">{t("language")}</Label>
-                          <LanguageSelector
-                            value={tmdbLanguage}
-                            onChange={setTmdbLanguage}
-                            className="h-7 text-xs"
-                          />
+                          <Label className="text-xs whitespace-nowrap">{t('language')}</Label>
+                          <LanguageSelector value={tmdbLanguage} onChange={setTmdbLanguage} />
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Label className="text-xs whitespace-nowrap">{t("overview")}</Label>
+                          <Label className="text-xs whitespace-nowrap">{t('overview')}</Label>
                           <Select value={tmdbAutoResponse} onValueChange={setTmdbAutoResponse}>
                             <SelectTrigger className="w-20 h-7 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="w">{t("wait")}</SelectItem>
-                              <SelectItem value="y">{t("overwrite")}</SelectItem>
-                              <SelectItem value="n">{t("skip")}</SelectItem>
+                              <SelectItem value="w">{t('wait')}</SelectItem>
+                              <SelectItem value="y">{t('overwrite')}</SelectItem>
+                              <SelectItem value="n">{t('skip')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -618,26 +692,34 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="incremental">{t("incrementalUpdate")}</Label>
+                      <Label htmlFor="incremental">{t('incrementalUpdate')}</Label>
                     </div>
-                    <Switch id="incremental" checked={incremental} onCheckedChange={setIncremental} />
+                    <Switch
+                      id="incremental"
+                      checked={incremental}
+                      onCheckedChange={setIncremental}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {incremental ? t("incrementalTip") : t("fullUpdateTip")}
+                    {incremental ? t('incrementalTip') : t('fullUpdateTip')}
                   </p>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="checkMetadata">{t("checkMetadataCompleteness")}</Label>
+                      <Label htmlFor="checkMetadata">{t('checkMetadataCompleteness')}</Label>
                     </div>
-                    <Switch id="checkMetadata" checked={checkMetadataCompleteness} onCheckedChange={setCheckMetadataCompleteness} />
+                    <Switch
+                      id="checkMetadata"
+                      checked={checkMetadataCompleteness}
+                      onCheckedChange={setCheckMetadataCompleteness}
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("checkMetadataCompletenessTip")}
+                    {t('checkMetadataCompletenessTip')}
                   </p>
 
                   <div className="space-y-2">
-                    <Label>{t("fieldCleanup")}</Label>
+                    <Label>{t('fieldCleanup')}</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -647,7 +729,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             setFieldCleanup({ ...fieldCleanup, name: checked === true })
                           }
                         />
-                        <Label htmlFor="cleanup-name" className="text-sm font-normal">name</Label>
+                        <Label htmlFor="cleanup-name" className="text-sm font-normal">
+                          name
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -657,7 +741,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             setFieldCleanup({ ...fieldCleanup, air_date: checked === true })
                           }
                         />
-                        <Label htmlFor="cleanup-air_date" className="text-sm font-normal">air_date</Label>
+                        <Label htmlFor="cleanup-air_date" className="text-sm font-normal">
+                          air_date
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -667,7 +753,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             setFieldCleanup({ ...fieldCleanup, runtime: checked === true })
                           }
                         />
-                        <Label htmlFor="cleanup-runtime" className="text-sm font-normal">runtime</Label>
+                        <Label htmlFor="cleanup-runtime" className="text-sm font-normal">
+                          runtime
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -677,7 +765,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             setFieldCleanup({ ...fieldCleanup, overview: checked === true })
                           }
                         />
-                        <Label htmlFor="cleanup-overview" className="text-sm font-normal">overview</Label>
+                        <Label htmlFor="cleanup-overview" className="text-sm font-normal">
+                          overview
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -687,7 +777,9 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                             setFieldCleanup({ ...fieldCleanup, backdrop: checked === true })
                           }
                         />
-                        <Label htmlFor="cleanup-backdrop" className="text-sm font-normal">backdrop</Label>
+                        <Label htmlFor="cleanup-backdrop" className="text-sm font-normal">
+                          backdrop
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -697,9 +789,13 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           </Card>
         </div>
         <div className="flex gap-2 px-1 py-2 flex-shrink-0">
-          <Button onClick={handleSave} disabled={saving || !isValidCron || isCompleted} className="flex-1 h-8 text-xs">
+          <Button
+            onClick={handleSave}
+            disabled={saving || !isValidCron || isCompleted}
+            className="flex-1 h-8 text-xs"
+          >
             {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-            {t("saveConfig")}
+            {t('saveConfig')}
           </Button>
           {task && (
             <Button
@@ -713,7 +809,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
               ) : (
                 <Play className="h-3 w-3 mr-1" />
               )}
-              {t("executeNow")}
+              {t('executeNow')}
             </Button>
           )}
         </div>
@@ -724,14 +820,14 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
           <CardHeader className="py-2 flex-shrink-0">
             <CardTitle className="text-sm flex items-center">
               <Activity className="h-4 w-4 mr-2" />
-              {t("executionLogs")}
+              {t('executionLogs')}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 p-0 px-3 pb-3">
             <div
               ref={terminalRef}
               className="bg-gray-900/90 backdrop-blur-md rounded-lg font-mono text-xs h-full overflow-y-auto"
-              style={{ lineHeight: "1.6" }}
+              style={{ lineHeight: '1.6' }}
             >
               {terminalLogs.length > 0 ? (
                 <div className="p-3 space-y-1">
@@ -744,8 +840,8 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                 </div>
               ) : (
                 <div className="p-3 text-gray-400">
-                  <p>{t("waitingForExecution")}</p>
-                  <p className="mt-2">{t("clickToExecute")}</p>
+                  <p>{t('waitingForExecution')}</p>
+                  <p className="mt-2">{t('clickToExecute')}</p>
                 </div>
               )}
             </div>
@@ -753,5 +849,5 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         </Card>
       </div>
     </div>
-  )
+  );
 }

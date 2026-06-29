@@ -1,22 +1,29 @@
-import { useCallback } from 'react'
-import { Message } from '@/types/ai-chat'
-import { logger } from '@/lib/utils/logger'
+import { useCallback } from 'react';
+import { Message } from '@/types/ai-chat';
+import { logger } from '@/lib/utils/logger';
 
 interface UseAiChatHandlersProps {
-  messages: Message[]
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
-  currentChatId: string | null
-  selectedModel: string
-  isLoading: boolean
-  setIsLoading: (loading: boolean) => void
-  setIsInterrupting: (interrupting: boolean) => void
-  setMainAbortController: (controller: AbortController | null) => void
-  createNewChat: () => Promise<string>
-  updateCurrentChat: (messages: Message[], chatId?: string) => Promise<void>
-  processStream: (response: Response, messageId: string, setMessages: React.Dispatch<React.SetStateAction<Message[]>>, scrollToLatestMessage: () => void) => Promise<string>
-  scrollToLatestMessage: () => void
-  getModelInfo: (modelId: string) => Promise<{ apiKey: string; modelId: string; apiBaseUrl?: string }>
-  fetchSuggestions: (lastMessage: string) => Promise<string[]>
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  currentChatId: string | null;
+  selectedModel: string;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+  setIsInterrupting: (interrupting: boolean) => void;
+  setMainAbortController: (controller: AbortController | null) => void;
+  createNewChat: () => Promise<string>;
+  updateCurrentChat: (messages: Message[], chatId?: string) => Promise<void>;
+  processStream: (
+    response: Response,
+    messageId: string,
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+    scrollToLatestMessage: () => void
+  ) => Promise<string>;
+  scrollToLatestMessage: () => void;
+  getModelInfo: (
+    modelId: string
+  ) => Promise<{ apiKey: string; modelId: string; apiBaseUrl?: string }>;
+  fetchSuggestions: (lastMessage: string) => Promise<string[]>;
 }
 
 export const useAiChatHandlers = ({
@@ -33,246 +40,339 @@ export const useAiChatHandlers = ({
   processStream,
   scrollToLatestMessage,
   getModelInfo,
-  fetchSuggestions
+  fetchSuggestions,
 }: UseAiChatHandlersProps) => {
-
-  const sendAIRequest = useCallback(async (
-    userContent: string,
-    uploadedFileContent?: string | null,
-    uploadedFileName?: string | null
-  ) => {
-    let chatId = currentChatId
-    if (!chatId) {
-      chatId = await createNewChat()
-    }
-
-    const userMessage: Message = {
-      id: `msg-${Date.now()}`,
-      role: 'user',
-      content: userContent,
-      timestamp: new Date(),
-      type: uploadedFileContent ? 'file' : 'text',
-      ...(uploadedFileName && { fileName: uploadedFileName }),
-      ...(uploadedFileContent && { fileContent: uploadedFileContent })
-    }
-
-    const assistantMessage: Message = {
-      id: `msg-${Date.now() + 1}`,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      type: 'text',
-      isStreaming: true
-    }
-
-    const updatedMessages = [...messages, userMessage, assistantMessage]
-    setMessages(updatedMessages)
-    setIsLoading(true)
-    setIsInterrupting(false)
-
-    const newAbortController = new AbortController()
-    setMainAbortController(newAbortController)
-
-    try {
-      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
-
-      const conversationMessages = messages
-        .filter(m => !m.isStreaming)
-        .map(m => ({ role: m.role, content: m.content }))
-
-      if (uploadedFileContent) {
-        conversationMessages.push({
-          role: 'user',
-          content: `字幕文件：${uploadedFileName}\n\n字幕内容：\n${uploadedFileContent}\n\n${userContent}`
-        })
-      } else {
-        conversationMessages.push({ role: 'user', content: userContent })
+  const sendAIRequest = useCallback(
+    async (
+      userContent: string,
+      uploadedFileContent?: string | null,
+      uploadedFileName?: string | null
+    ) => {
+      let chatId = currentChatId;
+      if (!chatId) {
+        chatId = await createNewChat();
       }
 
-      const response = await fetch('/api/ai/ai-chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
-        signal: newAbortController.signal
-      })
+      const userMessage: Message = {
+        id: `msg-${Date.now()}`,
+        role: 'user',
+        content: userContent,
+        timestamp: new Date(),
+        type: uploadedFileContent ? 'file' : 'text',
+        ...(uploadedFileName && { fileName: uploadedFileName }),
+        ...(uploadedFileContent && { fileContent: uploadedFileContent }),
+      };
 
-      if (response.status === 429) {
-        throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试')
+      const assistantMessage: Message = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        type: 'text',
+        isStreaming: true,
+      };
+
+      const updatedMessages = [...messages, userMessage, assistantMessage];
+      setMessages(updatedMessages);
+      setIsLoading(true);
+      setIsInterrupting(false);
+
+      const newAbortController = new AbortController();
+      setMainAbortController(newAbortController);
+
+      try {
+        const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel);
+
+        const conversationMessages = messages
+          .filter((m) => !m.isStreaming)
+          .map((m) => ({ role: m.role, content: m.content }));
+
+        if (uploadedFileContent) {
+          conversationMessages.push({
+            role: 'user',
+            content: `字幕文件：${uploadedFileName}\n\n字幕内容：\n${uploadedFileContent}\n\n${userContent}`,
+          });
+        } else {
+          conversationMessages.push({ role: 'user', content: userContent });
+        }
+
+        const response = await fetch('/api/ai/ai-chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+          body: JSON.stringify({
+            model: modelId,
+            messages: conversationMessages,
+            apiKey,
+            apiBaseUrl,
+          }),
+          signal: newAbortController.signal,
+        });
+
+        if (response.status === 429) {
+          throw new Error('当前模型已达到调用上限，请切换其他模型或稍后再试');
+        }
+
+        if (!response.ok || !response.body) {
+          throw new Error('AI回复失败');
+        }
+
+        const assistantAccumulated = await processStream(
+          response,
+          assistantMessage.id,
+          setMessages,
+          scrollToLatestMessage
+        );
+        const suggestions = await fetchSuggestions(assistantAccumulated);
+
+        setMessages((prevMessages) => {
+          const finalMessages = prevMessages.map((m) =>
+            m.id === assistantMessage.id
+              ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions, modelId }
+              : m
+          );
+          updateCurrentChat(finalMessages, chatId);
+          return finalMessages;
+        });
+
+        scrollToLatestMessage();
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          setMessages((prevMessages) => {
+            const interruptedMessages = prevMessages.map((msg) =>
+              msg.id === assistantMessage.id
+                ? { ...msg, content: msg.content || '回复已被用户中断', isStreaming: false }
+                : msg
+            );
+            updateCurrentChat(interruptedMessages, chatId);
+            return interruptedMessages;
+          });
+        } else {
+          logger.error('AI回复失败:', error);
+          setMessages((prevMessages) => {
+            const errorMessages = prevMessages.map((msg) =>
+              msg.id === assistantMessage.id
+                ? {
+                    ...msg,
+                    content:
+                      msg.content ||
+                      `AI回复时出现错误：${error instanceof Error ? error.message : String(error)}`,
+                    isStreaming: false,
+                  }
+                : msg
+            );
+            updateCurrentChat(errorMessages, chatId);
+            return errorMessages;
+          });
+        }
+      } finally {
+        setIsLoading(false);
+        setIsInterrupting(false);
+        setMainAbortController(null);
+      }
+    },
+    [
+      currentChatId,
+      messages,
+      selectedModel,
+      setMessages,
+      setIsLoading,
+      setIsInterrupting,
+      setMainAbortController,
+      createNewChat,
+      getModelInfo,
+      processStream,
+      scrollToLatestMessage,
+      updateCurrentChat,
+      fetchSuggestions,
+    ]
+  );
+
+  const handleRegenerateResponse = useCallback(
+    async (messageId: string) => {
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) {
+        return;
       }
 
-      if (!response.ok || !response.body) {
-        throw new Error('AI回复失败')
+      const userMessage = messages[messageIndex - 1];
+      if (!userMessage || userMessage.role !== 'user') {
+        return;
       }
 
-      const assistantAccumulated = await processStream(response, assistantMessage.id, setMessages, scrollToLatestMessage)
-      const suggestions = await fetchSuggestions(assistantAccumulated)
+      const messagesBeforeRegenerate = messages.slice(0, messageIndex);
 
-      setMessages(prevMessages => {
-        const finalMessages = prevMessages.map(m =>
-          m.id === assistantMessage.id
-            ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions, modelId }
-            : m
-        )
-        updateCurrentChat(finalMessages, chatId)
-        return finalMessages
-      })
+      const newAssistantMessage: Message = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        type: userMessage.type === 'file' ? 'episode-summary' : 'text',
+        isStreaming: true,
+      };
 
-      scrollToLatestMessage()
-    } catch (error: unknown) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        setMessages(prevMessages => {
-          const interruptedMessages = prevMessages.map(msg =>
-            msg.id === assistantMessage.id
-              ? { ...msg, content: msg.content || '回复已被用户中断', isStreaming: false }
-              : msg
-          )
-          updateCurrentChat(interruptedMessages, chatId)
-          return interruptedMessages
-        })
-      } else {
-        logger.error('AI回复失败:', error)
-        setMessages(prevMessages => {
-          const errorMessages = prevMessages.map(msg =>
-            msg.id === assistantMessage.id
-              ? { ...msg, content: msg.content || `AI回复时出现错误：${error instanceof Error ? error.message : String(error)}`, isStreaming: false }
-              : msg
-          )
-          updateCurrentChat(errorMessages, chatId)
-          return errorMessages
-        })
+      const updatedMessages = [...messagesBeforeRegenerate, newAssistantMessage];
+      setMessages(updatedMessages);
+      setIsLoading(true);
+
+      const newAbortController = new AbortController();
+      setMainAbortController(newAbortController);
+
+      try {
+        const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel);
+        const conversationMessages = messagesBeforeRegenerate
+          .filter((m) => !m.isStreaming)
+          .map((m) => ({ role: m.role, content: m.content }));
+
+        const response = await fetch('/api/ai/ai-chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+          body: JSON.stringify({
+            model: modelId,
+            messages: conversationMessages,
+            apiKey,
+            apiBaseUrl,
+          }),
+          signal: newAbortController.signal,
+        });
+
+        if (!response.ok || !response.body) {
+          throw new Error('重新生成失败');
+        }
+
+        const assistantAccumulated = await processStream(
+          response,
+          newAssistantMessage.id,
+          setMessages,
+          scrollToLatestMessage
+        );
+        const suggestions = await fetchSuggestions(assistantAccumulated);
+
+        setMessages((prevMessages) => {
+          const finalMessages = prevMessages.map((m) =>
+            m.id === newAssistantMessage.id
+              ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions }
+              : m
+          );
+          updateCurrentChat(finalMessages);
+          return finalMessages;
+        });
+
+        scrollToLatestMessage();
+      } catch (error: unknown) {
+        if (!(error instanceof Error && error.name === 'AbortError')) {
+          logger.error('重新生成失败:', error);
+        }
+      } finally {
+        setIsLoading(false);
+        setMainAbortController(null);
       }
-    } finally {
-      setIsLoading(false)
-      setIsInterrupting(false)
-      setMainAbortController(null)
-    }
-  }, [currentChatId, messages, selectedModel, setMessages, setIsLoading, setIsInterrupting, setMainAbortController, createNewChat, getModelInfo, processStream, scrollToLatestMessage, updateCurrentChat, fetchSuggestions])
+    },
+    [
+      messages,
+      selectedModel,
+      setMessages,
+      setIsLoading,
+      setMainAbortController,
+      getModelInfo,
+      processStream,
+      scrollToLatestMessage,
+      updateCurrentChat,
+      fetchSuggestions,
+    ]
+  );
 
-  const handleRegenerateResponse = useCallback(async (messageId: string) => {
-    const messageIndex = messages.findIndex(m => m.id === messageId)
-    if (messageIndex === -1) return
+  const handleContinueGeneration = useCallback(
+    async (messageId: string) => {
+      const newAssistantMessage: Message = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        type: 'text',
+        isStreaming: true,
+      };
 
-    const userMessage = messages[messageIndex - 1]
-    if (!userMessage || userMessage.role !== 'user') return
+      setMessages([...messages, newAssistantMessage]);
+      setIsLoading(true);
 
-    const messagesBeforeRegenerate = messages.slice(0, messageIndex)
+      const newAbortController = new AbortController();
+      setMainAbortController(newAbortController);
 
-    const newAssistantMessage: Message = {
-      id: `msg-${Date.now()}`,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      type: userMessage.type === 'file' ? 'episode-summary' : 'text',
-      isStreaming: true
-    }
+      try {
+        const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel);
+        const conversationMessages = messages
+          .filter((m) => !m.isStreaming)
+          .map((m) => ({ role: m.role, content: m.content }));
 
-    const updatedMessages = [...messagesBeforeRegenerate, newAssistantMessage]
-    setMessages(updatedMessages)
-    setIsLoading(true)
+        conversationMessages.push({ role: 'user', content: '继续' });
 
-    const newAbortController = new AbortController()
-    setMainAbortController(newAbortController)
+        const response = await fetch('/api/ai/ai-chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+          body: JSON.stringify({
+            model: modelId,
+            messages: conversationMessages,
+            apiKey,
+            apiBaseUrl,
+          }),
+          signal: newAbortController.signal,
+        });
 
-    try {
-      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
-      const conversationMessages = messagesBeforeRegenerate
-        .filter(m => !m.isStreaming)
-        .map(m => ({ role: m.role, content: m.content }))
+        if (!response.ok || !response.body) {
+          throw new Error('继续生成失败');
+        }
 
-      const response = await fetch('/api/ai/ai-chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
-        signal: newAbortController.signal
-      })
+        const assistantAccumulated = await processStream(
+          response,
+          newAssistantMessage.id,
+          setMessages,
+          scrollToLatestMessage
+        );
+        const suggestions = await fetchSuggestions(assistantAccumulated);
 
-      if (!response.ok || !response.body) throw new Error('重新生成失败')
+        setMessages((prevMessages) => {
+          const finalMessages = prevMessages.map((m) =>
+            m.id === newAssistantMessage.id
+              ? {
+                  ...m,
+                  content: assistantAccumulated,
+                  isStreaming: false,
+                  suggestions,
+                  canContinue: true,
+                }
+              : m
+          );
+          updateCurrentChat(finalMessages);
+          return finalMessages;
+        });
 
-      const assistantAccumulated = await processStream(response, newAssistantMessage.id, setMessages, scrollToLatestMessage)
-      const suggestions = await fetchSuggestions(assistantAccumulated)
-
-      setMessages(prevMessages => {
-        const finalMessages = prevMessages.map(m =>
-          m.id === newAssistantMessage.id
-            ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions }
-            : m
-        )
-        updateCurrentChat(finalMessages)
-        return finalMessages
-      })
-
-      scrollToLatestMessage()
-    } catch (error: unknown) {
-      if (!(error instanceof Error && error.name === 'AbortError')) {
-        logger.error('重新生成失败:', error)
+        scrollToLatestMessage();
+      } catch (error: unknown) {
+        if (!(error instanceof Error && error.name === 'AbortError')) {
+          logger.error('继续生成失败:', error);
+        }
+      } finally {
+        setIsLoading(false);
+        setMainAbortController(null);
       }
-    } finally {
-      setIsLoading(false)
-      setMainAbortController(null)
-    }
-  }, [messages, selectedModel, setMessages, setIsLoading, setMainAbortController, getModelInfo, processStream, scrollToLatestMessage, updateCurrentChat, fetchSuggestions])
-
-  const handleContinueGeneration = useCallback(async (messageId: string) => {
-    const newAssistantMessage: Message = {
-      id: `msg-${Date.now()}`,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      type: 'text',
-      isStreaming: true
-    }
-
-    setMessages([...messages, newAssistantMessage])
-    setIsLoading(true)
-
-    const newAbortController = new AbortController()
-    setMainAbortController(newAbortController)
-
-    try {
-      const { apiKey, modelId, apiBaseUrl } = await getModelInfo(selectedModel)
-      const conversationMessages = messages
-        .filter(m => !m.isStreaming)
-        .map(m => ({ role: m.role, content: m.content }))
-
-      conversationMessages.push({ role: 'user', content: '继续' })
-
-      const response = await fetch('/api/ai/ai-chat/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ model: modelId, messages: conversationMessages, apiKey, apiBaseUrl }),
-        signal: newAbortController.signal
-      })
-
-      if (!response.ok || !response.body) throw new Error('继续生成失败')
-
-      const assistantAccumulated = await processStream(response, newAssistantMessage.id, setMessages, scrollToLatestMessage)
-      const suggestions = await fetchSuggestions(assistantAccumulated)
-
-      setMessages(prevMessages => {
-        const finalMessages = prevMessages.map(m =>
-          m.id === newAssistantMessage.id
-            ? { ...m, content: assistantAccumulated, isStreaming: false, suggestions, canContinue: true }
-            : m
-        )
-        updateCurrentChat(finalMessages)
-        return finalMessages
-      })
-
-      scrollToLatestMessage()
-    } catch (error: unknown) {
-      if (!(error instanceof Error && error.name === 'AbortError')) {
-        logger.error('继续生成失败:', error)
-      }
-    } finally {
-      setIsLoading(false)
-      setMainAbortController(null)
-    }
-  }, [messages, selectedModel, setMessages, setIsLoading, setMainAbortController, getModelInfo, processStream, scrollToLatestMessage, updateCurrentChat, fetchSuggestions])
+    },
+    [
+      messages,
+      selectedModel,
+      setMessages,
+      setIsLoading,
+      setMainAbortController,
+      getModelInfo,
+      processStream,
+      scrollToLatestMessage,
+      updateCurrentChat,
+      fetchSuggestions,
+    ]
+  );
 
   return {
     sendAIRequest,
     handleRegenerateResponse,
-    handleContinueGeneration
-  }
-}
-
+    handleContinueGeneration,
+  };
+};

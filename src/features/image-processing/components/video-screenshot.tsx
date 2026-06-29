@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
-import { logger } from '@/lib/utils/logger'
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/utils/logger';
 import {
   Upload,
   Play,
@@ -21,137 +21,142 @@ import {
   X,
   AlertTriangle,
   Layers,
-  Loader2
-} from "lucide-react"
-import { HelpInfoButton } from "@/shared/components/ui/help-info-button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button } from "@/shared/components/ui/button"
-import { Progress } from "@/shared/components/ui/progress"
-import { Badge } from "@/shared/components/ui/badge"
-import { useToast } from "@/shared/components/ui/use-toast"
-import { useTranslation } from "react-i18next"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog"
-import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu"
-import { ImageProcessor } from "@/lib/media/image-processor-class"
-import JSZip from 'jszip'
-import FileSaver from 'file-saver'
+  Loader2,
+} from 'lucide-react';
+import { HelpInfoButton } from '@/shared/components/ui/help-info-button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Progress } from '@/shared/components/ui/progress';
+import { Badge } from '@/shared/components/ui/badge';
+import { useToast } from '@/shared/components/ui/use-toast';
+import { useTranslation } from 'react-i18next';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { DELAY_500MS, DELAY_2000MS } from '@/lib/constants/constants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
+import { ImageProcessor } from '@/lib/media/image-processor-class';
+import JSZip from 'jszip';
+import FileSaver from 'file-saver';
 
 // 视频文件接口
 interface VideoFile {
-  id: string
-  file: File
-  name: string
-  duration: number
-  resolution: string
-  size: number
-  url: string
-  thumbnails: Thumbnail[]
-  selectedThumbnail: number
-  extractionProgress: number
-  status: "pending" | "processing" | "completed" | "error" | "cancelled" | "no-frames"
+  id: string;
+  file: File;
+  name: string;
+  duration: number;
+  resolution: string;
+  size: number;
+  url: string;
+  thumbnails: Thumbnail[];
+  selectedThumbnail: number;
+  extractionProgress: number;
+  status: 'pending' | 'processing' | 'completed' | 'error' | 'cancelled' | 'no-frames';
 }
 
 // 缩略图接口
 interface Thumbnail {
-  id: string
-  url: string
-  timestamp: number
-  quality: number
-  isMain: boolean
+  id: string;
+  url: string;
+  timestamp: number;
+  quality: number;
+  isMain: boolean;
 }
 
 // 提取设置接口
 interface ExtractionSettings {
-  startTime: number
-  threadCount: number
-  outputFormat: "jpg" | "png"
-  thumbnailCount: number
-  frameInterval: number
-  keepOriginalResolution: boolean
+  startTime: number;
+  threadCount: number;
+  outputFormat: 'jpg' | 'png';
+  thumbnailCount: number;
+  frameInterval: number;
+  keepOriginalResolution: boolean;
 }
 
 interface PreviewData {
-  url: string
-  filename: string
-  videoId: string
-  thumbnailId: string
+  url: string;
+  filename: string;
+  videoId: string;
+  thumbnailId: string;
 }
 
 const DEFAULT_SETTINGS: ExtractionSettings = {
   startTime: 0,
   threadCount: 2,
-  outputFormat: "jpg",
+  outputFormat: 'jpg',
   thumbnailCount: 9,
   frameInterval: 30,
   keepOriginalResolution: true,
-}
+};
 
-const DEFAULT_ITEMS_PER_PAGE = 9
+const DEFAULT_ITEMS_PER_PAGE = 9;
 
 interface VideoScreenshotProps {
-  onOpenGlobalSettings?: (section?: string) => void
+  onOpenGlobalSettings?: (section?: string) => void;
 }
 
 export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreenshotProps = {}) {
-  const { t } = useTranslation('image-processing')
-  const { toast } = useToast()
+  const { t } = useTranslation('image-processing');
+  const { toast } = useToast();
 
   // 视频列表
-  const [videos, setVideos] = useState<VideoFile[]>([])
+  const [videos, setVideos] = useState<VideoFile[]>([]);
 
   // 处理状态
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [totalProgress, setTotalProgress] = useState(0)
-  const [processingQueue, setProcessingQueue] = useState<string[]>([])
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [totalProgress, setTotalProgress] = useState(0);
+  const [processingQueue, setProcessingQueue] = useState<string[]>([]);
 
   // 排序和过滤
-  const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
-  const [filterBy, setFilterBy] = useState<"all" | "completed" | "processing" | "pending">("all")
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
+  const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'processing' | 'pending'>('all');
 
   // 设置
-  const [settings, setSettings] = useState<ExtractionSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<ExtractionSettings>(DEFAULT_SETTINGS);
 
   // UI 状态
-  const [showHelpDialog, setShowHelpDialog] = useState(false)
-  const [showPreviewDialog, setShowPreviewDialog] = useState(false)
-  const [previewData, setPreviewData] = useState<PreviewData | null>(null)
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
+  const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   // 处理器状态
-  const [processorReady, setProcessorReady] = useState<boolean>(false)
-  const [processorInitialized, setProcessorInitialized] = useState(false)
+  const [processorReady, setProcessorReady] = useState<boolean>(false);
+  const [processorInitialized, setProcessorInitialized] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const dropAreaRef = useRef<HTMLDivElement>(null)
-  const imageProcessorRef = useRef<ImageProcessor | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropAreaRef = useRef<HTMLDivElement>(null);
+  const imageProcessorRef = useRef<ImageProcessor | null>(null);
 
   // 加载处理器和设置
   useEffect(() => {
     const initProcessor = async () => {
       try {
         if (typeof window !== 'undefined') {
-          const processor = ImageProcessor.getInstance()
-          await processor.initialize()
-          imageProcessorRef.current = processor
-          setProcessorInitialized(true)
-          setProcessorReady(true)
+          const processor = ImageProcessor.getInstance();
+          await processor.initialize();
+          imageProcessorRef.current = processor;
+          setProcessorInitialized(true);
+          setProcessorReady(true);
         }
       } catch (error) {
         toast({
           title: t('videoScreenshot.modelLoadFailed'),
           description: t('videoScreenshot.refreshPage'),
-          variant: "destructive",
-        })
+          variant: 'destructive',
+        });
       }
-    }
+    };
 
-    initProcessor()
+    initProcessor();
 
-    const savedSettings = localStorage.getItem("video_thumbnail_settings")
+    const savedSettings = localStorage.getItem('video_thumbnail_settings');
     if (savedSettings) {
       try {
-        const parsed = JSON.parse(savedSettings)
+        const parsed = JSON.parse(savedSettings);
         setSettings({
           ...DEFAULT_SETTINGS,
           ...parsed,
@@ -159,240 +164,258 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           threadCount: Number(parsed.threadCount ?? DEFAULT_SETTINGS.threadCount),
           thumbnailCount: Number(parsed.thumbnailCount ?? DEFAULT_SETTINGS.thumbnailCount),
           frameInterval: Number(parsed.frameInterval ?? DEFAULT_SETTINGS.frameInterval),
-          keepOriginalResolution: parsed.keepOriginalResolution ?? DEFAULT_SETTINGS.keepOriginalResolution,
-        })
+          keepOriginalResolution:
+            parsed.keepOriginalResolution ?? DEFAULT_SETTINGS.keepOriginalResolution,
+        });
       } catch (error) {
-        logger.error('加载设置失败:', error)
+        logger.error('加载设置失败:', error);
       }
     }
-  }, [toast])
+  }, [toast, t]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      processFiles(Array.from(event.target.files))
+      processFiles(Array.from(event.target.files));
     }
-  }
+  };
 
   // 处理文件拖放
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(Array.from(e.dataTransfer.files))
-    }
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processFiles(Array.from(e.dataTransfer.files));
+      }
 
-    // 重置拖放区域样式
-    if (dropAreaRef.current) {
-      dropAreaRef.current.classList.remove("border-primary", "bg-primary/5")
-    }
-  }, [])
+      // 重置拖放区域样式
+      if (dropAreaRef.current) {
+        dropAreaRef.current.classList.remove('border-primary', 'bg-primary/5');
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [toast, t, setVideos, isProcessing, processorReady]
+  );
 
   // 拖放区域进入事件
   const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
     // 添加高亮样式
     if (dropAreaRef.current) {
-      dropAreaRef.current.classList.add("border-primary", "bg-primary/5")
+      dropAreaRef.current.classList.add('border-primary', 'bg-primary/5');
     }
-  }, [])
+  }, []);
 
   // 拖放区域离开事件
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
     // 移除高亮样式
     if (dropAreaRef.current) {
-      dropAreaRef.current.classList.remove("border-primary", "bg-primary/5")
+      dropAreaRef.current.classList.remove('border-primary', 'bg-primary/5');
     }
-  }, [])
+  }, []);
 
   // 处理文件列表
-  const processFiles = (files: File[]) => {
-    const videoFiles = files.filter(file => file.type.startsWith('video/'))
+  const processFiles = useCallback(
+    (files: File[]) => {
+      const videoFiles = files.filter((file) => file.type.startsWith('video/'));
 
-    if (videoFiles.length === 0) {
-      toast({
-        title: t('videoScreenshot.noVideoFile'),
-        description: t('videoScreenshot.uploadVideoFile'),
-        variant: "destructive",
-      })
-      return
-    }
+      if (videoFiles.length === 0) {
+        toast({
+          title: t('videoScreenshot.noVideoFile'),
+          description: t('videoScreenshot.uploadVideoFile'),
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    const newVideos: VideoFile[] = videoFiles.map(file => ({
-      id: `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      file,
-      name: file.name,
-      size: file.size,
-      duration: 0,
-      resolution: "",
-      url: URL.createObjectURL(file),
-      thumbnails: [],
-      selectedThumbnail: 0,
-      extractionProgress: 0,
-      status: "pending"
-    }))
+      const newVideos: VideoFile[] = videoFiles.map((file) => ({
+        id: `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        file,
+        name: file.name,
+        size: file.size,
+        duration: 0,
+        resolution: '',
+        url: URL.createObjectURL(file),
+        thumbnails: [],
+        selectedThumbnail: 0,
+        extractionProgress: 0,
+        status: 'pending',
+      }));
 
-    setVideos(prev => [...prev, ...newVideos])
+      setVideos((prev) => [...prev, ...newVideos]);
 
-    if (!isProcessing && processorReady) {
-      setTimeout(() => handleBatchExtraction(), DELAY_500MS)
-    }
-  }
+      if (!isProcessing && processorReady) {
+        setTimeout(() => handleBatchExtraction(), DELAY_500MS);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, toast, setVideos, isProcessing, processorReady]
+  );
 
   // 格式化文件大小
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
-  }
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+  };
 
   // 格式化时长
   const formatDuration = (seconds: number): string => {
-    if (!isFinite(seconds) || seconds <= 0) return t("videoScreenshot.unknown")
+    if (!isFinite(seconds) || seconds <= 0) {
+      return t('videoScreenshot.unknown');
+    }
 
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = Math.floor(seconds % 60)
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
 
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`
-  }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // 批量处理视频
-  const handleBatchExtraction = async () => {
-    if (isProcessing) return
+  const handleBatchExtraction = useCallback(async () => {
+    if (isProcessing) {
+      return;
+    }
 
     if (!processorInitialized) {
       toast({
         title: t('videoScreenshot.waitForModelLoad'),
-        variant: "destructive",
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
 
     try {
-      const pendingVideos = videos.filter(v => v.status === "pending")
+      const pendingVideos = videos.filter((v) => v.status === 'pending');
 
       if (pendingVideos.length === 0) {
-          toast({
-            title: t("videoScreenshot.noVideoToProcess"),
-            description: t("videoScreenshot.uploadVideoFirst"),
-            variant: "default",
-          })
-        setIsProcessing(false)
-        return
+        toast({
+          title: t('videoScreenshot.noVideoToProcess'),
+          description: t('videoScreenshot.uploadVideoFirst'),
+          variant: 'default',
+        });
+        setIsProcessing(false);
+        return;
       }
 
-      await processQueue(pendingVideos)
+      await processQueue(pendingVideos);
     } catch (error) {
-      setIsProcessing(false)
-      setProcessingQueue([])
+      setIsProcessing(false);
+      setProcessingQueue([]);
       toast({
-        title: t("videoScreenshot.processingFailed"),
-        description: t("videoScreenshot.batchProcessError"),
-        variant: "destructive",
-      })
+        title: t('videoScreenshot.processingFailed'),
+        description: t('videoScreenshot.batchProcessError'),
+        variant: 'destructive',
+      });
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isProcessing, processorInitialized, t, toast, setIsProcessing, videos, setProcessingQueue]);
 
   // 队列处理函数
   const processQueue = async (videos: VideoFile[]) => {
-    const queue = [...videos.map(v => v.id)]
-    setProcessingQueue(queue)
+    const queue = [...videos.map((v) => v.id)];
+    setProcessingQueue(queue);
 
-    const concurrentLimit = Math.max(1, Math.min(settings.threadCount, 8))
-    let activeCount = 0
-    let completedCount = 0
+    const concurrentLimit = Math.max(1, Math.min(settings.threadCount, 8));
+    let activeCount = 0;
+    let completedCount = 0;
 
     const processNext = async () => {
       if (queue.length === 0) {
         if (completedCount === videos.length) {
-          setTotalProgress(100)
+          setTotalProgress(100);
         }
-        return
+        return;
       }
 
-      if (activeCount >= concurrentLimit) return
-
-      activeCount++
-      const videoId = queue.shift()!
-      const video = videos.find(v => v.id === videoId)
-
-      if (!video || video.status !== "pending") {
-        activeCount--
-        processNext()
-        return
+      if (activeCount >= concurrentLimit) {
+        return;
       }
 
-      setVideos(prev =>
-        prev.map(v => v.id === videoId ? { ...v, status: "processing", extractionProgress: 0 } : v)
-      )
+      activeCount++;
+      const videoId = queue.shift()!;
+      const video = videos.find((v) => v.id === videoId);
+
+      if (!video || video.status !== 'pending') {
+        activeCount--;
+        processNext();
+        return;
+      }
+
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoId ? { ...v, status: 'processing', extractionProgress: 0 } : v
+        )
+      );
 
       try {
-        await processVideo(video)
-        completedCount++
-        setTotalProgress(Math.floor((completedCount / videos.length) * 100))
+        await processVideo(video);
+        completedCount++;
+        setTotalProgress(Math.floor((completedCount / videos.length) * 100));
       } catch (error) {
-        completedCount++
-        setTotalProgress(Math.floor((completedCount / videos.length) * 100))
+        completedCount++;
+        setTotalProgress(Math.floor((completedCount / videos.length) * 100));
       } finally {
-        activeCount--
-        processNext()
+        activeCount--;
+        processNext();
 
         if (activeCount === 0 && queue.length === 0) {
-          setIsProcessing(false)
-          setProcessingQueue([])
+          setIsProcessing(false);
+          setProcessingQueue([]);
         }
       }
-    }
+    };
 
-    const initialBatch = Math.min(concurrentLimit, queue.length)
+    const initialBatch = Math.min(concurrentLimit, queue.length);
     for (let i = 0; i < initialBatch; i++) {
-      processNext()
+      processNext();
     }
-  }
+  };
 
   const processVideo = async (videoData: VideoFile): Promise<void> => {
     try {
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.src = videoData.url
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = videoData.url;
 
-      await loadVideoMetadata(video)
+      await loadVideoMetadata(video);
 
-      const duration = video.duration || 0
-      const resolution = video.videoWidth && video.videoHeight
+      const duration = video.duration || 0;
+      const resolution =
+        video.videoWidth && video.videoHeight
           ? `${video.videoWidth}x${video.videoHeight}`
-          : t("videoScreenshot.unknown")
+          : t('videoScreenshot.unknown');
 
-      setVideos(prev =>
-        prev.map(v => v.id === videoData.id ?
-          { ...v, duration, resolution, extractionProgress: 10 } : v
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoData.id ? { ...v, duration, resolution, extractionProgress: 10 } : v
         )
-      )
+      );
 
       if (!imageProcessorRef.current || !processorInitialized) {
-        throw new Error(t("videoScreenshot.modelNotReady"))
+        throw new Error(t('videoScreenshot.modelNotReady'));
       }
 
-      const validStartTime = Math.min(
-        Math.max(0, settings.startTime),
-        Math.max(0, duration - 1)
-      )
-      const availableDuration = Math.max(0, duration - validStartTime)
+      const validStartTime = Math.min(Math.max(0, settings.startTime), Math.max(0, duration - 1));
+      const availableDuration = Math.max(0, duration - validStartTime);
 
-      const candidateFrameCount = Math.max(settings.thumbnailCount * 2, 12)
+      const candidateFrameCount = Math.max(settings.thumbnailCount * 2, 12);
 
       const frames = await imageProcessorRef.current.extractFramesFromVideo(video, {
         startTime: validStartTime,
@@ -400,97 +423,101 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         interval: 'keyframes',
         keepOriginalResolution: settings.keepOriginalResolution,
         enhancedFrameDiversity: true,
-      })
+      });
 
-      setVideos(prev =>
-        prev.map(v => v.id === videoData.id ?
-          { ...v, extractionProgress: 40 } : v
-        )
-      )
+      setVideos((prev) =>
+        prev.map((v) => (v.id === videoData.id ? { ...v, extractionProgress: 40 } : v))
+      );
 
       if (frames.length === 0) {
-        throw new Error(t("videoScreenshot.noFrames"))
+        throw new Error(t('videoScreenshot.noFrames'));
       }
 
       const thumbnails = await generateThumbnails(
         frames,
         videoData.id,
         validStartTime,
-        availableDuration,
-      )
+        availableDuration
+      );
 
       if (thumbnails.length === 0 && frames.length > 0) {
-        const firstFrame = frames[0]
+        const firstFrame = frames[0];
         if (firstFrame) {
-          const fallbackThumb = await generateFallbackThumbnail(firstFrame, validStartTime, videoData.id)
+          const fallbackThumb = await generateFallbackThumbnail(
+            firstFrame,
+            validStartTime,
+            videoData.id
+          );
           if (fallbackThumb) {
-            thumbnails.push(fallbackThumb)
+            thumbnails.push(fallbackThumb);
           }
         }
       }
 
       if (thumbnails.length === 0) {
-        setVideos(prev =>
-          prev.map(v => v.id === videoData.id ?
-            { ...v, status: "no-frames", extractionProgress: 0 } : v
+        setVideos((prev) =>
+          prev.map((v) =>
+            v.id === videoData.id ? { ...v, status: 'no-frames', extractionProgress: 0 } : v
           )
-        )
-        return
+        );
+        return;
       }
 
-      setVideos(prev =>
-        prev.map(v => v.id === videoData.id ?
-          {
-            ...v,
-            status: "completed",
-            extractionProgress: 100,
-            thumbnails,
-            selectedThumbnail: 0
-          } : v
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoData.id
+            ? {
+                ...v,
+                status: 'completed',
+                extractionProgress: 100,
+                thumbnails,
+                selectedThumbnail: 0,
+              }
+            : v
         )
-      )
+      );
     } catch (error) {
-      setVideos(prev =>
-        prev.map(v => v.id === videoData.id ?
-          { ...v, status: "error", extractionProgress: 0 } : v
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id === videoData.id ? { ...v, status: 'error', extractionProgress: 0 } : v
         )
-      )
-      throw error
+      );
+      throw error;
     }
-  }
+  };
 
   // 加载视频元数据
   const loadVideoMetadata = (video: HTMLVideoElement): Promise<void> => {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error("视频元数据加载超时"))
-      }, 10000)
+        reject(new Error('视频元数据加载超时'));
+      }, 10000);
 
       const loadHandler = () => {
-        clearTimeout(timeout)
-        video.removeEventListener('loadedmetadata', loadHandler)
-        video.removeEventListener('error', errorHandler)
-        resolve()
-      }
+        clearTimeout(timeout);
+        video.removeEventListener('loadedmetadata', loadHandler);
+        video.removeEventListener('error', errorHandler);
+        resolve();
+      };
 
       const errorHandler = () => {
-        clearTimeout(timeout)
-        video.removeEventListener('loadedmetadata', loadHandler)
-        video.removeEventListener('error', errorHandler)
-        reject(new Error("视频加载失败"))
-      }
+        clearTimeout(timeout);
+        video.removeEventListener('loadedmetadata', loadHandler);
+        video.removeEventListener('error', errorHandler);
+        reject(new Error('视频加载失败'));
+      };
 
-      video.addEventListener('loadedmetadata', loadHandler)
-      video.addEventListener('error', errorHandler)
+      video.addEventListener('loadedmetadata', loadHandler);
+      video.addEventListener('error', errorHandler);
 
       if (video.readyState >= 2) {
-        clearTimeout(timeout)
-        video.removeEventListener('loadedmetadata', loadHandler)
-        video.removeEventListener('error', errorHandler)
-        resolve()
+        clearTimeout(timeout);
+        video.removeEventListener('loadedmetadata', loadHandler);
+        video.removeEventListener('error', errorHandler);
+        resolve();
       }
-    })
-  }
+    });
+  };
 
   const hasSubtitleInFrame = (frame: ImageData): boolean => {
     const { data, width, height } = frame;
@@ -507,11 +534,15 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
       for (let x = 0; x < width; x += sampleStep) {
         const idx = (y * width + x) * 4;
-        if (idx >= data.length - 3) continue;
+        if (idx >= data.length - 3) {
+          continue;
+        }
         const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
         if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 50) {
           rowTransitions++;
-          if (runLength > 0 && runLength < 30) highContrastRuns++;
+          if (runLength > 0 && runLength < 30) {
+            highContrastRuns++;
+          }
           runLength = 0;
         } else {
           runLength++;
@@ -519,7 +550,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         prevLuma = luma;
       }
 
-      if (rowTransitions > 3 && rowTransitions < width / sampleStep * 0.4) {
+      if (rowTransitions > 3 && rowTransitions < (width / sampleStep) * 0.4) {
         return true;
       }
     }
@@ -531,20 +562,22 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       prevLuma = -1;
       for (let x = 0; x < width; x += sampleStep) {
         const idx = (y * width + x) * 4;
-        if (idx >= data.length - 3) continue;
+        if (idx >= data.length - 3) {
+          continue;
+        }
         const luma = 0.299 * data[idx]! + 0.587 * data[idx + 1]! + 0.114 * data[idx + 2]!;
         if (prevLuma >= 0 && Math.abs(luma - prevLuma) > 50) {
           rowTransitions++;
         }
         prevLuma = luma;
       }
-      if (rowTransitions > 3 && rowTransitions < width / sampleStep * 0.4) {
+      if (rowTransitions > 3 && rowTransitions < (width / sampleStep) * 0.4) {
         return true;
       }
     }
 
     return false;
-  }
+  };
 
   const scoreFrame = (frame: ImageData): number => {
     const { data, width, height } = frame;
@@ -558,23 +591,35 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     for (let y = 0; y < height; y += sampleRate) {
       for (let x = 0; x < width; x += sampleRate) {
         const i = (y * width + x) * 4;
-        if (i >= data.length - 3) continue;
+        if (i >= data.length - 3) {
+          continue;
+        }
         const r = data[i]!;
         const g = data[i + 1]!;
         const b = data[i + 2]!;
         const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
         totalPixels++;
 
-        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && (r - g) > 15 && (r - b) > 15;
+        const isSkinRGB = r > 95 && g > 40 && b > 20 && r > g && r > b && r - g > 15 && r - b > 15;
         const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
         const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
         const isSkinYCbCr = brightness > 80 && cb > 85 && cb < 135 && cr > 135 && cr < 180;
         const maxC = Math.max(r, g, b);
         const minC = Math.min(r, g, b);
         const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
-        const isAnimeSkin = brightness > 140 && brightness < 250 && saturation < 0.25 && r > 180 && g > 140 && b > 120 && Math.abs(r - g) < 50 && Math.abs(r - b) < 70;
+        const isAnimeSkin =
+          brightness > 140 &&
+          brightness < 250 &&
+          saturation < 0.25 &&
+          r > 180 &&
+          g > 140 &&
+          b > 120 &&
+          Math.abs(r - g) < 50 &&
+          Math.abs(r - b) < 70;
         const isAnimeHair = saturation > 0.4 && maxC > 100;
-        if (isSkinRGB || isSkinYCbCr || isAnimeSkin || isAnimeHair) skinPixels++;
+        if (isSkinRGB || isSkinYCbCr || isAnimeSkin || isAnimeHair) {
+          skinPixels++;
+        }
 
         if (y > 0 && y < height - 1 && x > 0 && x < width - 1) {
           const left = (y * width + (x - 1)) * 4;
@@ -585,7 +630,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
             const lb = 0.299 * data[left]! + 0.587 * data[left + 1]! + 0.114 * data[left + 2]!;
             const rb = 0.299 * data[right]! + 0.587 * data[right + 1]! + 0.114 * data[right + 2]!;
             const tb = 0.299 * data[top]! + 0.587 * data[top + 1]! + 0.114 * data[top + 2]!;
-            const bb = 0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
+            const bb =
+              0.299 * data[bottom]! + 0.587 * data[bottom + 1]! + 0.114 * data[bottom + 2]!;
             const laplacian = Math.abs(4 * brightness - lb - rb - tb - bb);
             laplacianSum += laplacian;
             laplacianSqSum += laplacian * laplacian;
@@ -604,81 +650,93 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     }
 
     return peopleScore * 0.6 + sharpnessScore * 0.4;
-  }
+  };
 
   const generateThumbnails = async (
     frames: ImageData[],
     videoId: string,
     validStartTime: number,
-    availableDuration: number,
+    availableDuration: number
   ): Promise<Thumbnail[]> => {
     const scoredFrames = frames
       .map((frame, index) => {
-        if (!frame) return { frame, index, score: -1, hasSubtitle: true };
+        if (!frame) {
+          return { frame, index, score: -1, hasSubtitle: true };
+        }
         const hasSubtitle = hasSubtitleInFrame(frame);
         const score = hasSubtitle ? -1 : scoreFrame(frame);
         return { frame, index, score, hasSubtitle };
       })
-      .filter(f => f.frame && f.score >= 0)
+      .filter((f) => f.frame && f.score >= 0)
       .sort((a, b) => b.score - a.score);
 
     const selectedFrames = scoredFrames.slice(0, settings.thumbnailCount);
     selectedFrames.sort((a, b) => a.index - b.index);
 
-    const thumbnails: Thumbnail[] = []
-    let processedFrames = 0
+    const thumbnails: Thumbnail[] = [];
+    let processedFrames = 0;
 
     for (const { frame, index } of selectedFrames) {
-      if (!frame) continue
-      processedFrames++
+      if (!frame) {
+        continue;
+      }
+      processedFrames++;
 
       try {
         const result = await imageProcessorRef.current!.generateThumbnail(frame, {
           maxWidth: settings.keepOriginalResolution ? frame.width : 640,
           maxHeight: settings.keepOriginalResolution ? frame.height : 360,
           quality: 0.9,
-          format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-        })
+          format: settings.outputFormat as 'webp' | 'jpeg' | 'png',
+        });
 
-        if (!result || !result.url) continue
+        if (!result || !result.url) {
+          continue;
+        }
 
-        const estimatedTimestamp = validStartTime + (index * availableDuration / frames.length)
+        const estimatedTimestamp = validStartTime + (index * availableDuration) / frames.length;
 
         thumbnails.push({
           id: `thumb_${videoId}_${index}_${Date.now()}`,
           url: result.url,
           timestamp: estimatedTimestamp,
           quality: 100,
-          isMain: thumbnails.length === 0
-        })
+          isMain: thumbnails.length === 0,
+        });
 
-        updateProgress(videoId, processedFrames, selectedFrames.length)
+        updateProgress(videoId, processedFrames, selectedFrames.length);
       } catch (error) {
-        logger.warn('处理帧失败，跳过此帧:', error)
-        continue
+        logger.warn('处理帧失败，跳过此帧:', error);
+        continue;
       }
     }
 
     if (thumbnails.length === 0 && frames.length > 0) {
-      const fallbackFrame = frames.find(f => f != null);
+      const fallbackFrame = frames.find((f) => f !== null);
       if (fallbackFrame) {
-        const fallbackThumb = await generateFallbackThumbnail(fallbackFrame, validStartTime, videoId)
+        const fallbackThumb = await generateFallbackThumbnail(
+          fallbackFrame,
+          validStartTime,
+          videoId
+        );
         if (fallbackThumb) {
-          thumbnails.push(fallbackThumb)
+          thumbnails.push(fallbackThumb);
         }
       }
     }
 
-    return thumbnails
-  }
+    return thumbnails;
+  };
 
   const updateProgress = (videoId: string, processedFrames: number, totalFrames: number) => {
-    setVideos(prev =>
-      prev.map(v => v.id === videoId ?
-        { ...v, extractionProgress: 50 + (processedFrames / totalFrames) * 50 } : v
+    setVideos((prev) =>
+      prev.map((v) =>
+        v.id === videoId
+          ? { ...v, extractionProgress: 50 + (processedFrames / totalFrames) * 50 }
+          : v
       )
-    )
-  }
+    );
+  };
 
   // 生成回退缩略图
   const generateFallbackThumbnail = async (
@@ -691,8 +749,8 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         maxWidth: settings.keepOriginalResolution ? frame.width : 640,
         maxHeight: settings.keepOriginalResolution ? frame.height : 360,
         quality: 0.9,
-        format: settings.outputFormat as 'webp' | 'jpeg' | 'png'
-      })
+        format: settings.outputFormat as 'webp' | 'jpeg' | 'png',
+      });
 
       if (result && result.url) {
         return {
@@ -700,305 +758,321 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           url: result.url,
           timestamp: validStartTime,
           quality: 50,
-          isMain: true
-        }
+          isMain: true,
+        };
       }
-      return null
+      return null;
     } catch (error) {
-      logger.warn('生成回退缩略图失败:', error)
-      return null
+      logger.warn('生成回退缩略图失败:', error);
+      return null;
     }
-  }
+  };
 
   // 下载缩略图
   const downloadThumbnail = (videoId: string, thumbnailId: string) => {
-    const video = videos.find(v => v.id === videoId)
-    if (!video) return
+    const video = videos.find((v) => v.id === videoId);
+    if (!video) {
+      return;
+    }
 
-    const thumbnail = video.thumbnails.find(t => t.id === thumbnailId)
-    if (!thumbnail) return
+    const thumbnail = video.thumbnails.find((t) => t.id === thumbnailId);
+    if (!thumbnail) {
+      return;
+    }
 
-    const link = document.createElement('a')
-    link.href = thumbnail.url
+    const link = document.createElement('a');
+    link.href = thumbnail.url;
 
-    const baseFilename = video.name.replace(/\.[^.]+$/, '')
-    const timestamp = formatDuration(thumbnail.timestamp)
-    const outputExt = settings.outputFormat
+    const baseFilename = video.name.replace(/\.[^.]+$/, '');
+    const timestamp = formatDuration(thumbnail.timestamp);
+    const outputExt = settings.outputFormat;
 
-    link.download = `${baseFilename}_${timestamp}.${outputExt}`
-    link.click()
+    link.download = `${baseFilename}_${timestamp}.${outputExt}`;
+    link.click();
 
     toast({
-      title: t("videoScreenshot.downloadStarted"),
+      title: t('videoScreenshot.downloadStarted'),
       description: `Downloading ${link.download}`,
-      variant: "default",
-    })
-  }
+      variant: 'default',
+    });
+  };
 
   // 将候选帧设为主图
   const setAsMainThumbnail = (videoId: string, thumbnailId: string) => {
-    setVideos(prev =>
-      prev.map(v => {
-        if (v.id !== videoId) return v
+    setVideos((prev) =>
+      prev.map((v) => {
+        if (v.id !== videoId) {
+          return v;
+        }
 
-        const thumbnailIndex = v.thumbnails.findIndex(t => t.id === thumbnailId)
-        if (thumbnailIndex === -1) return v
+        const thumbnailIndex = v.thumbnails.findIndex((t) => t.id === thumbnailId);
+        if (thumbnailIndex === -1) {
+          return v;
+        }
 
-        const updatedThumbnails = v.thumbnails.map(t => ({
+        const updatedThumbnails = v.thumbnails.map((t) => ({
           ...t,
-          isMain: t.id === thumbnailId
-        }))
+          isMain: t.id === thumbnailId,
+        }));
 
         return {
           ...v,
           thumbnails: updatedThumbnails,
-          selectedThumbnail: thumbnailIndex
-        }
+          selectedThumbnail: thumbnailIndex,
+        };
       })
-    )
+    );
 
     toast({
-      title: t("videoScreenshot.mainImage"),
-      description: t("videoScreenshot.clickToSetMain"),
-      variant: "default",
-    })
-  }
+      title: t('videoScreenshot.mainImage'),
+      description: t('videoScreenshot.clickToSetMain'),
+      variant: 'default',
+    });
+  };
 
   // 下载所有缩略图
   const downloadAllThumbnails = async () => {
-    const completedVideos = videos.filter(v => v.status === "completed" && v.thumbnails.length > 0)
+    const completedVideos = videos.filter(
+      (v) => v.status === 'completed' && v.thumbnails.length > 0
+    );
 
     if (completedVideos.length === 0) {
       toast({
-        title: t("videoScreenshot.noFrames"),
-        description: t("videoScreenshot.uploadVideoFirst"),
-        variant: "destructive",
-      })
-      return
+        title: t('videoScreenshot.noFrames'),
+        description: t('videoScreenshot.uploadVideoFirst'),
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (completedVideos.length === 1 && completedVideos[0].thumbnails.length === 1) {
-      const video = completedVideos[0]
-      downloadThumbnail(video.id, video.thumbnails[0].id)
-      return
+      const video = completedVideos[0];
+      downloadThumbnail(video.id, video.thumbnails[0].id);
+      return;
     }
 
     toast({
-      title: t("videoScreenshot.preparingDownload"),
-      description: t("videoScreenshot.packagingScreenshots"),
-      variant: "default",
-    })
+      title: t('videoScreenshot.preparingDownload'),
+      description: t('videoScreenshot.packagingScreenshots'),
+      variant: 'default',
+    });
 
     try {
-      const zip = new JSZip()
-      const imgFolder = zip.folder("thumbnails")
+      const zip = new JSZip();
+      const imgFolder = zip.folder('thumbnails');
 
       if (!imgFolder) {
-        throw new Error(t("videoScreenshot.createZipFolderFailed") || "Failed to create ZIP folder")
+        throw new Error(
+          t('videoScreenshot.createZipFolderFailed') || 'Failed to create ZIP folder'
+        );
       }
 
       for (const video of completedVideos) {
-        const videoFolder = imgFolder.folder(video.name.replace(/[\\/:*?"<>|]/g, "_"))
+        const videoFolder = imgFolder.folder(video.name.replace(/[\\/:*?"<>|]/g, '_'));
 
-        if (!videoFolder) continue
+        if (!videoFolder) {
+          continue;
+        }
 
-        const mainThumbnail = video.thumbnails.find(t => t.isMain)
-        const candidateThumbnails = video.thumbnails.filter(t => !t.isMain)
+        const mainThumbnail = video.thumbnails.find((t) => t.isMain);
+        const candidateThumbnails = video.thumbnails.filter((t) => !t.isMain);
 
         if (mainThumbnail) {
-          const blob = await fetch(mainThumbnail.url).then(r => r.blob())
-          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat
+          const blob = await fetch(mainThumbnail.url).then((r) => r.blob());
+          const extension = settings.outputFormat === 'jpg' ? 'jpg' : settings.outputFormat;
           videoFolder.file(
             `main_${Math.round(mainThumbnail.timestamp)}_q${Math.round(mainThumbnail.quality)}.${extension}`,
             blob
-          )
+          );
         }
 
         for (let i = 0; i < candidateThumbnails.length; i++) {
-          const thumbnail = candidateThumbnails[i]
-          const blob = await fetch(thumbnail.url).then(r => r.blob())
-          const extension = settings.outputFormat === "jpg" ? "jpg" : settings.outputFormat
+          const thumbnail = candidateThumbnails[i];
+          const blob = await fetch(thumbnail.url).then((r) => r.blob());
+          const extension = settings.outputFormat === 'jpg' ? 'jpg' : settings.outputFormat;
           videoFolder.file(
             `candidate_${i + 1}_${Math.round(thumbnail.timestamp)}_q${Math.round(thumbnail.quality)}.${extension}`,
             blob
-          )
+          );
         }
       }
 
-      const content = await zip.generateAsync({
-        type: "blob",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 }
-      }, (metadata) => {
-        const progress = Math.round(metadata.percent)
-        if (progress % 10 === 0) {
-          toast({
-            title: t("videoScreenshot.packagingProgress"),
-            description: `${progress}%`,
-            variant: "default",
-          })
+      const content = await zip.generateAsync(
+        {
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 },
+        },
+        (metadata) => {
+          const progress = Math.round(metadata.percent);
+          if (progress % 10 === 0) {
+            toast({
+              title: t('videoScreenshot.packagingProgress'),
+              description: `${progress}%`,
+              variant: 'default',
+            });
+          }
         }
-      })
+      );
 
-      FileSaver.saveAs(content, `thumbnails_${new Date().toISOString().slice(0, 10)}.zip`)
+      FileSaver.saveAs(content, `thumbnails_${new Date().toISOString().slice(0, 10)}.zip`);
 
       toast({
-        title: t("videoScreenshot.downloadComplete"),
-        description: t("videoScreenshot.downloadCompleteDesc"),
-        variant: "default",
-      })
+        title: t('videoScreenshot.downloadComplete'),
+        description: t('videoScreenshot.downloadCompleteDesc'),
+        variant: 'default',
+      });
     } catch (error) {
       toast({
-        title: t("videoScreenshot.downloadFailed"),
-        description: t("videoScreenshot.packagingError"),
-        variant: "destructive",
-      })
+        title: t('videoScreenshot.downloadFailed'),
+        description: t('videoScreenshot.packagingError'),
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   // 移除视频
   const removeVideo = (videoId: string) => {
-    setVideos(prev => {
-      const videoToRemove = prev.find(v => v.id === videoId)
+    setVideos((prev) => {
+      const videoToRemove = prev.find((v) => v.id === videoId);
       if (videoToRemove) {
-        URL.revokeObjectURL(videoToRemove.url)
+        URL.revokeObjectURL(videoToRemove.url);
       }
-      return prev.filter(v => v.id !== videoId)
-    })
+      return prev.filter((v) => v.id !== videoId);
+    });
 
     toast({
-      title: t("videoScreenshot.videoRemoved"),
-      description: t("videoScreenshot.videoRemovedDesc"),
-      variant: "default",
-    })
-  }
+      title: t('videoScreenshot.videoRemoved'),
+      description: t('videoScreenshot.videoRemovedDesc'),
+      variant: 'default',
+    });
+  };
 
   // 移除所有视频
   const removeAllVideos = () => {
-    setVideos(prev => {
-      prev.forEach(v => URL.revokeObjectURL(v.url))
-      return []
-    })
+    setVideos((prev) => {
+      prev.forEach((v) => URL.revokeObjectURL(v.url));
+      return [];
+    });
 
-    setTotalProgress(0)
-    setIsProcessing(false)
-    setProcessingQueue([])
+    setTotalProgress(0);
+    setIsProcessing(false);
+    setProcessingQueue([]);
 
     toast({
-      title: t("videoScreenshot.listCleared"),
-      description: t("videoScreenshot.listClearedDesc"),
-      variant: "default",
-    })
-  }
+      title: t('videoScreenshot.listCleared'),
+      description: t('videoScreenshot.listClearedDesc'),
+      variant: 'default',
+    });
+  };
 
   // 重试处理视频
   const retryProcessVideo = (videoId: string) => {
-    setVideos(prev =>
-      prev.map(v => v.id === videoId ?
-        { ...v, status: "pending", extractionProgress: 0 } : v
-      )
-    )
+    setVideos((prev) =>
+      prev.map((v) => (v.id === videoId ? { ...v, status: 'pending', extractionProgress: 0 } : v))
+    );
 
     if (!isProcessing) {
-      handleBatchExtraction()
+      handleBatchExtraction();
     }
-  }
+  };
 
   // 取消处理视频
   const cancelProcessVideo = (videoId: string) => {
-    setVideos(prev =>
-      prev.map(v => v.id === videoId ?
-        { ...v, status: "cancelled", extractionProgress: 0 } : v
-      )
-    )
+    setVideos((prev) =>
+      prev.map((v) => (v.id === videoId ? { ...v, status: 'cancelled', extractionProgress: 0 } : v))
+    );
 
-    setProcessingQueue(prev => prev.filter(id => id !== videoId))
-  }
+    setProcessingQueue((prev) => prev.filter((id) => id !== videoId));
+  };
 
   // 打开预览
   const openPreview = (videoId: string, thumbnailId: string) => {
-    const video = videos.find(v => v.id === videoId)
-    if (!video) return
+    const video = videos.find((v) => v.id === videoId);
+    if (!video) {
+      return;
+    }
 
-    const thumbnail = video.thumbnails.find(t => t.id === thumbnailId)
-    if (!thumbnail) return
+    const thumbnail = video.thumbnails.find((t) => t.id === thumbnailId);
+    if (!thumbnail) {
+      return;
+    }
 
     setPreviewData({
       url: thumbnail.url,
       filename: video.name,
       videoId,
-      thumbnailId
-    })
+      thumbnailId,
+    });
 
-    setShowPreviewDialog(true)
-  }
+    setShowPreviewDialog(true);
+  };
 
   // 复制缩略图URL
   const copyThumbnailURL = (url: string) => {
-    navigator.clipboard.writeText(url)
+    navigator.clipboard
+      .writeText(url)
       .then(() => {
-        setCopyFeedback(t("videoScreenshot.copied"))
-        setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
+        setCopyFeedback(t('videoScreenshot.copied'));
+        setTimeout(() => setCopyFeedback(null), DELAY_2000MS);
       })
       .catch(() => {
-        setCopyFeedback(t("videoScreenshot.copyFailed"))
-        setTimeout(() => setCopyFeedback(null), DELAY_2000MS)
-      })
-  }
+        setCopyFeedback(t('videoScreenshot.copyFailed'));
+        setTimeout(() => setCopyFeedback(null), DELAY_2000MS);
+      });
+  };
 
   // 获取已过滤的视频列表
   const getFilteredVideos = (): VideoFile[] => {
-    let filteredList = [...videos]
+    let filteredList = [...videos];
 
-    if (filterBy !== "all") {
-      filteredList = filteredList.filter(v => v.status === filterBy)
+    if (filterBy !== 'all') {
+      filteredList = filteredList.filter((v) => v.status === filterBy);
     }
 
     switch (sortBy) {
-      case "name":
-        filteredList.sort((a, b) => a.name.localeCompare(b.name))
-        break
-      case "date":
-        filteredList.sort((a, b) => a.id.localeCompare(b.id))
-        break
-      case "size":
-        filteredList.sort((a, b) => b.size - a.size)
-        break
+      case 'name':
+        filteredList.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'date':
+        filteredList.sort((a, b) => a.id.localeCompare(b.id));
+        break;
+      case 'size':
+        filteredList.sort((a, b) => b.size - a.size);
+        break;
     }
 
-    return filteredList
-  }
+    return filteredList;
+  };
 
   // 渲染预览对话框
   const renderPreviewDialog = () => (
     <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
       <DialogContent className="max-w-[95vw] md:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{t("videoScreenshot.previewDialog.title")}</DialogTitle>
+          <DialogTitle>{t('videoScreenshot.previewDialog.title')}</DialogTitle>
         </DialogHeader>
 
         {previewData && (
           <div className="flex flex-col space-y-4">
             <div className="relative w-full aspect-video bg-neutral-950/50 rounded-lg overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewData.url}
-                alt={t("videoScreenshot.previewDialog.title")}
+                alt={t('videoScreenshot.previewDialog.title')}
                 className="w-full h-full object-contain"
               />
             </div>
 
             <div className="flex flex-wrap justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                <span className="font-medium">{t("videoScreenshot.previewDialog.fileName")}: </span>
+                <span className="font-medium">{t('videoScreenshot.previewDialog.fileName')}: </span>
                 {previewData.filename}
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  className="text-xs h-8"
-                  onClick={() => copyThumbnailURL(previewData.url)}
-                >
-                  {copyFeedback ? copyFeedback : t("videoScreenshot.previewDialog.copyLink")}
+                <Button className="text-xs h-8" onClick={() => copyThumbnailURL(previewData.url)}>
+                  {copyFeedback ? copyFeedback : t('videoScreenshot.previewDialog.copyLink')}
                 </Button>
 
                 <Button
@@ -1006,7 +1080,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   onClick={() => downloadThumbnail(previewData.videoId, previewData.thumbnailId)}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  {t("videoScreenshot.previewDialog.download")}
+                  {t('videoScreenshot.previewDialog.download')}
                 </Button>
               </div>
             </div>
@@ -1014,48 +1088,52 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 
   // 渲染帮助对话框
   const renderHelpDialog = () => (
     <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
       <DialogContent className="max-w-[95vw] md:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{t("videoScreenshot.helpDialog.title")}</DialogTitle>
+          <DialogTitle>{t('videoScreenshot.helpDialog.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.howToUse")}</h3>
+            <h3 className="text-base font-semibold mb-2">
+              {t('videoScreenshot.helpDialog.howToUse')}
+            </h3>
             <ol className="list-decimal list-inside space-y-1 text-sm">
-              <li>{t("videoScreenshot.helpDialog.step1")}</li>
-              <li>{t("videoScreenshot.helpDialog.step2")}</li>
-              <li>{t("videoScreenshot.helpDialog.step3")}</li>
-              <li>{t("videoScreenshot.helpDialog.step4")}</li>
-              <li>{t("videoScreenshot.helpDialog.step5")}</li>
+              <li>{t('videoScreenshot.helpDialog.step1')}</li>
+              <li>{t('videoScreenshot.helpDialog.step2')}</li>
+              <li>{t('videoScreenshot.helpDialog.step3')}</li>
+              <li>{t('videoScreenshot.helpDialog.step4')}</li>
+              <li>{t('videoScreenshot.helpDialog.step5')}</li>
             </ol>
           </div>
 
           <div>
-            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.advancedFeatures")}</h3>
+            <h3 className="text-base font-semibold mb-2">
+              {t('videoScreenshot.helpDialog.advancedFeatures')}
+            </h3>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>{t("videoScreenshot.helpDialog.feature1")}</li>
-              <li>{t("videoScreenshot.helpDialog.feature2")}</li>
-              <li>{t("videoScreenshot.helpDialog.feature3")}</li>
-              <li>{t("videoScreenshot.helpDialog.feature4")}</li>
+              <li>{t('videoScreenshot.helpDialog.feature1')}</li>
+              <li>{t('videoScreenshot.helpDialog.feature2')}</li>
+              <li>{t('videoScreenshot.helpDialog.feature3')}</li>
+              <li>{t('videoScreenshot.helpDialog.feature4')}</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-base font-semibold mb-2">{t("videoScreenshot.helpDialog.注意事项")}</h3>
-            <p className="text-sm">
-              {t("videoScreenshot.helpDialog.note")}
-            </p>
+            <h3 className="text-base font-semibold mb-2">
+              {t('videoScreenshot.helpDialog.注意事项')}
+            </h3>
+            <p className="text-sm">{t('videoScreenshot.helpDialog.note')}</p>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 
   // 渲染视频卡片
   const renderVideoCard = (video: VideoFile) => {
@@ -1063,9 +1141,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
     const thumbnails = video.thumbnails.slice(0, 9);
 
     // 获取主图和候选帧
-    const mainThumbnail = video.thumbnails.find(t => t.isMain);
+    const mainThumbnail = video.thumbnails.find((t) => t.isMain);
     const candidateThumbnails = mainThumbnail
-      ? video.thumbnails.filter(t => !t.isMain).slice(0, 8)
+      ? video.thumbnails.filter((t) => !t.isMain).slice(0, 8)
       : video.thumbnails.slice(0, 8);
     const hasMainThumbnail = !!mainThumbnail;
 
@@ -1097,34 +1175,34 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
             </div>
 
             <div className="flex items-center gap-1 flex-shrink-0">
-              {video.status === "pending" && (
+              {video.status === 'pending' && (
                 <Badge className="bg-yellow-50 text-yellow-600 hover:bg-yellow-50 border border-yellow-200">
-                  {t("videoScreenshot.videoCard.pending")}
+                  {t('videoScreenshot.videoCard.pending')}
                 </Badge>
               )}
-              {video.status === "processing" && (
+              {video.status === 'processing' && (
                 <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200">
-                  {t("videoScreenshot.videoCard.processing")}
+                  {t('videoScreenshot.videoCard.processing')}
                 </Badge>
               )}
-              {video.status === "completed" && (
+              {video.status === 'completed' && (
                 <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200">
-                  {t("videoScreenshot.videoCard.completed")}
+                  {t('videoScreenshot.videoCard.completed')}
                 </Badge>
               )}
-              {video.status === "error" && (
+              {video.status === 'error' && (
                 <Badge className="bg-red-50 text-red-600 hover:bg-red-50 border border-red-200">
-                  {t("videoScreenshot.videoCard.error")}
+                  {t('videoScreenshot.videoCard.error')}
                 </Badge>
               )}
-              {video.status === "cancelled" && (
+              {video.status === 'cancelled' && (
                 <Badge className="bg-gray-50 text-gray-600 hover:bg-gray-50 border border-gray-200">
-                  {t("videoScreenshot.videoCard.cancelled")}
+                  {t('videoScreenshot.videoCard.cancelled')}
                 </Badge>
               )}
-              {video.status === "no-frames" && (
+              {video.status === 'no-frames' && (
                 <Badge className="bg-orange-50 text-orange-600 hover:bg-orange-50 border border-orange-200">
-                  {t("videoScreenshot.videoCard.noFrames")}
+                  {t('videoScreenshot.videoCard.noFrames')}
                 </Badge>
               )}
 
@@ -1132,31 +1210,37 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <DropdownMenuTrigger asChild>
                   <Button className="h-7 w-7 p-0 md:h-7 md:w-7 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0">
                     <ArrowUpDown className="h-4 w-4" />
-                    <span className="sr-only">{t("videoScreenshot.videoCard.operationMenu")}</span>
+                    <span className="sr-only">{t('videoScreenshot.videoCard.operationMenu')}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {video.status === "pending" && (
+                  {video.status === 'pending' && (
                     <DropdownMenuItem onClick={() => cancelProcessVideo(video.id)}>
                       <X className="mr-2 h-4 w-4" />
-                      <span>{t("videoScreenshot.videoCard.cancel")}</span>
+                      <span>{t('videoScreenshot.videoCard.cancel')}</span>
                     </DropdownMenuItem>
                   )}
-                  {(video.status === "error" || video.status === "no-frames" || video.status === "cancelled") && (
+                  {(video.status === 'error' ||
+                    video.status === 'no-frames' ||
+                    video.status === 'cancelled') && (
                     <DropdownMenuItem onClick={() => retryProcessVideo(video.id)}>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      <span>{t("videoScreenshot.videoCard.retry")}</span>
+                      <span>{t('videoScreenshot.videoCard.retry')}</span>
                     </DropdownMenuItem>
                   )}
-                  {video.status === "completed" && video.thumbnails.length > 0 && (
-                    <DropdownMenuItem onClick={() => downloadThumbnail(video.id, video.thumbnails[video.selectedThumbnail].id)}>
+                  {video.status === 'completed' && video.thumbnails.length > 0 && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        downloadThumbnail(video.id, video.thumbnails[video.selectedThumbnail].id)
+                      }
+                    >
                       <Download className="mr-2 h-4 w-4" />
-                      <span>{t("videoScreenshot.videoCard.downloadScreenshot")}</span>
+                      <span>{t('videoScreenshot.videoCard.downloadScreenshot')}</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => removeVideo(video.id)}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    <span>{t("videoScreenshot.videoCard.remove")}</span>
+                    <span>{t('videoScreenshot.videoCard.remove')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1166,18 +1250,22 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
 
         <CardContent className="pt-3 pb-4 px-3 md:px-6">
           {/* 处理进度 */}
-          {video.status === "processing" && (
+          {video.status === 'processing' && (
             <div className="mb-3 space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{t("videoScreenshot.videoCard.processingProgress")}</span>
-                <span className="text-muted-foreground font-medium">{video.extractionProgress}%</span>
+                <span className="text-muted-foreground">
+                  {t('videoScreenshot.videoCard.processingProgress')}
+                </span>
+                <span className="text-muted-foreground font-medium">
+                  {video.extractionProgress}%
+                </span>
               </div>
               <Progress value={video.extractionProgress} className="h-2" />
             </div>
           )}
 
           {/* 截图展示 - 主图优先，更大的尺寸 */}
-          {video.status === "completed" && video.thumbnails.length > 0 ? (
+          {video.status === 'completed' && video.thumbnails.length > 0 ? (
             <div className="space-y-3">
               {/* 混合式布局：主图区域 + 候选帧区域（3x3） */}
               <div className="space-y-2">
@@ -1185,10 +1273,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 <div className="flex justify-between items-center border-b pb-1 mb-1">
                   <h4 className="text-xs md:text-sm font-medium flex items-center">
                     <Star className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1 text-yellow-500" />
-                    {t("videoScreenshot.videoCard.screenshots")}
+                    {t('videoScreenshot.videoCard.screenshots')}
                   </h4>
                   <span className="text-[10px] md:text-xs text-muted-foreground">
-                    {t("videoScreenshot.videoCard.clickToSetMain")}
+                    {t('videoScreenshot.videoCard.clickToSetMain')}
                   </span>
                 </div>
 
@@ -1199,12 +1287,15 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     <div className="mb-1 md:mb-2">
                       <div className="text-[10px] md:text-xs font-medium mb-1 text-muted-foreground flex items-center">
                         <Star className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 text-yellow-500" />
-                        {t("videoScreenshot.videoCard.mainImage")}（{t("videoScreenshot.videoCard.time")}：{formatDuration(mainThumbnail!.timestamp)}）
+                        {t('videoScreenshot.videoCard.mainImage')}（
+                        {t('videoScreenshot.videoCard.time')}：
+                        {formatDuration(mainThumbnail!.timestamp)}）
                       </div>
                       <div className="relative aspect-video rounded-md overflow-hidden border-2 border-yellow-400 shadow-md hover:shadow-lg transition-shadow">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={mainThumbnail!.url}
-                          alt={t("videoScreenshot.videoCard.mainImage")}
+                          alt={t('videoScreenshot.videoCard.mainImage')}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 flex justify-between items-center text-xs text-white">
@@ -1236,7 +1327,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                         </div>
                         <div className="absolute top-2 left-2">
                           <span className="bg-yellow-500 text-white text-[10px] px-2 py-0.5 rounded-sm font-medium">
-                            {t("videoScreenshot.videoCard.mainImage")}
+                            {t('videoScreenshot.videoCard.mainImage')}
                           </span>
                         </div>
                       </div>
@@ -1247,7 +1338,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   {candidateThumbnails.length > 0 && (
                     <div className="text-xs font-medium mb-1 text-muted-foreground flex items-center">
                       <Layers className="h-3.5 w-3.5 mr-1 text-blue-500" />
-                      {t("videoScreenshot.videoCard.candidateFrames")}
+                      {t('videoScreenshot.videoCard.candidateFrames')}
                     </div>
                   )}
 
@@ -1259,9 +1350,10 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                         className="relative aspect-video rounded-md overflow-hidden cursor-pointer border hover:border-primary transition-all hover:shadow-md"
                         onClick={() => setAsMainThumbnail(video.id, thumbnail.id)}
                       >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={thumbnail.url}
-                          alt={`${t("videoScreenshot.videoCard.screenshots")} ${idx + 1}`}
+                          alt={`${t('videoScreenshot.videoCard.screenshots')} ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
 
@@ -1283,89 +1375,75 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                 </div>
               </div>
             </div>
-          ) : video.status === "completed" && video.thumbnails.length === 0 ? (
+          ) : video.status === 'completed' && video.thumbnails.length === 0 ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-orange-50/50 rounded-lg border border-orange-100">
               <AlertTriangle className="h-7 w-7 text-orange-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.noFrames")}</p>
+                <p className="text-sm font-medium">{t('videoScreenshot.videoCard.noFrames')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t("videoScreenshot.videoCard.noSuitableFrames")}
+                  {t('videoScreenshot.videoCard.noSuitableFrames')}
                 </p>
               </div>
-              <Button
-                className="mt-2 text-xs h-7 px-3"
-                onClick={() => retryProcessVideo(video.id)}
-              >
+              <Button className="mt-2 text-xs h-7 px-3" onClick={() => retryProcessVideo(video.id)}>
                 <RefreshCw className="mr-2 h-3 w-3" />
-                {t("videoScreenshot.videoCard.retry")}
+                {t('videoScreenshot.videoCard.retry')}
               </Button>
             </div>
-          ) : video.status === "error" ? (
+          ) : video.status === 'error' ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-red-50/50 rounded-lg border border-red-100">
               <AlertTriangle className="h-7 w-7 text-red-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.error")}</p>
+                <p className="text-sm font-medium">{t('videoScreenshot.videoCard.error')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t("videoScreenshot.videoCard.videoProcessingError")}
+                  {t('videoScreenshot.videoCard.videoProcessingError')}
                 </p>
               </div>
-              <Button
-                className="mt-2 text-xs h-7 px-3"
-                onClick={() => retryProcessVideo(video.id)}
-              >
+              <Button className="mt-2 text-xs h-7 px-3" onClick={() => retryProcessVideo(video.id)}>
                 <RefreshCw className="mr-2 h-3 w-3" />
-                {t("videoScreenshot.videoCard.retry")}
+                {t('videoScreenshot.videoCard.retry')}
               </Button>
             </div>
-          ) : video.status === "no-frames" ? (
+          ) : video.status === 'no-frames' ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-orange-50/50 rounded-lg border border-orange-100">
               <AlertTriangle className="h-7 w-7 text-orange-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.noFrames")}</p>
+                <p className="text-sm font-medium">{t('videoScreenshot.videoCard.noFrames')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t("videoScreenshot.videoCard.noSuitableFrames")}
+                  {t('videoScreenshot.videoCard.noSuitableFrames')}
                 </p>
               </div>
-              <Button
-                className="mt-2 text-xs h-7 px-3"
-                onClick={() => retryProcessVideo(video.id)}
-              >
+              <Button className="mt-2 text-xs h-7 px-3" onClick={() => retryProcessVideo(video.id)}>
                 <RefreshCw className="mr-2 h-3 w-3" />
-                {t("videoScreenshot.videoCard.retry")}
+                {t('videoScreenshot.videoCard.retry')}
               </Button>
             </div>
-          ) : video.status === "cancelled" ? (
+          ) : video.status === 'cancelled' ? (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-gray-50/50 rounded-lg border border-gray-100">
               <X className="h-7 w-7 text-gray-500" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.cancelled")}</p>
+                <p className="text-sm font-medium">{t('videoScreenshot.videoCard.cancelled')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t("videoScreenshot.status.processing")}
+                  {t('videoScreenshot.status.processing')}
                 </p>
               </div>
-              <Button
-                className="mt-2 text-xs h-7 px-3"
-                onClick={() => retryProcessVideo(video.id)}
-              >
+              <Button className="mt-2 text-xs h-7 px-3" onClick={() => retryProcessVideo(video.id)}>
                 <RefreshCw className="mr-2 h-3 w-3" />
-                {t("videoScreenshot.videoCard.retry")}
+                {t('videoScreenshot.videoCard.retry')}
               </Button>
             </div>
           ) : (
             <div className="py-6 flex flex-col items-center justify-center text-center space-y-2 bg-blue-50/30 rounded-lg border border-blue-100/50">
               <Loader2 className="h-7 w-7 text-blue-500 animate-spin" />
               <div className="space-y-1">
-                <p className="text-sm font-medium">{t("videoScreenshot.videoCard.pending")}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("videoScreenshot.processing")}
-                </p>
+                <p className="text-sm font-medium">{t('videoScreenshot.videoCard.pending')}</p>
+                <p className="text-xs text-muted-foreground">{t('videoScreenshot.processing')}</p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-    )
-  }
+    );
+  };
 
   // 渲染空状态
   const renderEmptyState = () => (
@@ -1373,9 +1451,9 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
       <div className="rounded-full bg-primary/10 p-3 md:p-4 mb-3 md:mb-4">
         <FileVideo className="h-6 w-6 md:h-8 md:w-8 text-primary" />
       </div>
-      <h3 className="text-base md:text-lg font-medium mb-2">{t("videoScreenshot.noVideo")}</h3>
+      <h3 className="text-base md:text-lg font-medium mb-2">{t('videoScreenshot.noVideo')}</h3>
       <p className="text-xs md:text-sm text-muted-foreground mb-4 max-w-md">
-        {t("videoScreenshot.uploadHint")}
+        {t('videoScreenshot.uploadHint')}
       </p>
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <Button
@@ -1383,25 +1461,25 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mr-2 h-4 w-4" />
-          {t("videoScreenshot.uploadVideo")}
+          {t('videoScreenshot.uploadVideo')}
         </Button>
         <Button
           className="flex items-center w-full sm:w-auto"
           onClick={() => setShowHelpDialog(true)}
         >
           <HelpCircle className="mr-2 h-4 w-4" />
-          {t("videoScreenshot.usageHelp")}
+          {t('videoScreenshot.usageHelp')}
         </Button>
         <Button
           className="flex items-center w-full sm:w-auto"
           onClick={() => onOpenGlobalSettings?.('video-thumbnail')}
         >
           <Settings className="mr-2 h-4 w-4" />
-          {t("videoScreenshot.screenshotSettings")}
+          {t('videoScreenshot.screenshotSettings')}
         </Button>
       </div>
     </div>
-  )
+  );
 
   return (
     <div className="h-full flex flex-col">
@@ -1414,14 +1492,11 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               <div>
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center">
                   <Film className="mr-2 h-5 w-5 md:h-6 md:w-6 text-primary" />
-                  {t("videoScreenshot.title")}
-                  <HelpInfoButton
-                    content={t("videoScreenshot.helpDescription")}
-                    side="right"
-                  />
+                  {t('videoScreenshot.title')}
+                  <HelpInfoButton content={t('videoScreenshot.helpDescription')} side="right" />
                 </h1>
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  {t("videoScreenshot.subtitle")}
+                  {t('videoScreenshot.subtitle')}
                 </p>
               </div>
             </div>
@@ -1441,17 +1516,23 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-0 bg-muted/50 p-3 rounded-lg border border-border">
                 <div className="flex items-center space-x-2 w-full md:w-auto">
                   <span className="text-sm font-medium whitespace-nowrap">
-                    {t("videoScreenshot.videosCount", { count: videos.length })}
+                    {t('videoScreenshot.videosCount', { count: videos.length })}
                   </span>
                   <div className="flex items-center gap-1 overflow-x-auto">
-                    {videos.filter(v => v.status === "completed").length > 0 && (
+                    {videos.filter((v) => v.status === 'completed').length > 0 && (
                       <Badge className="bg-green-50 text-green-600 hover:bg-green-50 border border-green-200 whitespace-nowrap">
-                        {videos.filter(v => v.status === "completed").length} {t("videoScreenshot.completed")}
+                        {videos.filter((v) => v.status === 'completed').length}{' '}
+                        {t('videoScreenshot.completed')}
                       </Badge>
                     )}
-                    {videos.filter(v => v.status === "pending" || v.status === "processing").length > 0 && (
+                    {videos.filter((v) => v.status === 'pending' || v.status === 'processing')
+                      .length > 0 && (
                       <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 whitespace-nowrap">
-                        {videos.filter(v => v.status === "pending" || v.status === "processing").length} {t("videoScreenshot.processing")}
+                        {
+                          videos.filter((v) => v.status === 'pending' || v.status === 'processing')
+                            .length
+                        }{' '}
+                        {t('videoScreenshot.processing')}
                       </Badge>
                     )}
                   </div>
@@ -1461,19 +1542,24 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                   <Button
                     className="flex-1 md:flex-none text-xs md:text-sm h-9 md:h-10"
                     onClick={handleBatchExtraction}
-                    disabled={isProcessing || videos.filter(v => v.status === "pending").length === 0}
+                    disabled={
+                      isProcessing || videos.filter((v) => v.status === 'pending').length === 0
+                    }
                   >
                     <Play className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                    {t("videoScreenshot.batchProcess")}
+                    {t('videoScreenshot.batchProcess')}
                   </Button>
 
                   <Button
                     className="flex-1 md:flex-none text-xs md:text-sm h-9 md:h-10"
                     onClick={downloadAllThumbnails}
-                    disabled={videos.filter(v => v.status === "completed" && v.thumbnails.length > 0).length === 0}
+                    disabled={
+                      videos.filter((v) => v.status === 'completed' && v.thumbnails.length > 0)
+                        .length === 0
+                    }
                   >
                     <Download className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                    {t("videoScreenshot.downloadAll")}
+                    {t('videoScreenshot.downloadAll')}
                   </Button>
 
                   <Button
@@ -1481,7 +1567,7 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
                     onClick={removeAllVideos}
                   >
                     <Trash2 className="mr-1 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                    {t("videoScreenshot.clearList")}
+                    {t('videoScreenshot.clearList')}
                   </Button>
                 </div>
               </div>
@@ -1517,5 +1603,5 @@ export default function VideoScreenshot({ onOpenGlobalSettings }: VideoScreensho
         }
       `}</style>
     </div>
-  )
-} 
+  );
+}

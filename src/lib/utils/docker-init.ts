@@ -32,10 +32,10 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
       indexedDB: false,
       localStorage: false,
       fileSystem: false,
-      networkOptimization: false
+      networkOptimization: false,
     },
     warnings: [],
-    errors: []
+    errors: [],
   };
 
   try {
@@ -47,7 +47,7 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
       const env = (await import('./docker-storage-adapter')).dockerStorageAdapter.getEnvironment();
       result.environment = env.isDocker ? 'docker' : 'local';
       result.features.fileSystem = env.hasWritePermission;
-      
+
       logger.info(`✅ Docker适配器初始化完成 - 环境: ${result.environment}`);
     } catch (error) {
       result.errors.push(`Docker适配器初始化失败: ${error}`);
@@ -78,7 +78,7 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
         }
       } catch (error) {
         result.warnings.push(`IndexedDB测试失败: ${error}`);
-          logger.warn('⚠️ IndexedDB测试失败:', error);
+        logger.warn('⚠️ IndexedDB测试失败:', error);
       }
 
       // localStorage检查
@@ -90,7 +90,7 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
         logger.info('✅ localStorage可用');
       } catch (error) {
         result.errors.push(`localStorage不可用: ${error}`);
-          logger.error('❌ localStorage不可用:', error);
+        logger.error('❌ localStorage不可用:', error);
       }
     }
 
@@ -98,10 +98,10 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
     try {
       const storageManager = enhancedStorageManager;
       const health = await storageManager.getHealthStatus();
-      
+
       if (health.status === 'error') {
         result.errors.push(`存储管理器健康检查失败: ${health.details.lastError}`);
-          logger.error('❌ 存储管理器健康检查失败:', health.details);
+        logger.error('❌ 存储管理器健康检查失败:', health.details);
       } else {
         logger.info('✅ 增强存储管理器初始化完成');
         if (health.status === 'warning') {
@@ -150,18 +150,19 @@ export async function initializeDockerOptimizations(): Promise<DockerInitResult>
     }
 
     // 判断初始化是否成功
-    result.success = result.errors.length === 0 && (
-      result.features.localStorage || 
-      result.features.indexedDB || 
-      result.features.fileSystem
-    );
+    result.success =
+      result.errors.length === 0 &&
+      (result.features.localStorage || result.features.indexedDB || result.features.fileSystem);
 
     if (result.success) {
       logger.info('🎉 Docker优化功能初始化成功!');
-      logger.info('📊 可用功能:', Object.entries(result.features)
-        .filter(([_, enabled]) => enabled)
-        .map(([feature, _]) => feature)
-        .join(', '));
+      logger.info(
+        '📊 可用功能:',
+        Object.entries(result.features)
+          .filter(([_, enabled]) => enabled)
+          .map(([feature, _]) => feature)
+          .join(', ')
+      );
     } else {
       logger.error('💥 Docker优化功能初始化失败');
       logger.error('❌ 错误:', result.errors);
@@ -196,7 +197,9 @@ async function applyDockerOptimizations(): Promise<void> {
   }
 
   // 应用网络配置
-  logger.debug(`🐳 Docker环境: 网络配置 - 最大并发: ${networkConfig.maxConcurrentRequests}, 超时: ${networkConfig.requestTimeout}ms`);
+  logger.debug(
+    `🐳 Docker环境: 网络配置 - 最大并发: ${networkConfig.maxConcurrentRequests}, 超时: ${networkConfig.requestTimeout}ms`
+  );
 
   // 设置环境变量（如果在Node.js环境中）
   if (typeof process !== 'undefined' && process.env) {
@@ -217,7 +220,7 @@ async function runHealthChecks(): Promise<{
   const results = {
     critical: [] as string[],
     warnings: [] as string[],
-    info: [] as string[]
+    info: [] as string[],
   };
 
   // 检查存储可用性
@@ -225,7 +228,7 @@ async function runHealthChecks(): Promise<{
     if (!('localStorage' in window)) {
       results.critical.push('localStorage不可用，应用可能无法正常工作');
     }
-    
+
     if (!('indexedDB' in window)) {
       results.warnings.push('IndexedDB不可用，将使用localStorage作为后备');
     }
@@ -245,12 +248,12 @@ async function runHealthChecks(): Promise<{
   // 检查Docker环境特定问题
   const { dockerStorageAdapter } = await import('./docker-storage-adapter');
   const env = dockerStorageAdapter.getEnvironment();
-  
+
   if (env.isDocker) {
     if (!env.hasWritePermission) {
       results.critical.push('Docker容器没有文件写入权限，请检查卷挂载配置');
     }
-    
+
     results.info.push(`Docker环境检测: 数据路径=${env.dataPath}, 日志路径=${env.logPath}`);
   }
 
@@ -276,7 +279,7 @@ export function getDockerConfigurationAdvice(): {
       '    chown -R nextjs:nodejs /app/data /app/logs',
       '',
       '# 设置Docker环境标识',
-      'ENV DOCKER_CONTAINER=true'
+      'ENV DOCKER_CONTAINER=true',
     ],
     dockerCompose: [
       'services:',
@@ -288,17 +291,14 @@ export function getDockerConfigurationAdvice(): {
       '          cpus: "0.5"',
       '        reservations:',
       '          memory: 512M',
-      '          cpus: "0.25"'
+      '          cpus: "0.25"',
     ],
     environment: [
       'DOCKER_CONTAINER=true',
       'NODE_OPTIONS=--max-old-space-size=1024',
-      'NEXT_TELEMETRY_DISABLED=1'
+      'NEXT_TELEMETRY_DISABLED=1',
     ],
-    volumes: [
-      'tmdb_data:/app/data  # 持久化数据存储',
-      'tmdb_logs:/app/logs  # 持久化日志存储'
-    ]
+    volumes: ['tmdb_data:/app/data  # 持久化数据存储', 'tmdb_logs:/app/logs  # 持久化日志存储'],
   };
 }
 
@@ -322,8 +322,8 @@ export async function exportDockerDiagnostics(): Promise<string> {
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A',
       platform: typeof window !== 'undefined' ? window.navigator.platform : process.platform,
       language: typeof window !== 'undefined' ? window.navigator.language : 'N/A',
-      cookieEnabled: typeof window !== 'undefined' ? window.navigator.cookieEnabled : 'N/A'
-    }
+      cookieEnabled: typeof window !== 'undefined' ? window.navigator.cookieEnabled : 'N/A',
+    },
   };
 
   return JSON.stringify(diagnostics, null, 2);
@@ -334,14 +334,14 @@ if (typeof window !== 'undefined') {
   // 等待DOM加载完成后初始化
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      initializeDockerOptimizations().catch(error => {
+      initializeDockerOptimizations().catch((error) => {
         logger.error('自动初始化Docker优化功能失败:', error);
       });
     });
   } else {
     // DOM已经加载完成，立即初始化
     setTimeout(() => {
-      initializeDockerOptimizations().catch(error => {
+      initializeDockerOptimizations().catch((error) => {
         logger.error('自动初始化Docker优化功能失败:', error);
       });
     }, 100);

@@ -4,7 +4,10 @@ const fs = require('fs');
 const os = require('os');
 
 // 开发环境检测
-const isDev = process.env.NODE_ENV === 'development' || process.defaultApp || /[\\/]electron/.test(process.execPath);
+const isDev =
+  process.env.NODE_ENV === 'development' ||
+  process.defaultApp ||
+  /[\\/]electron/.test(process.execPath);
 const port = 4949;
 
 // 简单的日志辅助函数（Electron 主进程无法使用 Logger class）
@@ -73,7 +76,7 @@ function initDataDir() {
   electronLog(`数据目录: ${appDataDir}`);
   electronLog(`exe 路径: ${app.getPath('exe')}`);
   electronLog(`app 路径: ${app.getAppPath()}`);
-  
+
   // 初始化数据库
   initDatabase();
 }
@@ -86,13 +89,13 @@ function initDatabase() {
   try {
     const dbPath = path.join(appDataDir, 'tmdb-helper.db');
     electronLog(`初始化数据库: ${dbPath}`);
-    
+
     // 检查数据库是否已存在
     if (fs.existsSync(dbPath)) {
       electronLog('数据库已存在，跳过初始化');
       return;
     }
-    
+
     // 使用 better-sqlite3 初始化数据库（Electron 33 使用 Node.js 20，不支持 node:sqlite）
     electronLog('尝试加载 better-sqlite3...');
     const Database = require('better-sqlite3');
@@ -100,7 +103,7 @@ function initDatabase() {
     const db = new Database(dbPath);
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('PRAGMA foreign_keys = ON');
-    
+
     // 创建 items 表
     db.exec(`CREATE TABLE IF NOT EXISTS items (
       id TEXT PRIMARY KEY, tmdbId TEXT, imdbId TEXT, title TEXT NOT NULL,
@@ -115,7 +118,7 @@ function initDatabase() {
       blurIntensity TEXT, rating INTEGER, createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL, deletedAt TEXT
     )`);
-    
+
     // 创建 seasons 表
     db.exec(`CREATE TABLE IF NOT EXISTS seasons (
       id TEXT PRIMARY KEY, itemId TEXT NOT NULL, seasonNumber INTEGER NOT NULL,
@@ -123,7 +126,7 @@ function initDatabase() {
       createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
       FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE
     )`);
-    
+
     // 创建 episodes 表
     db.exec(`CREATE TABLE IF NOT EXISTS episodes (
       id TEXT PRIMARY KEY, itemId TEXT NOT NULL, seasonId TEXT,
@@ -132,7 +135,7 @@ function initDatabase() {
       FOREIGN KEY (itemId) REFERENCES items(id) ON DELETE CASCADE,
       FOREIGN KEY (seasonId) REFERENCES seasons(id) ON DELETE CASCADE
     )`);
-    
+
     // 创建 users 表
     db.exec(`CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL,
@@ -140,18 +143,18 @@ function initDatabase() {
       updatedAt TEXT NOT NULL, lastLoginAt TEXT, sessionExpiryDays INTEGER DEFAULT 15,
       deletedAt TEXT
     )`);
-    
+
     // 创建 config 表
     db.exec(`CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY, value TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL
     )`);
-    
+
     // 创建 chatHistories 表
     db.exec(`CREATE TABLE IF NOT EXISTS chatHistories (
       id TEXT PRIMARY KEY, title TEXT NOT NULL, createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL, deletedAt TEXT
     )`);
-    
+
     // 创建 messages 表
     db.exec(`CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY, chatId TEXT NOT NULL, role TEXT NOT NULL,
@@ -161,7 +164,7 @@ function initDatabase() {
       canContinue INTEGER DEFAULT 0, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL,
       FOREIGN KEY (chatId) REFERENCES chatHistories(id) ON DELETE CASCADE
     )`);
-    
+
     // 创建 image_cache 表
     db.exec(`CREATE TABLE IF NOT EXISTS image_cache (
       id INTEGER PRIMARY KEY AUTOINCREMENT, tmdbId TEXT NOT NULL, itemId TEXT,
@@ -170,7 +173,7 @@ function initDatabase() {
       isPermanent INTEGER DEFAULT 1, sourceType TEXT DEFAULT 'tmdb',
       UNIQUE(tmdbId, imageType, sizeType)
     )`);
-    
+
     // 创建 schedule_tasks 表
     db.exec(`CREATE TABLE IF NOT EXISTS schedule_tasks (
       id TEXT PRIMARY KEY, itemId TEXT NOT NULL, cron TEXT NOT NULL,
@@ -179,14 +182,14 @@ function initDatabase() {
       tmdbAutoResponse TEXT DEFAULT 'w', fieldCleanup TEXT DEFAULT '{}',
       lastRunAt TEXT, nextRunAt TEXT, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL
     )`);
-    
+
     // 创建 schedule_logs 表
     db.exec(`CREATE TABLE IF NOT EXISTS schedule_logs (
       id TEXT PRIMARY KEY, taskId TEXT NOT NULL, status TEXT NOT NULL,
       startAt TEXT NOT NULL, endAt TEXT, message TEXT NOT NULL, details TEXT,
       FOREIGN KEY (taskId) REFERENCES schedule_tasks(id) ON DELETE CASCADE
     )`);
-    
+
     // 创建索引
     db.exec(`CREATE INDEX IF NOT EXISTS idx_items_tmdbId ON items(tmdbId)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_items_weekday ON items(weekday)`);
@@ -196,20 +199,25 @@ function initDatabase() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_chatId ON messages(chatId)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_chatHistories_deletedAt ON chatHistories(deletedAt)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_users_deletedAt ON users(deletedAt)`);
-    
+
     // 设置 schema 版本
     db.exec(`PRAGMA user_version = 10`);
-    
+
     db.close();
     electronLog('数据库初始化完成');
   } catch (error) {
-    electronLog(`数据库初始化失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    electronLog(
+      `数据库初始化失败: ${error instanceof Error ? error.message : String(error)}`,
+      'error'
+    );
     electronLog(`错误详情: ${error instanceof Error ? error.stack : String(error)}`, 'error');
     // 在 Electron 中显示错误对话框
     try {
       const { dialog } = require('electron');
-      dialog.showErrorBox('数据库初始化失败', 
-        `无法初始化数据库，请检查 better-sqlite3 是否正确安装。\n\n错误信息: ${error instanceof Error ? error.message : String(error)}`);
+      dialog.showErrorBox(
+        '数据库初始化失败',
+        `无法初始化数据库，请检查 better-sqlite3 是否正确安装。\n\n错误信息: ${error instanceof Error ? error.message : String(error)}`
+      );
     } catch (e) {
       // 如果 dialog 还没准备好，只记录日志
     }
@@ -226,15 +234,15 @@ function createWindow() {
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
-  
+
   // 设置窗口尺寸为屏幕的80%，但不超过最大限制
   const windowWidth = Math.min(Math.floor(width * 0.8), 1400);
   const windowHeight = Math.min(Math.floor(height * 0.8), 900);
-  
+
   mainWindow = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    minWidth: 1024,  // 降低最小宽度要求至1024px
+    minWidth: 1024, // 降低最小宽度要求至1024px
     minHeight: 700,
     webPreferences: {
       nodeIntegration: false,
@@ -248,20 +256,20 @@ function createWindow() {
       enableWebSQL: false, // 禁用WebSQL
       experimentalFeatures: false, // 禁用实验性功能
       v8CacheOptions: 'code', // 启用V8代码缓存
-      sandbox: false // 开发环境禁用沙盒，避免渲染进程崩溃
+      sandbox: false, // 开发环境禁用沙盒，避免渲染进程崩溃
     },
     icon: path.join(__dirname, '../public/images/tmdb-helper-logo-new.png'),
     show: false,
     // 性能优化选项
     useContentSize: true,
-    enableLargerThanScreen: false
+    enableLargerThanScreen: false,
   });
 
   // 添加窗口大小变化监听
   mainWindow.on('resize', () => {
     if (mainWindow) {
       const [width, height] = mainWindow.getSize();
-      
+
       // 发送窗口大小变化事件到渲染进程
       mainWindow.webContents.send('window-resize', { width, height });
     }
@@ -284,11 +292,11 @@ function createWindow() {
   const originalUA = mainWindow.webContents.getUserAgent();
   const newUA = originalUA + ' TMDB-Helper-Electron';
   mainWindow.webContents.setUserAgent(newUA);
-  
+
   // 窗口准备好后显示
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    
+
     // 禁用拼写检查，避免语言代码问题
     if (mainWindow.webContents.session) {
       mainWindow.webContents.session.setSpellCheckerEnabled(false);
@@ -318,13 +326,13 @@ function createWindow() {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-          "style-src 'self' 'unsafe-inline'; " +
-          "img-src 'self' data: blob: https:; " +
-          "font-src 'self' data:; " +
-          "connect-src 'self' http://localhost:* ws://localhost:*;"
-        ]
-      }
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data: blob: https:; " +
+            "font-src 'self' data:; " +
+            "connect-src 'self' http://localhost:* ws://localhost:*;",
+        ],
+      },
     });
   });
 
@@ -342,13 +350,13 @@ function createWindow() {
       if (isDev) {
         // 开发环境使用本地服务器
         const startUrl = `http://localhost:${port}`;
-        
+
         await mainWindow.loadURL(startUrl);
       } else {
         // 生产环境尝试使用本地服务器，如果失败则使用静态文件
         try {
           const startUrl = `http://localhost:${port}`;
-          
+
           await mainWindow.loadURL(startUrl);
         } catch (serverError) {
           electronLog(`本地服务器加载失败，尝试静态文件: ${serverError.message}`, 'error');
@@ -365,7 +373,7 @@ function createWindow() {
             path.join(appPath, '.next', 'server', 'app', 'page.html'),
             path.join(process.resourcesPath, '.next', 'server', 'pages', 'index.html'),
             path.join(process.resourcesPath, '.next', 'standalone', 'index.html'),
-            path.join(process.resourcesPath, 'out', 'index.html')
+            path.join(process.resourcesPath, 'out', 'index.html'),
           ];
 
           let htmlPath = null;
@@ -384,7 +392,6 @@ function createWindow() {
           }
         }
       }
-      
     } catch (error) {
       electronLog(`应用加载失败: ${error.message}`, 'error');
       // 显示错误页面
@@ -409,7 +416,7 @@ function createWindow() {
   // 处理导航安全
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
-    
+
     if (parsedUrl.origin !== `http://localhost:${port}`) {
       event.preventDefault();
     }
@@ -424,7 +431,7 @@ function createWindow() {
     if (parsedUrl.origin === internalOrigin) {
       const featureMap = {};
       if (features) {
-        features.split(',').forEach(f => {
+        features.split(',').forEach((f) => {
           const [key, value] = f.trim().split('=');
           if (key && value) featureMap[key.trim()] = value.trim();
         });
@@ -445,10 +452,10 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: false,
             preload: path.join(__dirname, 'preload.js'),
-            sandbox: true
+            sandbox: true,
           },
           show: false,
-        }
+        },
       };
     }
 
@@ -466,15 +473,15 @@ function createWindow() {
   // 窗口关闭事件 - 修改为最小化到托盘
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
-      event.preventDefault();  // 阻止默认关闭行为
-      mainWindow.hide();       // 隐藏窗口到托盘
+      event.preventDefault(); // 阻止默认关闭行为
+      mainWindow.hide(); // 隐藏窗口到托盘
 
       // Windows 系统下可以显示托盘提示
       if (process.platform === 'win32' && tray) {
         tray.displayBalloon({
           iconType: 'info',
           title: 'TMDB Helper',
-          content: '应用已最小化到系统托盘，点击托盘图标可重新打开'
+          content: '应用已最小化到系统托盘，点击托盘图标可重新打开',
         });
       }
     }
@@ -484,7 +491,7 @@ function createWindow() {
     mainWindow = null;
     // 注意：这里不销毁 tray，因为应用还在运行
   });
-  
+
   // 添加定期垃圾回收（仅生产环境）
   if (!isDev) {
     setInterval(() => {
@@ -513,14 +520,14 @@ function startNextServer() {
       // 获取正确的应用路径
       const appPath = app.getAppPath();
       const exeDir = path.dirname(app.getPath('exe'));
-      
+
       // 尝试多个可能的 .next 目录位置
       const possibleNextDirs = [
-        path.join(appPath, '.next'),                    // app.asar/.next
-        path.join(path.dirname(appPath), 'app.asar.unpacked', '.next'),  // app.asar.unpacked/.next
-        path.join(exeDir, 'resources', 'app.asar.unpacked', '.next'),    // exe目录下的 unpacked
-        path.join(exeDir, 'resources', 'app', '.next'),                  // exe目录下的 app
-        path.join(process.resourcesPath, 'app.asar.unpacked', '.next'),  // resourcesPath 下的 unpacked
+        path.join(appPath, '.next'), // app.asar/.next
+        path.join(path.dirname(appPath), 'app.asar.unpacked', '.next'), // app.asar.unpacked/.next
+        path.join(exeDir, 'resources', 'app.asar.unpacked', '.next'), // exe目录下的 unpacked
+        path.join(exeDir, 'resources', 'app', '.next'), // exe目录下的 app
+        path.join(process.resourcesPath, 'app.asar.unpacked', '.next'), // resourcesPath 下的 unpacked
       ];
 
       let nextDir = null;
@@ -553,46 +560,47 @@ function startNextServer() {
         dev: false,
         dir: appRoot,
         conf: {
-          distDir: '.next'
-        }
+          distDir: '.next',
+        },
       });
 
       const handle = nextApp.getRequestHandler();
 
-      nextApp.prepare().then(async () => {
-        electronLog('Next.js 准备完成');
+      nextApp
+        .prepare()
+        .then(async () => {
+          electronLog('Next.js 准备完成');
 
-        const server = createServer(async (req, res) => {
-          try {
-            const parsedUrl = parse(req.url, true);
-            await handle(req, res, parsedUrl);
-          } catch (err) {
-            electronLog(`请求处理失败: ${err.message}`, 'error');
-            res.statusCode = 500;
-            res.end('Internal Server Error');
-          }
-        });
+          const server = createServer(async (req, res) => {
+            try {
+              const parsedUrl = parse(req.url, true);
+              await handle(req, res, parsedUrl);
+            } catch (err) {
+              electronLog(`请求处理失败: ${err.message}`, 'error');
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            }
+          });
 
-        server.listen(port, (err) => {
-          if (err) {
-            electronLog(`服务器启动失败: ${err.message}`, 'error');
-            reject(err);
-          } else {
-            electronLog(`Next.js 服务器已启动 (端口 ${port})`);
-            resolve();
-          }
-        });
+          server.listen(port, (err) => {
+            if (err) {
+              electronLog(`服务器启动失败: ${err.message}`, 'error');
+              reject(err);
+            } else {
+              electronLog(`Next.js 服务器已启动 (端口 ${port})`);
+              resolve();
+            }
+          });
 
-        server.on('error', (error) => {
-          electronLog(`服务器错误: ${error.message}`, 'error');
+          server.on('error', (error) => {
+            electronLog(`服务器错误: ${error.message}`, 'error');
+            reject(error);
+          });
+        })
+        .catch((error) => {
+          electronLog(`Next.js prepare 失败: ${error.message}`, 'error');
           reject(error);
         });
-
-      }).catch((error) => {
-        electronLog(`Next.js prepare 失败: ${error.message}`, 'error');
-        reject(error);
-      });
-
     } catch (error) {
       electronLog(`启动 Next.js 服务器异常: ${error.message}`, 'error');
       reject(error);
@@ -617,14 +625,14 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+I',
           click: () => {
             mainWindow.webContents.send('menu-import-data');
-          }
+          },
         },
         {
           label: '导出数据',
           accelerator: 'CmdOrCtrl+E',
           click: () => {
             mainWindow.webContents.send('menu-export-data');
-          }
+          },
         },
         { type: 'separator' },
         {
@@ -632,9 +640,9 @@ function createMenu() {
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
           click: () => {
             app.quit();
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       label: '编辑',
@@ -644,24 +652,26 @@ function createMenu() {
         { type: 'separator' },
         { label: '剪切', accelerator: 'CmdOrCtrl+X', role: 'cut' },
         { label: '复制', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-        { label: '粘贴', accelerator: 'CmdOrCtrl+V', role: 'paste' }
-      ]
+        { label: '粘贴', accelerator: 'CmdOrCtrl+V', role: 'paste' },
+      ],
     },
     {
       label: '视图',
       submenu: [
-        ...(process.env.NODE_ENV === 'development' ? [
-          { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-          { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-          { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' },
-          { type: 'separator' }
-        ] : []),
+        ...(process.env.NODE_ENV === 'development'
+          ? [
+              { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
+              { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
+              { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' },
+              { type: 'separator' },
+            ]
+          : []),
         { label: '实际大小', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
         { label: '放大', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
         { label: '缩小', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
         { type: 'separator' },
-        { label: '全屏', accelerator: 'F11', role: 'togglefullscreen' }
-      ]
+        { label: '全屏', accelerator: 'F11', role: 'togglefullscreen' },
+      ],
     },
     {
       label: '开发',
@@ -673,7 +683,7 @@ function createMenu() {
             if (mainWindow) {
               mainWindow.webContents.toggleDevTools();
             }
-          }
+          },
         },
         {
           label: '重新加载页面',
@@ -682,7 +692,7 @@ function createMenu() {
             if (mainWindow) {
               mainWindow.webContents.reload();
             }
-          }
+          },
         },
         {
           label: '强制重新加载',
@@ -691,7 +701,7 @@ function createMenu() {
             if (mainWindow) {
               mainWindow.webContents.reloadIgnoringCache();
             }
-          }
+          },
         },
         { type: 'separator' },
         {
@@ -703,10 +713,10 @@ function createMenu() {
                 type: 'info',
                 title: '缓存清除',
                 message: '缓存已清除',
-                detail: '应用缓存已成功清除'
+                detail: '应用缓存已成功清除',
               });
             }
-          }
+          },
         },
         {
           label: '清除存储数据',
@@ -717,12 +727,12 @@ function createMenu() {
                 type: 'info',
                 title: '存储数据清除',
                 message: '存储数据已清除',
-                detail: '本地存储、会话存储等数据已清除'
+                detail: '本地存储、会话存储等数据已清除',
               });
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       label: '帮助',
@@ -734,12 +744,12 @@ function createMenu() {
               type: 'info',
               title: '关于 TMDB Helper',
               message: 'TMDB Helper',
-              detail: '版本 0.3.7\n\n一个强大的 TMDB 媒体管理助手桌面应用'
+              detail: '版本 0.3.7\n\n一个强大的 TMDB 媒体管理助手桌面应用',
             });
-          }
-        }
-      ]
-    }
+          },
+        },
+      ],
+    },
   ];
 
   // macOS 特殊处理
@@ -755,8 +765,8 @@ function createMenu() {
         { label: '隐藏其他', accelerator: 'Command+Shift+H', role: 'hideothers' },
         { label: '显示全部', role: 'unhide' },
         { type: 'separator' },
-        { label: '退出', accelerator: 'Command+Q', click: () => app.quit() }
-      ]
+        { label: '退出', accelerator: 'Command+Q', click: () => app.quit() },
+      ],
     });
   }
 
@@ -786,7 +796,7 @@ function createTray() {
         } else {
           createWindow();
         }
-      }
+      },
     },
     { type: 'separator' },
     {
@@ -794,8 +804,8 @@ function createTray() {
       click: () => {
         isQuitting = true;
         app.quit();
-      }
-    }
+      },
+    },
   ]);
 
   tray.setContextMenu(contextMenu);
@@ -842,7 +852,7 @@ app.whenReady().then(async () => {
 
     // 启动 Next.js 服务器
     await startNextServer();
-    
+
     // 创建窗口和菜单
     createWindow();
 
@@ -851,7 +861,6 @@ app.whenReady().then(async () => {
 
     // 创建系统托盘
     createTray();
-
   } catch (error) {
     electronLog(`启动失败: ${error.message}`, 'error');
     // 显示更详细的错误信息
@@ -930,7 +939,7 @@ ipcMain.handle('window-is-maximized', () => {
 ipcMain.handle('select-directory', async () => {
   if (!mainWindow) return null;
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory']
+    properties: ['openDirectory'],
   });
   if (result.canceled) return null;
   return result.filePaths[0];
@@ -951,7 +960,7 @@ ipcMain.handle('open-directory', async (_event, dirPath) => {
 ipcMain.handle('get-tray-status', () => {
   return {
     hasTray: !!tray,
-    isWindowVisible: mainWindow ? mainWindow.isVisible() : false
+    isWindowVisible: mainWindow ? mainWindow.isVisible() : false,
   };
 });
 
@@ -989,14 +998,21 @@ ipcMain.on('ondragstart', (event, filePaths) => {
       });
     }
   } catch (error) {
-    electronLog(`startDrag 失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    electronLog(
+      `startDrag 失败: ${error instanceof Error ? error.message : String(error)}`,
+      'error'
+    );
   }
 });
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif']);
 const MIME_MAP = {
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
-  '.webp': 'image/webp', '.gif': 'image/gif', '.bmp': 'image/bmp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.bmp': 'image/bmp',
   '.avif': 'image/avif',
 };
 const MAX_THUMBNAIL_ENTRIES = 1000;
@@ -1009,7 +1025,7 @@ ipcMain.handle('open-image-directory', async (_event, existingPath) => {
   let dirPath = existingPath;
   if (!dirPath) {
     const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory']
+      properties: ['openDirectory'],
     });
     if (result.canceled) return null;
     dirPath = result.filePaths[0];
@@ -1040,9 +1056,13 @@ ipcMain.handle('open-image-directory', async (_event, existingPath) => {
             if (!IMAGE_EXTS.has(ext)) continue;
             entries.push({ fullPath, rel, ext });
           }
-        } catch (_) { /* skip inaccessible */ }
+        } catch (_) {
+          /* skip inaccessible */
+        }
       }
-    } catch (_) { /* skip inaccessible */ }
+    } catch (_) {
+      /* skip inaccessible */
+    }
     return entries;
   }
 
@@ -1067,11 +1087,12 @@ ipcMain.handle('open-image-directory', async (_event, existingPath) => {
         thumbnailUrl: `data:${mime};base64,${b64}`,
       });
     } catch (error) {
-      electronLog(`读取文件失败: ${f.fullPath} - ${error instanceof Error ? error.message : String(error)}`, 'error');
+      electronLog(
+        `读取文件失败: ${f.fullPath} - ${error instanceof Error ? error.message : String(error)}`,
+        'error'
+      );
     }
   }
 
   return { dirPath, dirName, entries };
 });
-
-

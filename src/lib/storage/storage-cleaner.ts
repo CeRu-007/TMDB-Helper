@@ -3,10 +3,10 @@
  * Handles corrupted localStorage data
  */
 
-import { storageService } from './storage-service'
-import { logger } from '@/lib/utils/logger'
+import { storageService } from './storage-service';
+import { logger } from '@/lib/utils/logger';
 
-const CLEANUP_FLAG = 'storage_cleaned_v2'
+const CLEANUP_FLAG = 'storage_cleaned_v2';
 const STRING_KEYS = [
   'last_login_username',
   'last_login_remember_me',
@@ -19,53 +19,53 @@ const STRING_KEYS = [
   'video_thumbnail_settings',
   'episode_generator_api_provider',
   'tmdb_helper_user_salt',
-  'last_login_password_enc'
-] as const
+  'last_login_password_enc',
+] as const;
 
 interface CleanupResult {
-  success: boolean
-  cleanedKeys: string[]
-  errors: string[]
+  success: boolean;
+  cleanedKeys: string[];
+  errors: string[];
 }
 
 interface CleanupStatus {
-  needsCleanup: boolean
-  cleanupComplete: boolean
-  corruptedKeys: string[]
+  needsCleanup: boolean;
+  cleanupComplete: boolean;
+  corruptedKeys: string[];
 }
 
 function isJsonValid(value: string): boolean {
   try {
-    JSON.parse(value)
-    return true
+    JSON.parse(value);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
 function findCorruptedKeys(): string[] {
-  const corrupted: string[] = []
+  const corrupted: string[] = [];
 
   for (const key of STRING_KEYS) {
-    const value = localStorage.getItem(key)
+    const value = localStorage.getItem(key);
     if (value !== null && value.trim() !== '' && !isJsonValid(value)) {
-      corrupted.push(key)
+      corrupted.push(key);
     }
   }
 
-  return corrupted
+  return corrupted;
 }
 
 function attemptRepair(key: string, value: string): string | null {
-  if (!STRING_KEYS.includes(key)) {
-    return null
+  if (!(STRING_KEYS as readonly string[]).includes(key)) {
+    return null;
   }
 
   if (!value.startsWith('"') && !value.startsWith('{') && !value.startsWith('[')) {
-    return JSON.stringify(value)
+    return JSON.stringify(value);
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -76,12 +76,16 @@ export class StorageCleaner {
    * Check if cleanup is needed
    */
   static needsCleanup(): boolean {
-    if (typeof window === 'undefined') return false
+    if (typeof window === 'undefined') {
+      return false;
+    }
 
-    const cleaned = localStorage.getItem(CLEANUP_FLAG)
-    if (cleaned === 'true') return false
+    const cleaned = localStorage.getItem(CLEANUP_FLAG);
+    if (cleaned === 'true') {
+      return false;
+    }
 
-    return findCorruptedKeys().length > 0
+    return findCorruptedKeys().length > 0;
   }
 
   /**
@@ -91,40 +95,44 @@ export class StorageCleaner {
     const result: CleanupResult = {
       success: false,
       cleanedKeys: [],
-      errors: []
-    }
+      errors: [],
+    };
 
     if (typeof window === 'undefined') {
-      result.errors.push('Cleanup can only be executed in browser environment')
-      return result
+      result.errors.push('Cleanup can only be executed in browser environment');
+      return result;
     }
 
     try {
-      const keys = Object.keys(localStorage)
+      const keys = Object.keys(localStorage);
 
       for (const key of keys) {
-        const value = localStorage.getItem(key)
-        if (!value?.trim()) continue
+        const value = localStorage.getItem(key);
+        if (!value?.trim()) {
+          continue;
+        }
 
         if (!isJsonValid(value)) {
-          const fixed = attemptRepair(key, value)
+          const fixed = attemptRepair(key, value);
           if (fixed !== null) {
-            localStorage.setItem(key, fixed)
-            result.cleanedKeys.push(key)
+            localStorage.setItem(key, fixed);
+            result.cleanedKeys.push(key);
           } else {
-            localStorage.removeItem(key)
-            result.cleanedKeys.push(key)
+            localStorage.removeItem(key);
+            result.cleanedKeys.push(key);
           }
         }
       }
 
-      localStorage.setItem(CLEANUP_FLAG, 'true')
-      result.success = true
+      localStorage.setItem(CLEANUP_FLAG, 'true');
+      result.success = true;
     } catch (error) {
-      result.errors.push(`Cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      result.errors.push(
+        `Cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
-    return result
+    return result;
   }
 
   /**
@@ -132,7 +140,7 @@ export class StorageCleaner {
    */
   static resetCleanupFlag(): void {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(CLEANUP_FLAG)
+      localStorage.removeItem(CLEANUP_FLAG);
     }
   }
 
@@ -144,18 +152,18 @@ export class StorageCleaner {
       return {
         needsCleanup: false,
         cleanupComplete: true,
-        corruptedKeys: []
-      }
+        corruptedKeys: [],
+      };
     }
 
-    const cleanupComplete = localStorage.getItem(CLEANUP_FLAG) === 'true'
-    const corruptedKeys = cleanupComplete ? [] : findCorruptedKeys()
+    const cleanupComplete = localStorage.getItem(CLEANUP_FLAG) === 'true';
+    const corruptedKeys = cleanupComplete ? [] : findCorruptedKeys();
 
     return {
       needsCleanup: corruptedKeys.length > 0,
       cleanupComplete,
-      corruptedKeys
-    }
+      corruptedKeys,
+    };
   }
 
   /**
@@ -163,17 +171,19 @@ export class StorageCleaner {
    */
   static autoCleanup(): void {
     if (this.needsCleanup()) {
-      const result = this.cleanup()
+      const result = this.cleanup();
       if (result.success) {
-        logger.info(`[StorageCleaner] Cleaned ${result.cleanedKeys.length} corrupted localStorage keys`)
+        logger.info(
+          `[StorageCleaner] Cleaned ${result.cleanedKeys.length} corrupted localStorage keys`
+        );
       } else {
-        logger.error('[StorageCleaner] Cleanup failed:', result.errors)
+        logger.error('[StorageCleaner] Cleanup failed:', result.errors);
       }
     }
   }
 }
 
-export const cleanupStorage = () => StorageCleaner.cleanup()
-export const needsStorageCleanup = () => StorageCleaner.needsCleanup()
-export const getStorageCleanupStatus = () => StorageCleaner.getCleanupStatus()
-export const autoCleanupStorage = () => StorageCleaner.autoCleanup()
+export const cleanupStorage = () => StorageCleaner.cleanup();
+export const needsStorageCleanup = () => StorageCleaner.needsCleanup();
+export const getStorageCleanupStatus = () => StorageCleaner.getCleanupStatus();
+export const autoCleanupStorage = () => StorageCleaner.autoCleanup();

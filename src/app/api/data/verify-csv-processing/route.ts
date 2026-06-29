@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '缺少原始CSV文件路径',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -68,23 +68,16 @@ export async function POST(request: NextRequest) {
 
       const originalContent = await fs.readFile(originalCsvPath, 'utf-8');
       result.originalFile.content =
-        originalContent.substring(0, 1000) +
-        (originalContent.length > 1000 ? '...' : '');
+        originalContent.substring(0, 1000) + (originalContent.length > 1000 ? '...' : '');
 
-      const originalLines = originalContent
-        .split('\n')
-        .filter((line) => line.trim() !== '');
+      const originalLines = originalContent.split('\n').filter((line) => line.trim() !== '');
       result.originalFile.lines = originalLines.length;
 
       // 解析集数信息
       if (originalLines.length > 1) {
-        const headers = originalLines[0]
-          .split(',')
-          .map((h) => h.trim().replace(/"/g, ''));
+        const headers = originalLines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
         const episodeColumnIndex = headers.findIndex(
-          (h) =>
-            h.toLowerCase().includes('episode') &&
-            h.toLowerCase().includes('number'),
+          (h) => h.toLowerCase().includes('episode') && h.toLowerCase().includes('number')
         );
 
         if (episodeColumnIndex !== -1) {
@@ -92,9 +85,7 @@ export async function POST(request: NextRequest) {
           result.originalFile.episodeColumnName = headers[episodeColumnIndex];
 
           for (let i = 1; i < originalLines.length; i++) {
-            const columns = originalLines[i]
-              .split(',')
-              .map((c) => c.trim().replace(/"/g, ''));
+            const columns = originalLines[i].split(',').map((c) => c.trim().replace(/"/g, ''));
             if (columns.length > episodeColumnIndex) {
               const episodeNumber = parseInt(columns[episodeColumnIndex]);
               if (!isNaN(episodeNumber)) {
@@ -109,8 +100,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      result.originalFile.error =
-        error instanceof Error ? error.message : String(error);
+      result.originalFile.error = error instanceof Error ? error.message : String(error);
     }
 
     // 检查处理后文件（如果提供了路径）
@@ -129,34 +119,24 @@ export async function POST(request: NextRequest) {
 
         const processedContent = await fs.readFile(processedCsvPath, 'utf-8');
         result.processedFile.content =
-          processedContent.substring(0, 1000) +
-          (processedContent.length > 1000 ? '...' : '');
+          processedContent.substring(0, 1000) + (processedContent.length > 1000 ? '...' : '');
 
-        const processedLines = processedContent
-          .split('\n')
-          .filter((line) => line.trim() !== '');
+        const processedLines = processedContent.split('\n').filter((line) => line.trim() !== '');
         result.processedFile.lines = processedLines.length;
 
         // 解析集数信息
         if (processedLines.length > 1) {
-          const headers = processedLines[0]
-            .split(',')
-            .map((h) => h.trim().replace(/"/g, ''));
+          const headers = processedLines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
           const episodeColumnIndex = headers.findIndex(
-            (h) =>
-              h.toLowerCase().includes('episode') &&
-              h.toLowerCase().includes('number'),
+            (h) => h.toLowerCase().includes('episode') && h.toLowerCase().includes('number')
           );
 
           if (episodeColumnIndex !== -1) {
             result.processedFile.episodeColumnIndex = episodeColumnIndex;
-            result.processedFile.episodeColumnName =
-              headers[episodeColumnIndex];
+            result.processedFile.episodeColumnName = headers[episodeColumnIndex];
 
             for (let i = 1; i < processedLines.length; i++) {
-              const columns = processedLines[i]
-                .split(',')
-                .map((c) => c.trim().replace(/"/g, ''));
+              const columns = processedLines[i].split(',').map((c) => c.trim().replace(/"/g, ''));
               if (columns.length > episodeColumnIndex) {
                 const episodeNumber = parseInt(columns[episodeColumnIndex]);
                 if (!isNaN(episodeNumber)) {
@@ -171,8 +151,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        result.processedFile.error =
-          error instanceof Error ? error.message : String(error);
+        result.processedFile.error = error instanceof Error ? error.message : String(error);
       }
 
       // 比较分析
@@ -187,17 +166,11 @@ export async function POST(request: NextRequest) {
         result.comparison = {
           originalEpisodeCount: originalEpisodes.length,
           processedEpisodeCount: processedEpisodes.length,
-          removedEpisodes: originalEpisodes.filter(
-            (ep: number) => !processedEpisodes.includes(ep),
-          ),
-          addedEpisodes: processedEpisodes.filter(
-            (ep: number) => !originalEpisodes.includes(ep),
-          ),
+          removedEpisodes: originalEpisodes.filter((ep: number) => !processedEpisodes.includes(ep)),
+          addedEpisodes: processedEpisodes.filter((ep: number) => !originalEpisodes.includes(ep)),
           originalEpisodes,
           processedEpisodes,
-          isIdentical:
-            JSON.stringify(originalEpisodes) ===
-            JSON.stringify(processedEpisodes),
+          isIdentical: JSON.stringify(originalEpisodes) === JSON.stringify(processedEpisodes),
         };
       }
     }
@@ -207,7 +180,7 @@ export async function POST(request: NextRequest) {
         success: true,
         result,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     return NextResponse.json(
@@ -216,7 +189,7 @@ export async function POST(request: NextRequest) {
         error: '验证失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -237,9 +210,7 @@ export async function GET(request: NextRequest) {
           const filePath = path.join(tmdbImportDir, file);
           const stats = await fs.stat(filePath);
           const content = await fs.readFile(filePath, 'utf-8');
-          const lines = content
-            .split('\n')
-            .filter((line) => line.trim() !== '');
+          const lines = content.split('\n').filter((line) => line.trim() !== '');
 
           return {
             name: file,
@@ -247,10 +218,9 @@ export async function GET(request: NextRequest) {
             size: stats.size,
             modified: stats.mtime.toISOString(),
             lines: lines.length,
-            preview:
-              content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+            preview: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
           };
-        }),
+        })
       );
 
       return NextResponse.json(
@@ -259,7 +229,7 @@ export async function GET(request: NextRequest) {
           directory: tmdbImportDir,
           csvFiles: csvFileDetails,
         },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (dirError) {
       return NextResponse.json(
@@ -268,11 +238,10 @@ export async function GET(request: NextRequest) {
           error: '无法访问TMDB-Import目录',
           details: {
             directory: tmdbImportDir,
-            error:
-              dirError instanceof Error ? dirError.message : String(dirError),
+            error: dirError instanceof Error ? dirError.message : String(dirError),
           },
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
   } catch (error) {
@@ -282,7 +251,7 @@ export async function GET(request: NextRequest) {
         error: '操作失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

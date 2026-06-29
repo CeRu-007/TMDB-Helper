@@ -120,4 +120,4 @@ It's best to add cast and crew information from press releases rather than user-
 # Videos
 
 Videos should be official trailers, teasers, or clips. Fan-made videos are not allowed.
-`
+`;

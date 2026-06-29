@@ -113,7 +113,7 @@ export class AdvancedMetadataExtractor {
 
   static async extractFromUrl(
     url: string,
-    config: ExtractionConfig = {},
+    config: ExtractionConfig = {}
   ): Promise<{
     success: boolean;
     metadata?: AdvancedExtractedMetadata;
@@ -205,9 +205,7 @@ export class AdvancedMetadataExtractor {
   }
 
   // 计算高级置信度评分
-  static calculateAdvancedConfidence(
-    metadata: AdvancedExtractedMetadata,
-  ): number {
+  static calculateAdvancedConfidence(metadata: AdvancedExtractedMetadata): number {
     let score = 0;
     let maxScore = 0;
 
@@ -237,20 +235,30 @@ export class AdvancedMetadataExtractor {
     maxScore += 0.2;
 
     // 技术信息权重
-    if (metadata.duration) score += 0.05;
-    if (metadata.language && metadata.language.length > 0) score += 0.05;
-    if (metadata.country && metadata.country.length > 0) score += 0.05;
+    if (metadata.duration) {
+      score += 0.05;
+    }
+    if (metadata.language && metadata.language.length > 0) {
+      score += 0.05;
+    }
+    if (metadata.country && metadata.country.length > 0) {
+      score += 0.05;
+    }
     maxScore += 0.15;
 
     // 图片资源权重
-    if (metadata.images?.poster && metadata.images.poster.length > 0)
+    if (metadata.images?.poster && metadata.images.poster.length > 0) {
       score += 0.05;
-    if (metadata.images?.backdrop && metadata.images.backdrop.length > 0)
+    }
+    if (metadata.images?.backdrop && metadata.images.backdrop.length > 0) {
       score += 0.05;
+    }
     maxScore += 0.1;
 
     // 评分信息权重
-    if (metadata.rating && metadata.rating.length > 0) score += 0.1;
+    if (metadata.rating && metadata.rating.length > 0) {
+      score += 0.1;
+    }
     maxScore += 0.1;
 
     return Math.min(score / maxScore, 1);
@@ -261,13 +269,21 @@ export class AdvancedMetadataExtractor {
     const lines: string[] = [];
 
     // 基本信息
-    if (metadata.title) lines.push(`标题: ${metadata.title}`);
+    if (metadata.title) {
+      lines.push(`标题: ${metadata.title}`);
+    }
     if (metadata.originalTitle && metadata.originalTitle !== metadata.title) {
       lines.push(`原标题: ${metadata.originalTitle}`);
     }
-    if (metadata.year) lines.push(`年份: ${metadata.year}`);
-    if (metadata.releaseDate) lines.push(`上映日期: ${metadata.releaseDate}`);
-    if (metadata.endDate) lines.push(`完结日期: ${metadata.endDate}`);
+    if (metadata.year) {
+      lines.push(`年份: ${metadata.year}`);
+    }
+    if (metadata.releaseDate) {
+      lines.push(`上映日期: ${metadata.releaseDate}`);
+    }
+    if (metadata.endDate) {
+      lines.push(`完结日期: ${metadata.endDate}`);
+    }
 
     // 分类信息
     if (metadata.genre && metadata.genre.length > 0) {
@@ -292,7 +308,9 @@ export class AdvancedMetadataExtractor {
     }
 
     // 技术信息
-    if (metadata.duration) lines.push(`时长: ${metadata.duration}分钟`);
+    if (metadata.duration) {
+      lines.push(`时长: ${metadata.duration}分钟`);
+    }
     if (metadata.language && metadata.language.length > 0) {
       lines.push(`语言: ${metadata.language.join(', ')}`);
     }
@@ -304,14 +322,17 @@ export class AdvancedMetadataExtractor {
     }
 
     // 剧集信息
-    if (metadata.episodeCount) lines.push(`总集数: ${metadata.episodeCount}`);
-    if (metadata.seasonCount) lines.push(`季数: ${metadata.seasonCount}`);
+    if (metadata.episodeCount) {
+      lines.push(`总集数: ${metadata.episodeCount}`);
+    }
+    if (metadata.seasonCount) {
+      lines.push(`季数: ${metadata.seasonCount}`);
+    }
 
     // 评分信息
     if (metadata.rating && metadata.rating.length > 0) {
       const ratings = metadata.rating.map(
-        (r) =>
-          `${r.source}: ${r.value}/${r.scale}${r.count ? ` (${r.count}人评价)` : ''}`,
+        (r) => `${r.source}: ${r.value}/${r.scale}${r.count ? ` (${r.count}人评价)` : ''}`
       );
       lines.push(`评分: ${ratings.join(', ')}`);
     }
@@ -330,21 +351,24 @@ export class AdvancedMetadataExtractor {
     // 播出时间
     if (metadata.airTime) {
       const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-      lines.push(
-        `播出时间: ${weekdays[metadata.airTime.day]} ${metadata.airTime.time}`,
-      );
+      lines.push(`播出时间: ${weekdays[metadata.airTime.day]} ${metadata.airTime.time}`);
     }
 
     // 外部ID
     if (metadata.externalIds) {
       const ids = [];
-      if (metadata.externalIds.imdb)
+      if (metadata.externalIds.imdb) {
         ids.push(`IMDb: ${metadata.externalIds.imdb}`);
-      if (metadata.externalIds.tmdb)
+      }
+      if (metadata.externalIds.tmdb) {
         ids.push(`TMDB: ${metadata.externalIds.tmdb}`);
-      if (metadata.externalIds.douban)
+      }
+      if (metadata.externalIds.douban) {
         ids.push(`豆瓣: ${metadata.externalIds.douban}`);
-      if (ids.length > 0) lines.push(`外部ID: ${ids.join(', ')}`);
+      }
+      if (ids.length > 0) {
+        lines.push(`外部ID: ${ids.join(', ')}`);
+      }
     }
 
     // 剧情简介
@@ -358,13 +382,15 @@ export class AdvancedMetadataExtractor {
   }
 
   // 合并多个来源的元数据
-  static mergeMetadata(
-    sources: AdvancedExtractedMetadata[],
-  ): AdvancedExtractedMetadata {
-    if (sources.length === 0) return {};
-    if (sources.length === 1) return sources[0];
+  static mergeMetadata(sources: AdvancedExtractedMetadata[]): AdvancedExtractedMetadata {
+    if (sources.length === 0) {
+      return {} as AdvancedExtractedMetadata;
+    }
+    if (sources.length === 1) {
+      return sources[0];
+    }
 
-    const merged: AdvancedExtractedMetadata = {};
+    const merged: AdvancedExtractedMetadata = {} as AdvancedExtractedMetadata;
 
     // 合并基本字段（优先选择最完整的）
     const basicFields = [
@@ -381,7 +407,7 @@ export class AdvancedMetadataExtractor {
         .map((s) => s[field as keyof AdvancedExtractedMetadata])
         .filter(Boolean);
       if (values.length > 0) {
-        merged[field as keyof AdvancedExtractedMetadata] = values[0] as any;
+        (merged as any)[field as keyof AdvancedExtractedMetadata] = values[0] as any;
       }
     });
 
@@ -400,31 +426,27 @@ export class AdvancedMetadataExtractor {
     ];
     arrayFields.forEach((field) => {
       const allValues = sources.flatMap(
-        (s) => (s[field as keyof AdvancedExtractedMetadata] as string[]) || [],
+        (s) => (s[field as keyof AdvancedExtractedMetadata] as string[]) || []
       );
       const uniqueValues = [...new Set(allValues)];
       if (uniqueValues.length > 0) {
-        merged[field as keyof AdvancedExtractedMetadata] = uniqueValues as any;
+        (merged as any)[field as keyof AdvancedExtractedMetadata] = uniqueValues as any;
       }
     });
 
     // 合并演员信息
     const allCast = sources.flatMap((s) => s.cast || []);
     const uniqueCast = allCast.filter(
-      (cast, index, self) =>
-        index === self.findIndex((c) => c.name === cast.name),
+      (cast, index, self) => index === self.findIndex((c) => c.name === cast.name)
     );
     if (uniqueCast.length > 0) {
-      merged.cast = uniqueCast.sort(
-        (a, b) => (a.order || 999) - (b.order || 999),
-      );
+      merged.cast = uniqueCast.sort((a, b) => (a.order || 999) - (b.order || 999));
     }
 
     // 合并评分信息
     const allRatings = sources.flatMap((s) => s.rating || []);
     const uniqueRatings = allRatings.filter(
-      (rating, index, self) =>
-        index === self.findIndex((r) => r.source === rating.source),
+      (rating, index, self) => index === self.findIndex((r) => r.source === rating.source)
     );
     if (uniqueRatings.length > 0) {
       merged.rating = uniqueRatings;
@@ -444,8 +466,7 @@ export class AdvancedMetadataExtractor {
     // 合并预告片
     const allTrailers = sources.flatMap((s) => s.trailers || []);
     const uniqueTrailers = allTrailers.filter(
-      (trailer, index, self) =>
-        index === self.findIndex((t) => t.url === trailer.url),
+      (trailer, index, self) => index === self.findIndex((t) => t.url === trailer.url)
     );
     if (uniqueTrailers.length > 0) {
       merged.trailers = uniqueTrailers;
@@ -464,9 +485,7 @@ export class AdvancedMetadataExtractor {
         .map((s) => s[field as keyof AdvancedExtractedMetadata] as number)
         .filter(Boolean);
       if (values.length > 0) {
-        merged[field as keyof AdvancedExtractedMetadata] = Math.max(
-          ...values,
-        ) as any;
+        (merged as any)[field as keyof AdvancedExtractedMetadata] = Math.max(...values) as any;
       }
     });
 

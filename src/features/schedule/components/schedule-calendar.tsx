@@ -1,132 +1,130 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { logger } from '@/lib/utils/logger'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Button } from '@/shared/components/ui/button'
-import { Badge } from '@/shared/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { ScrollArea } from '@/shared/components/ui/scroll-area'
-import { Calendar, Clock, RefreshCw, Filter, Grid, List, Loader2 } from 'lucide-react'
-import { ScheduleDay, ScheduleEpisode, ViewMode } from '../types/schedule'
-import { schedulePlatformManager } from '../lib/platform-manager'
-import { initializeScheduleModule } from '../lib/platform-config'
-import { cn } from '@/lib/utils'
+import React, { useState, useEffect, useMemo } from 'react';
+import { logger } from '@/lib/utils/logger';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Calendar, Clock, RefreshCw, Filter, Grid, List, Loader2 } from 'lucide-react';
+import { ScheduleDay, ScheduleEpisode, ViewMode } from '../types/schedule';
+import { schedulePlatformManager } from '../lib/platform-manager';
+import { initializeScheduleModule } from '../lib/platform-config';
+import { cn } from '@/lib/utils';
 
 interface ScheduleCalendarProps {
-  className?: string
+  className?: string;
 }
 
-const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
 export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
-  const [loading, setLoading] = useState(false)
-  const [scheduleData, setScheduleData] = useState<ScheduleDay[]>([])
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['bilibili'])
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar')
-  const [showOnlyUnpublished, setShowOnlyUnpublished] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [scheduleData, setScheduleData] = useState<ScheduleDay[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['bilibili']);
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [showOnlyUnpublished, setShowOnlyUnpublished] = useState(false);
 
   useEffect(() => {
-    initializeScheduleModule()
-  }, [])
+    initializeScheduleModule();
+  }, []);
 
-  const availablePlatforms = schedulePlatformManager.getAvailablePlatforms()
+  const availablePlatforms = schedulePlatformManager.getAvailablePlatforms();
 
   useEffect(() => {
-    fetchSchedule()
-  }, [selectedPlatforms])
+    fetchSchedule();
+  }, [selectedPlatforms]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchSchedule() {
-    if (selectedPlatforms.length === 0) return
+    if (selectedPlatforms.length === 0) {
+      return;
+    }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const results = await schedulePlatformManager.fetchMultipleSchedules(selectedPlatforms)
-      const schedules = Array.from(results.values())
-      const merged = schedulePlatformManager.mergeSchedules(...schedules)
+      const results = await schedulePlatformManager.fetchMultipleSchedules(selectedPlatforms);
+      const schedules = Array.from(results.values());
+      const merged = schedulePlatformManager.mergeSchedules(...schedules);
 
-      setScheduleData(merged.result?.list || [])
+      setScheduleData(merged.result?.list || []);
     } catch (error) {
-      logger.error('Failed to fetch schedule:', error)
+      logger.error('Failed to fetch schedule:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   function refreshSchedule() {
-    schedulePlatformManager.clearCache()
-    fetchSchedule()
+    schedulePlatformManager.clearCache();
+    fetchSchedule();
   }
 
   function togglePlatform(platformId: string) {
-    setSelectedPlatforms(prev =>
-      prev.includes(platformId)
-        ? prev.filter(p => p !== platformId)
-        : [...prev, platformId]
-    )
+    setSelectedPlatforms((prev) =>
+      prev.includes(platformId) ? prev.filter((p) => p !== platformId) : [...prev, platformId]
+    );
   }
 
   function toggleFilter() {
-    setShowOnlyUnpublished(prev => !prev)
+    setShowOnlyUnpublished((prev) => !prev);
   }
 
-  function changeViewMode(value: ViewMode) {
-    setViewMode(value)
+  function changeViewMode(value: string) {
+    setViewMode(value as ViewMode);
   }
 
   const filteredScheduleData = useMemo(() => {
-    return scheduleData.map(day => ({
+    return scheduleData.map((day) => ({
       ...day,
-      episodes: showOnlyUnpublished
-        ? day.episodes.filter(ep => !ep.published)
-        : day.episodes
-    }))
-  }, [scheduleData, showOnlyUnpublished])
+      episodes: showOnlyUnpublished ? day.episodes.filter((ep) => !ep.published) : day.episodes,
+    }));
+  }, [scheduleData, showOnlyUnpublished]);
 
   const statistics = useMemo(() => {
-    let publishedCount = 0
-    let totalCount = 0
+    let publishedCount = 0;
+    let totalCount = 0;
 
     for (const day of filteredScheduleData) {
-      totalCount += day.episodes.length
-      publishedCount += day.episodes.filter(ep => ep.published).length
+      totalCount += day.episodes.length;
+      publishedCount += day.episodes.filter((ep) => ep.published).length;
     }
 
     return {
       days: filteredScheduleData.length,
       published: publishedCount,
       unpublished: totalCount - publishedCount,
-      total: totalCount
-    }
-  }, [filteredScheduleData])
+      total: totalCount,
+    };
+  }, [filteredScheduleData]);
 
   function getDayOfWeekText(dayOfWeek: number): string {
-    return WEEKDAYS[dayOfWeek - 1] || ''
+    return WEEKDAYS[dayOfWeek - 1] || '';
   }
 
   function getStatusBadge(published: boolean) {
     return (
       <Badge
         className={cn(
-          "text-xs",
+          'text-xs',
           published
-            ? "bg-green-100 text-green-800 border-green-200"
-            : "bg-yellow-100 text-yellow-800 border-yellow-200"
+            ? 'bg-green-100 text-green-800 border-green-200'
+            : 'bg-yellow-100 text-yellow-800 border-yellow-200'
         )}
       >
         {published ? '已更新' : '待更新'}
       </Badge>
-    )
+    );
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-wrap gap-2">
           {availablePlatforms.map((platform) => (
             <Button
               key={platform.platformId}
-              variant={selectedPlatforms.includes(platform.platformId) ? "default" : "outline"}
+              variant={selectedPlatforms.includes(platform.platformId) ? 'default' : 'outline'}
               size="sm"
               onClick={() => togglePlatform(platform.platformId)}
             >
@@ -137,11 +135,7 @@ export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleFilter}
-          >
+          <Button variant="outline" size="sm" onClick={toggleFilter}>
             <Filter className="h-4 w-4 mr-1" />
             {showOnlyUnpublished ? '全部' : '待更新'}
           </Button>
@@ -160,7 +154,7 @@ export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
           </Tabs>
 
           <Button variant="outline" size="sm" onClick={refreshSchedule} disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} />
+            <RefreshCw className={cn('h-4 w-4 mr-1', loading && 'animate-spin')} />
             刷新
           </Button>
         </div>
@@ -201,15 +195,15 @@ export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
       ) : (
         <Tabs value={viewMode} className="w-full">
           <TabsContent value="calendar" className="mt-0">
-            <ScheduleCalendarView 
-              data={filteredScheduleData} 
+            <ScheduleCalendarView
+              data={filteredScheduleData}
               getStatusBadge={getStatusBadge}
               getDayOfWeekText={getDayOfWeekText}
             />
           </TabsContent>
           <TabsContent value="list" className="mt-0">
-            <ScheduleListView 
-              data={filteredScheduleData} 
+            <ScheduleListView
+              data={filteredScheduleData}
               getStatusBadge={getStatusBadge}
               getDayOfWeekText={getDayOfWeekText}
             />
@@ -217,13 +211,13 @@ export function ScheduleCalendar({ className }: ScheduleCalendarProps) {
         </Tabs>
       )}
     </div>
-  )
+  );
 }
 
 interface ScheduleViewProps {
-  data: ScheduleDay[]
-  getStatusBadge: (published: boolean) => React.ReactNode
-  getDayOfWeekText: (dayOfWeek: number) => string
+  data: ScheduleDay[];
+  getStatusBadge: (published: boolean) => React.ReactNode;
+  getDayOfWeekText: (dayOfWeek: number) => string;
 }
 
 function ScheduleCalendarView({ data, getStatusBadge, getDayOfWeekText }: ScheduleViewProps) {
@@ -233,8 +227,8 @@ function ScheduleCalendarView({ data, getStatusBadge, getDayOfWeekText }: Schedu
         <Card
           key={day.date}
           className={cn(
-            "transition-all duration-200 hover:shadow-md",
-            day.isToday && "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20"
+            'transition-all duration-200 hover:shadow-md',
+            day.isToday && 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/20'
           )}
         >
           <CardHeader className="pb-3">
@@ -243,7 +237,11 @@ function ScheduleCalendarView({ data, getStatusBadge, getDayOfWeekText }: Schedu
                 <CardTitle className="text-lg">{day.date}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {getDayOfWeekText(day.dayOfWeek)}
-                  {day.isToday && <Badge className="ml-2" variant="default">今天</Badge>}
+                  {day.isToday && (
+                    <Badge className="ml-2" variant="default">
+                      今天
+                    </Badge>
+                  )}
                 </p>
               </div>
               <div className="text-right">
@@ -262,6 +260,7 @@ function ScheduleCalendarView({ data, getStatusBadge, getDayOfWeekText }: Schedu
                   >
                     <div className="w-12 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-200">
                       {episode.cover && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={episode.cover}
                           alt={episode.title}
@@ -294,7 +293,7 @@ function ScheduleCalendarView({ data, getStatusBadge, getDayOfWeekText }: Schedu
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
 function ScheduleListView({ data, getStatusBadge, getDayOfWeekText }: ScheduleViewProps) {
@@ -325,6 +324,7 @@ function ScheduleListView({ data, getStatusBadge, getDayOfWeekText }: ScheduleVi
                 >
                   <div className="w-16 h-20 flex-shrink-0 rounded overflow-hidden bg-gray-200">
                     {episode.cover && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={episode.cover}
                         alt={episode.title}
@@ -356,5 +356,5 @@ function ScheduleListView({ data, getStatusBadge, getDayOfWeekText }: ScheduleVi
         </Card>
       ))}
     </div>
-  )
+  );
 }

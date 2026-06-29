@@ -26,10 +26,7 @@ export async function POST(request: NextRequest) {
     const { tmdbId, type: imageType, mediaType, size = 'original' } = body;
 
     if (!tmdbId || !imageType) {
-      return NextResponse.json(
-        { error: '缺少必需参数: tmdbId 和 type' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必需参数: tmdbId 和 type' }, { status: 400 });
     }
 
     // 验证图片类型
@@ -57,7 +54,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 从 TMDB 获取最新 Logo
-      const logoUrl = await TMDBService.getLogoUrl(mediaType, tmdbId, 500); // 500px 宽度
+      const logoUrl = await (TMDBService as any).getLogoUrl(mediaType, tmdbId, 500); // 500px 宽度
 
       if (logoUrl) {
         // 从 URL 提取路径
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest) {
       // 否则需要调用方提供更多信息
 
       // 简化方案：直接从 TMDB 获取 item details
-      const itemDetails = await TMDBService.getItemDetails(
+      const itemDetails = await (TMDBService as any).getItemDetails(
         mediaType || 'tv',
         parseInt(tmdbId)
       );
@@ -92,12 +89,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!newImageUrl) {
-      return NextResponse.json({
-        success: false,
-        error: '无法从 TMDB 获取图片信息',
-        tmdbId,
-        type: imageType,
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '无法从 TMDB 获取图片信息',
+          tmdbId,
+          type: imageType,
+        },
+        { status: 404 }
+      );
     }
 
     // 更新缓存
@@ -112,10 +112,7 @@ export async function POST(request: NextRequest) {
       );
 
       if (!updateResult.success) {
-        return NextResponse.json(
-          { error: updateResult.error || '更新缓存失败' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: updateResult.error || '更新缓存失败' }, { status: 500 });
       }
     } else {
       // 创建新缓存
@@ -130,10 +127,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!cacheResult.success) {
-        return NextResponse.json(
-          { error: cacheResult.error || '创建缓存失败' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: cacheResult.error || '创建缓存失败' }, { status: 500 });
       }
     }
 
@@ -169,19 +163,13 @@ export async function GET(request: NextRequest) {
     const imageType = searchParams.get('type') as ImageCacheData['imageType'] | null;
 
     if (!tmdbIdsParam) {
-      return NextResponse.json(
-        { error: '缺少必需参数: tmdbIds（逗号分隔）' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必需参数: tmdbIds（逗号分隔）' }, { status: 400 });
     }
 
     const tmdbIds = tmdbIdsParam.split(',').filter(Boolean);
 
     if (tmdbIds.length === 0) {
-      return NextResponse.json(
-        { error: '无效的 tmdbIds 参数' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '无效的 tmdbIds 参数' }, { status: 400 });
     }
 
     const results: Array<{

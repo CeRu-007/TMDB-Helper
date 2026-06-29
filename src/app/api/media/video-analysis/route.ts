@@ -89,9 +89,7 @@ async function cleanupTempFiles(sessionId: string) {
   try {
     const sessionDir = path.join(getTempDir(), sessionId);
     await fs.rm(sessionDir, { recursive: true, force: true });
-  } catch (error) {
-    
-  }
+  } catch (error) {}
 }
 
 // 简化的URL验证（只需要基本的URL格式验证）
@@ -113,13 +111,15 @@ async function checkFFmpegAvailability(): Promise<boolean> {
     await execAsync('ffmpeg -version', { timeout: TIMEOUT_5S });
     return true;
   } catch (error) {
-
     return false;
   }
 }
 
 // 直接从URL提取音频（不下载视频文件）
-async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise<{
+async function extractAudioFromUrl(
+  videoUrl: string,
+  sessionId: string
+): Promise<{
   audioPath: string;
   duration: number;
   title: string;
@@ -137,11 +137,11 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
   try {
     // 使用ffmpeg直接从URL提取音频，不下载视频文件
-    
+
     const command = `ffmpeg -i "${videoUrl}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}"`;
     const { stdout, stderr } = await execAsync(command, {
       timeout: 1800000, // 30分钟超时，支持长视频
-      maxBuffer: 1024 * 1024 * 50 // 50MB buffer，支持更大的音频文件
+      maxBuffer: 1024 * 1024 * 50, // 50MB buffer，支持更大的音频文件
     });
 
     // 获取音频信息
@@ -152,15 +152,16 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
     const duration = parseFloat(audioInfo.format.duration) || 0;
     const title = audioInfo.format.tags?.title || '未知标题';
 
-    logger.info(`音频提取成功 - 时长: ${duration.toFixed(2)}秒 (${Math.floor(duration/60)}分${Math.floor(duration%60)}秒)`);
+    logger.info(
+      `音频提取成功 - 时长: ${duration.toFixed(2)}秒 (${Math.floor(duration / 60)}分${Math.floor(duration % 60)}秒)`
+    );
 
     return {
       audioPath,
       duration,
-      title
+      title,
     };
   } catch (error) {
-    
     // 提供更详细的错误信息
     let errorMessage = '音频提取失败';
     if (error instanceof Error) {
@@ -181,17 +182,34 @@ async function extractAudioFromUrl(videoUrl: string, sessionId: string): Promise
 
 // 根据模型获取默认置信度
 function getModelConfidence(model: string): number {
-  if (model.includes('SenseVoiceLarge')) return 0.9;
-  if (model.includes('SenseVoiceSmall')) return 0.8;
-  if (model.includes('CosyVoice-300M-SFT')) return 0.85;
-  if (model.includes('CosyVoice-300M-Instruct')) return 0.82;
-  if (model.includes('CosyVoice-300M')) return 0.75;
-  if (model.includes('SpeechT5')) return 0.7;
+  if (model.includes('SenseVoiceLarge')) {
+    return 0.9;
+  }
+  if (model.includes('SenseVoiceSmall')) {
+    return 0.8;
+  }
+  if (model.includes('CosyVoice-300M-SFT')) {
+    return 0.85;
+  }
+  if (model.includes('CosyVoice-300M-Instruct')) {
+    return 0.82;
+  }
+  if (model.includes('CosyVoice-300M')) {
+    return 0.75;
+  }
+  if (model.includes('SpeechT5')) {
+    return 0.7;
+  }
   return 0.8; // 默认置信度
 }
 
 // 语音转文字（使用硅基流动语音识别模型）
-async function transcribeAudio(audioPath: string, apiKey: string, audioDuration: number = 0, model: string = 'FunAudioLLM/SenseVoiceSmall'): Promise<{
+async function transcribeAudio(
+  audioPath: string,
+  apiKey: string,
+  audioDuration: number = 0,
+  model: string = 'FunAudioLLM/SenseVoiceSmall'
+): Promise<{
   text: string;
   segments: Array<{
     start: number;
@@ -230,15 +248,17 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     const response = await fetch('https://api.siliconflow.cn/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: formData,
-      signal: AbortSignal.timeout(300000) // 5分钟超时
+      signal: AbortSignal.timeout(300000), // 5分钟超时
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`语音识别API调用失败: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `语音识别API调用失败: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -247,7 +267,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
     logger.debug('API响应结构:', Object.keys(result));
 
     // 处理不同模型的响应格式
-    let segments: Array<{start: number; end: number; text: string; confidence?: number}> = [];
+    let segments: Array<{ start: number; end: number; text: string; confidence?: number }> = [];
 
     // 如果API返回了分段信息，优先使用
     if (result.segments && Array.isArray(result.segments)) {
@@ -255,30 +275,29 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
         start: segment.start || 0,
         end: segment.end || 0,
         text: segment.text || '',
-        confidence: segment.confidence || 0.8
+        confidence: segment.confidence || 0.8,
       }));
-      
     } else {
       // 回退到基于句子的分段处理
-      const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
+      const sentences = transcriptText
+        .split(/[。！？.!?]+/)
+        .filter((s: string) => s.trim().length > 0);
       const totalDuration = audioDuration > 0 ? audioDuration : sentences.length * 5;
       const avgSentenceDuration = totalDuration / sentences.length;
 
-      segments = sentences.map((sentence, index) => ({
+      segments = sentences.map((sentence: string, index: number) => ({
         start: Math.round(index * avgSentenceDuration * 100) / 100,
         end: Math.round((index + 1) * avgSentenceDuration * 100) / 100,
         text: sentence.trim(),
-        confidence: getModelConfidence(model) // 根据模型设置置信度
+        confidence: getModelConfidence(model), // 根据模型设置置信度
       }));
-      
     }
 
     return {
       text: transcriptText,
-      segments
+      segments,
     };
   } catch (error) {
-    
     // 提供更详细的错误信息
     let errorMessage = '语音转文字失败';
     if (error instanceof Error) {
@@ -293,7 +312,7 @@ async function transcribeAudio(audioPath: string, apiKey: string, audioDuration:
 
     return {
       text: errorMessage,
-      segments: []
+      segments: [],
     };
   }
 }
@@ -308,7 +327,7 @@ async function generateStructuredContent(
   const audioSegments = audioTranscriptResult.segments;
 
   // 生成SRT格式，直接从音频转录内容开始
-  const srtLines = [];
+  const srtLines: string[] = [];
 
   // 音频转录内容
   audioSegments.forEach((segment, index) => {
@@ -316,18 +335,13 @@ async function generateStructuredContent(
     const startTime = formatSRTTime(segment.start);
     const endTime = formatSRTTime(segment.end);
 
-    srtLines.push(
-      srtIndex.toString(),
-      `${startTime} --> ${endTime}`,
-      segment.text,
-      ''
-    );
+    srtLines.push(srtIndex.toString(), `${startTime} --> ${endTime}`, segment.text, '');
   });
 
   const srtContent = srtLines.join('\n');
 
   return {
-    srt: srtContent
+    srt: srtContent,
   };
 }
 
@@ -347,52 +361,83 @@ export async function POST(request: NextRequest) {
   try {
     await ensureTempDir();
 
-    const body = await request.json() as VideoAnalysisRequest & { apiKey: string; speechRecognitionModel?: string };
+    const body = (await request.json()) as VideoAnalysisRequest & {
+      apiKey: string;
+      speechRecognitionModel?: string;
+    };
     const { videoUrl, apiKey, speechRecognitionModel } = body;
 
     if (!videoUrl) {
-      return NextResponse.json<ApiResponse<null>>({
-        success: false,
-        error: '请提供视频URL',
-        data: null
-      }, { status: 400 });
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: '请提供视频URL', timestamp: Date.now() },
+          data: null,
+          timestamp: Date.now(),
+        },
+        { status: 400 }
+      );
     }
 
     if (!apiKey) {
-      return NextResponse.json<ApiResponse<null>>({
-        success: false,
-        error: '请提供硅基流动API密钥',
-        data: null
-      }, { status: 400 });
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '请提供硅基流动API密钥',
+            timestamp: Date.now(),
+          },
+          data: null,
+          timestamp: Date.now(),
+        },
+        { status: 400 }
+      );
     }
 
     if (!validateVideoUrl(videoUrl)) {
-      return NextResponse.json<ApiResponse<null>>({
-        success: false,
-        error: '不支持的视频URL格式',
-        data: null
-      }, { status: 400 });
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: '不支持的视频URL格式',
+            timestamp: Date.now(),
+          },
+          data: null,
+          timestamp: Date.now(),
+        },
+        { status: 400 }
+      );
     }
-    
+
     // 1. 直接从URL提取音频
-    
+
     const audioInfo = await extractAudioFromUrl(videoUrl, sessionId);
 
     // 2. 语音转文字
-    
+
     const selectedModel = speechRecognitionModel || 'FunAudioLLM/SenseVoiceSmall';
-    const audioTranscriptResult = await transcribeAudio(audioInfo.audioPath, apiKey, audioInfo.duration, selectedModel);
+    const audioTranscriptResult = await transcribeAudio(
+      audioInfo.audioPath,
+      apiKey,
+      audioInfo.duration,
+      selectedModel
+    );
     const audioTranscript = audioTranscriptResult.text;
 
     // 3. 生成结构化内容
-    
+
     const videoInfo = {
       title: audioInfo.title,
       duration: audioInfo.duration,
-      url: videoUrl
+      url: videoUrl,
     };
 
-    const structuredContentResult = await generateStructuredContent(audioTranscriptResult, videoInfo);
+    const structuredContentResult = await generateStructuredContent(
+      audioTranscriptResult,
+      videoInfo
+    );
 
     // 4. 构建返回结果
     const result: VideoAnalysisResult = {
@@ -402,33 +447,40 @@ export async function POST(request: NextRequest) {
         audioAnalysis: {
           transcript: audioTranscript,
           segments: audioTranscriptResult.segments,
-          summary: audioTranscript.length > 200 ? audioTranscript.substring(0, 200) + '...' : audioTranscript
+          summary:
+            audioTranscript.length > 200
+              ? audioTranscript.substring(0, 200) + '...'
+              : audioTranscript,
         },
         structuredContent: {
           srt: structuredContentResult.srt,
           markdown: '', // 不再生成
-          text: ''      // 不再生成
-        }
-      }
+          text: '', // 不再生成
+        },
+      },
     };
 
     // 5. 立即清理临时文件（处理完成后不再需要）
     await cleanupTempFiles(sessionId);
-    
-    return NextResponse.json<ApiResponse<VideoAnalysisResult['data']>>({
-      success: true,
-      data: result.data
-    });
 
+    return NextResponse.json<ApiResponse<Exclude<VideoAnalysisResult['data'], undefined>>>({
+      success: true,
+      data: result.data!,
+      timestamp: Date.now(),
+    });
   } catch (error) {
     // 清理临时文件
     await cleanupTempFiles(sessionId);
 
     const errorMessage = error instanceof Error ? error.message : '音频转写失败';
-    return NextResponse.json<ApiResponse<null>>({
-      success: false,
-      error: errorMessage,
-      data: null
-    }, { status: 500 });
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: { code: 'PROCESSING_ERROR', message: errorMessage, timestamp: Date.now() },
+        data: null,
+        timestamp: Date.now(),
+      },
+      { status: 500 }
+    );
   }
 }

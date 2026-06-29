@@ -1,61 +1,57 @@
-"use client"
+'use client';
 
-import { Button } from "@/shared/components/ui/button"
-import { CornerDownLeft, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { Button } from '@/shared/components/ui/button';
+import { CornerDownLeft, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface TerminalInputButtonsProps {
-  processId: number | null
-  onSendCommand?: (command: string) => Promise<void>
-  disabled?: boolean
+  processId: number | null;
+  onSendCommand?: (command: string) => Promise<void>;
+  disabled?: boolean;
 }
 
-export function TerminalInputButtons({ 
-  processId, 
-  onSendCommand, 
-  disabled = false 
+export function TerminalInputButtons({
+  processId,
+  onSendCommand,
+  disabled = false,
 }: TerminalInputButtonsProps) {
-  const [isSending, setIsSending] = useState(false)
-  
+  const [isSending, setIsSending] = useState(false);
+
   // 简化为只发送回车
   const sendEnter = async () => {
     if (isSending) {
-      
       return;
     }
-    
-    setIsSending(true)
-    
+
+    setIsSending(true);
+
     try {
-      const response = await fetch("/api/commands/send-input", {
-        method: "POST",
+      const response = await fetch('/api/commands/send-input', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           processId,
-          input: "\n",
-          sendDirectly: true
+          input: '\n',
+          sendDirectly: true,
         }),
-      })
-      
+      });
+
       if (response.ok) {
-        
         if (onSendCommand) {
-          await onSendCommand("\n")
+          await onSendCommand('\n');
         }
       } else {
-        
       }
     } catch (error) {
-      
     } finally {
       setTimeout(() => {
-        setIsSending(false)
-      }, 500)
+        setIsSending(false);
+      }, 500);
     }
-  }
-  
+  };
+
   return (
     <div className="mt-2 border-t border-gray-800 pt-2">
       <div className="flex items-center justify-between mb-1.5">
@@ -83,5 +79,5 @@ export function TerminalInputButtons({
         </Button>
       </div>
     </div>
-  )
-} 
+  );
+}

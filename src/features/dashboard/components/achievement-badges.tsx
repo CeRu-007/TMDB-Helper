@@ -1,26 +1,26 @@
-"use client"
+'use client';
 
-import React, { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Lock } from '@phosphor-icons/react'
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Lock } from '@phosphor-icons/react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/shared/components/ui/dialog'
-import { DynamicIcon } from './dynamic-icon'
+} from '@/shared/components/ui/dialog';
+import { DynamicIcon } from './dynamic-icon';
 
 interface AchievementBadgesProps {
   achievements: Array<{
-    id: string
-    icon: string
-    name: string
-    description: string
-    unlocked: boolean
-    unlockedAt?: string
-  }>
+    id: string;
+    icon: string;
+    name: string;
+    description: string;
+    unlocked: boolean;
+    unlockedAt?: string;
+  }>;
 }
 
 const ACHIEVEMENT_COLORS: Record<string, string> = {
@@ -38,13 +38,13 @@ const ACHIEVEMENT_COLORS: Record<string, string> = {
   long_runner: 'text-sky-500',
   thousand_episodes: 'text-pink-500',
   all_categories: 'text-fuchsia-500',
-}
+};
 
 export function AchievementBadges({ achievements }: AchievementBadgesProps) {
-  const { t } = useTranslation('dashboard')
-  const [selected, setSelected] = useState<typeof achievements[0] | null>(null)
+  const { t } = useTranslation('dashboard');
+  const [selected, setSelected] = useState<(typeof achievements)[0] | null>(null);
 
-  const unlockedCount = achievements.filter(a => a.unlocked).length
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
   return (
     <div className="rounded-xl border border-border bg-muted/50 p-4 md:p-5">
@@ -56,7 +56,7 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 md:gap-3">
         {achievements.map((achievement) => {
-          const colorClass = ACHIEVEMENT_COLORS[achievement.id] || 'text-muted-foreground'
+          const colorClass = ACHIEVEMENT_COLORS[achievement.id] || 'text-muted-foreground';
           return (
             <button
               key={achievement.id}
@@ -67,13 +67,18 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
                   : 'bg-muted/20 border border-border opacity-40 hover:opacity-60'
               }`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-1.5 ${
-                achievement.unlocked
-                  ? 'bg-muted/30'
-                  : 'bg-muted/30'
-              }`}>
+              <div
+                className={`w-9 h-9 rounded-lg flex items-center justify-center mb-1.5 ${
+                  achievement.unlocked ? 'bg-muted/30' : 'bg-muted/30'
+                }`}
+              >
                 {achievement.unlocked ? (
-                  <DynamicIcon name={achievement.icon} className={colorClass} size={22} weight="duotone" />
+                  <DynamicIcon
+                    name={achievement.icon}
+                    className={colorClass}
+                    size={22}
+                    weight="duotone"
+                  />
                 ) : (
                   <Lock className="text-muted-foreground" size={22} weight="fill" />
                 )}
@@ -82,23 +87,35 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
                 {t(`achievements.${achievement.name}`)}
               </p>
             </button>
-          )
+          );
         })}
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null) }}>
+      <Dialog
+        open={!!selected}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelected(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-sm">
           {selected && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3">
-                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                    selected.unlocked
-                      ? 'bg-muted/50'
-                      : 'bg-muted/30'
-                  }`}>
+                  <div
+                    className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                      selected.unlocked ? 'bg-muted/50' : 'bg-muted/30'
+                    }`}
+                  >
                     {selected.unlocked ? (
-                      <DynamicIcon name={selected.icon} className={ACHIEVEMENT_COLORS[selected.id] || 'text-muted-foreground'} size={32} weight="duotone" />
+                      <DynamicIcon
+                        name={selected.icon}
+                        className={ACHIEVEMENT_COLORS[selected.id] || 'text-muted-foreground'}
+                        size={32}
+                        weight="duotone"
+                      />
                     ) : (
                       <Lock className="text-muted-foreground" size={32} weight="fill" />
                     )}
@@ -124,10 +141,17 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
                 </div>
                 {selected.unlocked && (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                    <DynamicIcon name="check-circle" className="text-green-500" size={16} weight="fill" />
+                    <DynamicIcon
+                      name="check-circle"
+                      className="text-green-500"
+                      size={16}
+                      weight="fill"
+                    />
                     <p className="text-xs text-green-700 dark:text-green-400">
                       {selected.unlockedAt
-                        ? t('achievements.unlockedAt', { date: new Date(selected.unlockedAt).toLocaleDateString() })
+                        ? t('achievements.unlockedAt', {
+                            date: new Date(selected.unlockedAt).toLocaleDateString(),
+                          })
                         : t('achievements.unlocked')}
                     </p>
                   </div>
@@ -138,5 +162,5 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

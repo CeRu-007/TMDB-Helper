@@ -7,49 +7,49 @@
  * @deprecated 建议直接使用 useUIStore
  */
 
-import { useCallback } from 'react'
-import { useUIStore } from '@/stores'
-import type { TMDBItem } from '@/types/tmdb-item'
+import { useCallback } from 'react';
+import { useUIStore } from '@/stores';
+import type { TMDBItem } from '@/types/tmdb-item';
 
 // 向后兼容的类型定义
 export interface PrefilledData {
-  id: number
-  title: string
-  mediaType: 'movie' | 'tv'
-  posterPath?: string | null
-  releaseDate: string
-  overview?: string
-  voteAverage?: number
+  id: number;
+  title: string;
+  mediaType: 'movie' | 'tv';
+  posterPath?: string | null;
+  releaseDate: string;
+  overview?: string;
+  voteAverage?: number;
 }
 
 export interface UseHomeStateReturn {
   // 对话框状态
-  showAddDialog: boolean
-  addDialogPrefilledData: PrefilledData | null
-  showSettingsDialog: boolean
-  settingsInitialSection: string | undefined
-  showImportDialog: boolean
-  showExportDialog: boolean
+  showAddDialog: boolean;
+  addDialogPrefilledData: PrefilledData | null;
+  showSettingsDialog: boolean;
+  settingsInitialSection: string | undefined;
+  showImportDialog: boolean;
+  showExportDialog: boolean;
 
   // 选中的项目
-  selectedItem: TMDBItem | null
+  selectedItem: TMDBItem | null;
 
   // 主页面状态
-  activeTab: string
-  selectedDayFilter: 'recent' | number
-  selectedCategory: string
+  activeTab: string;
+  selectedDayFilter: 'recent' | number;
+  selectedCategory: string;
 
   // 设置函数
-  setShowAddDialog: (show: boolean, prefilledData?: PrefilledData | null) => void
-  setShowSettingsDialog: (show: boolean) => void
-  setSettingsInitialSection: (section: string | undefined) => void
-  setShowImportDialog: (show: boolean) => void
-  setShowExportDialog: (show: boolean) => void
+  setShowAddDialog: (show: boolean, prefilledData?: PrefilledData | null) => void;
+  setShowSettingsDialog: (show: boolean) => void;
+  setSettingsInitialSection: (section: string | undefined) => void;
+  setShowImportDialog: (show: boolean) => void;
+  setShowExportDialog: (show: boolean) => void;
 
-  setSelectedItem: (item: TMDBItem | null) => void
-  setActiveTab: (tab: string) => void
-  setSelectedDayFilter: (filter: 'recent' | number) => void
-  setSelectedCategory: (category: string) => void
+  setSelectedItem: (item: TMDBItem | null) => void;
+  setActiveTab: (tab: string) => void;
+  setSelectedDayFilter: (filter: 'recent' | number) => void;
+  setSelectedCategory: (category: string) => void;
 }
 
 /**
@@ -57,60 +57,61 @@ export interface UseHomeStateReturn {
  */
 export function useHomeState(): UseHomeStateReturn {
   // 从 UI Store 获取状态和操作
-  const showAddDialog = useUIStore((s) => s.showAddDialog)
-  const addDialogPrefilledData = useUIStore((s) => s.addDialogPrefilledData)
-  const showSettingsDialog = useUIStore((s) => s.showSettingsDialog)
-  const settingsInitialSection = useUIStore((s) => s.settingsInitialSection)
-  const showImportDialog = useUIStore((s) => s.showImportDialog)
-  const showExportDialog = useUIStore((s) => s.showExportDialog)
-  const selectedItem = useUIStore((s) => s.selectedItem)
-  const activeTab = useUIStore((s) => s.activeTab)
-  const selectedDayFilter = useUIStore((s) => s.selectedDayFilter)
-  const selectedCategory = useUIStore((s) => s.selectedCategory)
+  const showAddDialog = useUIStore((s) => s.showAddDialog);
+  const addDialogPrefilledData = useUIStore((s) => s.addDialogPrefilledData);
+  const showSettingsDialog = useUIStore((s) => s.showSettingsDialog);
+  const settingsInitialSection = useUIStore((s) => s.settingsInitialSection);
+  const showImportDialog = useUIStore((s) => s.showImportDialog);
+  const showExportDialog = useUIStore((s) => s.showExportDialog);
+  const selectedItem = useUIStore((s) => s.selectedItem);
+  const activeTab = useUIStore((s) => s.activeTab);
+  const selectedDayFilter = useUIStore((s) => s.selectedDayFilter);
+  const selectedCategory = useUIStore((s) => s.selectedCategory);
 
   // 从 UI Store 获取操作方法
-  const openAddDialog = useUIStore((s) => s.openAddDialog)
-  const closeAddDialog = useUIStore((s) => s.closeAddDialog)
-  const openSettingsDialog = useUIStore((s) => s.openSettingsDialog)
-  const closeSettingsDialog = useUIStore((s) => s.closeSettingsDialog)
-  const openImportDialog = useUIStore((s) => s.openImportDialog)
-  const closeImportDialog = useUIStore((s) => s.closeImportDialog)
-  const openExportDialog = useUIStore((s) => s.openExportDialog)
-  const closeExportDialog = useUIStore((s) => s.closeExportDialog)
-  const setSelectedItem = useUIStore((s) => s.setSelectedItem)
-  const setActiveTab = useUIStore((s) => s.setActiveTab)
-  const setSelectedDayFilter = useUIStore((s) => s.setSelectedDayFilter)
-  const setSelectedCategory = useUIStore((s) => s.setSelectedCategory)
+  const openAddDialog = useUIStore((s) => s.openAddDialog);
+  const closeAddDialog = useUIStore((s) => s.closeAddDialog);
+  const openSettingsDialog = useUIStore((s) => s.openSettingsDialog);
+  const closeSettingsDialog = useUIStore((s) => s.closeSettingsDialog);
+  const openImportDialog = useUIStore((s) => s.openImportDialog);
+  const closeImportDialog = useUIStore((s) => s.closeImportDialog);
+  const openExportDialog = useUIStore((s) => s.openExportDialog);
+  const closeExportDialog = useUIStore((s) => s.closeExportDialog);
+  const setSelectedItem = useUIStore((s) => s.setSelectedItem);
+  const setActiveTab = useUIStore((s) => s.setActiveTab);
+  const setSelectedDayFilter = useUIStore((s) => s.setSelectedDayFilter);
+  const setSelectedCategory = useUIStore((s) => s.setSelectedCategory);
 
   // 向后兼容的设置函数
   const setShowAddDialog = useCallback(
-    (show: boolean, prefilledData?: PrefilledData | null) => (show ? openAddDialog(prefilledData || null) : closeAddDialog()),
+    (show: boolean, prefilledData?: PrefilledData | null) =>
+      show ? openAddDialog(prefilledData || null) : closeAddDialog(),
     [openAddDialog, closeAddDialog]
-  )
+  );
 
   const setShowSettingsDialog = useCallback(
     (show: boolean) => (show ? openSettingsDialog() : closeSettingsDialog()),
     [openSettingsDialog, closeSettingsDialog]
-  )
+  );
 
   const setSettingsInitialSection = useCallback(
     (section: string | undefined) => {
       if (section) {
-        openSettingsDialog(section)
+        openSettingsDialog(section);
       }
     },
     [openSettingsDialog]
-  )
+  );
 
   const setShowImportDialog = useCallback(
     (show: boolean) => (show ? openImportDialog() : closeImportDialog()),
     [openImportDialog, closeImportDialog]
-  )
+  );
 
   const setShowExportDialog = useCallback(
     (show: boolean) => (show ? openExportDialog() : closeExportDialog()),
     [openExportDialog, closeExportDialog]
-  )
+  );
 
   return {
     // 对话框状态
@@ -140,5 +141,5 @@ export function useHomeState(): UseHomeStateReturn {
     setActiveTab,
     setSelectedDayFilter,
     setSelectedCategory,
-  }
+  };
 }

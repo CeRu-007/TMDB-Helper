@@ -35,6 +35,7 @@ TMDB Helper 项目使用 `i18next` + `react-i18next` 实现国际化支持，目
 ### 快速检查
 
 修改代码后，问自己：
+
 - 这个文本会在浏览器中显示给用户吗？
 - 如果是，它使用了 `t()` 函数吗？
 - 翻译键是否已添加到所有语言文件中？
@@ -78,23 +79,23 @@ src/lib/i18n/
 
 项目采用**按功能模块拆分**的命名空间设计，便于维护和团队协作：
 
-| 命名空间 | 翻译文件 | 用途 |
-|---------|---------|------|
-| `common` | `common.json` | 通用文本（按钮、标签、提示） |
-| `nav.maintenance` | `nav/maintenance.json` | 维护模块导航 |
-| `nav.news` | `nav/news.json` | 资讯模块导航 |
-| `nav.content` | `nav/content.json` | 内容模块导航 |
-| `nav.image` | `nav/image.json` | 图片模块导航 |
-| `nav.tools` | `nav/tools.json` | 工具模块导航 |
-| `media` | `media.json` | 媒体相关文本 |
-| `schedule` | `schedule.json` | 排程相关文本 |
-| `settings` | `settings.json` | 设置面板 |
-| `user` | `user.json` | 用户相关文本 |
-| `dialogs` | `dialogs.json` | 对话框文本 |
-| `messages` | `messages.json` | 消息和通知 |
-| `errors` | `errors.json` | 错误消息 |
-| `weekdays` | `weekdays.json` | 星期名称 |
-| `categories` | `categories.json` | 分类名称 |
+| 命名空间          | 翻译文件               | 用途                         |
+| ----------------- | ---------------------- | ---------------------------- |
+| `common`          | `common.json`          | 通用文本（按钮、标签、提示） |
+| `nav.maintenance` | `nav/maintenance.json` | 维护模块导航                 |
+| `nav.news`        | `nav/news.json`        | 资讯模块导航                 |
+| `nav.content`     | `nav/content.json`     | 内容模块导航                 |
+| `nav.image`       | `nav/image.json`       | 图片模块导航                 |
+| `nav.tools`       | `nav/tools.json`       | 工具模块导航                 |
+| `media`           | `media.json`           | 媒体相关文本                 |
+| `schedule`        | `schedule.json`        | 排程相关文本                 |
+| `settings`        | `settings.json`        | 设置面板                     |
+| `user`            | `user.json`            | 用户相关文本                 |
+| `dialogs`         | `dialogs.json`         | 对话框文本                   |
+| `messages`        | `messages.json`        | 消息和通知                   |
+| `errors`          | `errors.json`          | 错误消息                     |
+| `weekdays`        | `weekdays.json`        | 星期名称                     |
+| `categories`      | `categories.json`      | 分类名称                     |
 
 **注意**：命名空间在代码中使用**点号格式**（如 `nav.maintenance`），而不是斜杠格式。文件名使用**斜杠格式**（如 `nav/maintenance.json`）。
 
@@ -103,17 +104,17 @@ src/lib/i18n/
 ### 基本用法
 
 ```tsx
-import { useTranslation } from "react-i18next"
+import { useTranslation } from 'react-i18next';
 
 function MyComponent() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <div>
-      <h1>{t("nav.maintenance.title", { ns: "nav.maintenance" })}</h1>
-      <button>{t("save", { ns: "common" })}</button>
+      <h1>{t('nav.maintenance.title', { ns: 'nav.maintenance' })}</h1>
+      <button>{t('save', { ns: 'common' })}</button>
     </div>
-  )
+  );
 }
 ```
 
@@ -122,29 +123,29 @@ function MyComponent() {
 可以在 `useTranslation` hook 中直接传入 namespace 参数，这样在组件中就可以省略 `{ ns: "..." }`：
 
 ```tsx
-import { useTranslation } from "react-i18next"
+import { useTranslation } from 'react-i18next';
 
 // 方法1：在 hook 中指定 namespace
 function MyComponent() {
-  const { t } = useTranslation("settings")  // 指定默认 namespace
+  const { t } = useTranslation('settings'); // 指定默认 namespace
 
   return (
     <div>
-      <h1>{t("settings.settings")}</h1>  // 无需再指定 ns
-      <p>{t("settings.settingsDesc")}</p>
+      <h1>{t('settings.settings')}</h1> // 无需再指定 ns
+      <p>{t('settings.settingsDesc')}</p>
     </div>
-  )
+  );
 }
 
 // 方法2：省略 namespace（仅适用于 common）
 function AnotherComponent() {
-  const { t } = useTranslation()  // 默认 namespace 是 common
+  const { t } = useTranslation(); // 默认 namespace 是 common
 
   return (
     <div>
-      <button>{t("save")}</button>  // common.save
+      <button>{t('save')}</button> // common.save
     </div>
-  )
+  );
 }
 ```
 
@@ -194,7 +195,7 @@ function AnotherComponent() {
 
 ```tsx
 // 根据数量自动选择单数/复数形式
-<p>{t("itemCount", { count: items.length, ns: "common" })}</p>
+<p>{t('itemCount', { count: items.length, ns: 'common' })}</p>
 ```
 
 ## 翻译键命名规范
@@ -217,50 +218,44 @@ function AnotherComponent() {
 以下是一个完整国际化的组件示例（`src/features/media-maintenance/components/add-item-dialog.tsx`）：
 
 ```tsx
-import { useTranslation } from "react-i18next"
+import { useTranslation } from 'react-i18next';
 
 // 使用 WEEKDAY_KEYS 映射到翻译
-const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 
 function AddItemDialog() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   // 在组件内使用 WEEKDAY_KEYS 生成翻译后的星期数组
-  const WEEKDAYS = WEEKDAY_KEYS.map(key => t(`weekdaysList.${key}`, { ns: "common" }))
+  const WEEKDAYS = WEEKDAY_KEYS.map((key) => t(`weekdaysList.${key}`, { ns: 'common' }));
 
   return (
     <div>
       {/* 对话框标题 - 使用 nav.maintenance 命名空间 */}
-      <DialogTitle>
-        {t("independentPage.addItem.title", { ns: "nav.maintenance" })}
-      </DialogTitle>
+      <DialogTitle>{t('independentPage.addItem.title', { ns: 'nav.maintenance' })}</DialogTitle>
 
       {/* 搜索提示 - 使用 nav.maintenance 命名空间 */}
       <DialogDescription>
-        {t("independentPage.addItem.searchHint", { ns: "nav.maintenance" })}
+        {t('independentPage.addItem.searchHint', { ns: 'nav.maintenance' })}
       </DialogDescription>
 
       {/* 搜索输入框 - 使用 nav.maintenance 命名空间 */}
       <Input
-        placeholder={t("independentPage.addItem.searchPlaceholder", { ns: "nav.maintenance" })}
+        placeholder={t('independentPage.addItem.searchPlaceholder', { ns: 'nav.maintenance' })}
       />
 
       {/* 分类选择 - 使用 media 命名空间的 categoryNames */}
-      <SelectItem value="anime">
-        {t('categoryNames.anime', { ns: 'media' })}
-      </SelectItem>
+      <SelectItem value="anime">{t('categoryNames.anime', { ns: 'media' })}</SelectItem>
 
       {/* 星期选择 - 使用 common 命名空间的 weekdaysList */}
-      <SelectItem value="0">
-        {t("weekdaysList.sunday", { ns: "common" })}
-      </SelectItem>
+      <SelectItem value="0">{t('weekdaysList.sunday', { ns: 'common' })}</SelectItem>
       {WEEKDAYS.map((day, index) => (
         <SelectItem key={index} value={(index + 1).toString()}>
           {day}
         </SelectItem>
       ))}
     </div>
-  )
+  );
 }
 ```
 
@@ -277,13 +272,13 @@ function AddItemDialog() {
 ### 手动切换语言
 
 ```tsx
-import { changeLanguage } from "@/lib/i18n"
+import { changeLanguage } from '@/lib/i18n';
 
 // 切换到英语
-await changeLanguage("en-US")
+await changeLanguage('en-US');
 
 // 切换到简体中文
-await changeLanguage("zh-CN")
+await changeLanguage('zh-CN');
 ```
 
 ## 添加新翻译
@@ -293,6 +288,7 @@ await changeLanguage("zh-CN")
 在对应语言的模块目录下添加新的翻译键值对：
 
 **zh-CN/nav/maintenance.json:**
+
 ```json
 {
   "title": "词条维护",
@@ -303,6 +299,7 @@ await changeLanguage("zh-CN")
 ```
 
 **en-US/nav/maintenance.json:**
+
 ```json
 {
   "title": "Media Maintenance",
@@ -326,31 +323,31 @@ const { t } = useTranslation()
 ### 日期格式化
 
 ```tsx
-import { formatDate, formatDateTime } from "@/lib/i18n/utils"
+import { formatDate, formatDateTime } from '@/lib/i18n/utils';
 
-const date = new Date()
+const date = new Date();
 
 // 格式化日期
-formatDate(date, "zh-CN")  // "2024年1月15日"
-formatDate(date, "en-US")  // "January 15, 2024"
+formatDate(date, 'zh-CN'); // "2024年1月15日"
+formatDate(date, 'en-US'); // "January 15, 2024"
 
 // 格式化日期时间
-formatDateTime(date, "zh-CN")  // "2024年1月15日 上午10:30"
+formatDateTime(date, 'zh-CN'); // "2024年1月15日 上午10:30"
 ```
 
 ### 数字格式化
 
 ```tsx
-import { formatNumber, formatPercentage } from "@/lib/i18n/utils"
+import { formatNumber, formatPercentage } from '@/lib/i18n/utils';
 
-const num = 1234567.89
+const num = 1234567.89;
 
 // 格式化数字
-formatNumber(num, "zh-CN")  // "1,234,567.89"
-formatNumber(num, "en-US")  // "1,234,567.89"
+formatNumber(num, 'zh-CN'); // "1,234,567.89"
+formatNumber(num, 'en-US'); // "1,234,567.89"
 
 // 格式化百分比
-formatPercentage(85.5, "zh-CN")  // "86%"
+formatPercentage(85.5, 'zh-CN'); // "86%"
 ```
 
 ## 常见错误与排查
@@ -358,15 +355,21 @@ formatPercentage(85.5, "zh-CN")  // "86%"
 ### 错误1：namespace 名称使用斜杠而非点号
 
 **错误写法：**
+
 ```tsx
 // ✗ 错误 - 使用了斜杠格式
-{t("independentPage.addItem.title", { ns: "nav/maintenance" })}
+{
+  t('independentPage.addItem.title', { ns: 'nav/maintenance' });
+}
 ```
 
 **正确写法：**
+
 ```tsx
 // ✓ 正确 - 使用了点号格式，与 i18n 配置中的注册名一致
-{t("independentPage.addItem.title", { ns: "nav.maintenance" })}
+{
+  t('independentPage.addItem.title', { ns: 'nav.maintenance' });
+}
 ```
 
 **原因**：代码中的 namespace 必须与 `src/lib/i18n/index.ts` 中注册的名字完全一致。注册时使用的是点号格式（如 `"nav.maintenance"`），而不是斜杠格式的文件路径。
@@ -386,14 +389,20 @@ formatPercentage(85.5, "zh-CN")  // "86%"
 
 ```tsx
 // ✗ 错误 - 省略了 namespace，且 hook 中也未指定
-{t("settings.settings")}  // 翻译键无法解析，会直接显示键名
+{
+  t('settings.settings');
+} // 翻译键无法解析，会直接显示键名
 
 // ✓ 正确 - 在 hook 中指定 namespace
-const { t } = useTranslation("settings")
-{t("settings.settings")}  // 正确解析
+const { t } = useTranslation('settings');
+{
+  t('settings.settings');
+} // 正确解析
 
 // ✓ 也正确 - 使用 { ns: "..." } 参数
-{t("settings.settings", { ns: "settings" })}  // 正确解析
+{
+  t('settings.settings', { ns: 'settings' });
+} // 正确解析
 ```
 
 ### 错误4：common 命名空间省略问题
@@ -402,20 +411,28 @@ const { t } = useTranslation("settings")
 
 ```tsx
 // ✓ 正确 - common 作为默认命名空间
-{t("save")}
+{
+  t('save');
+}
 
 // ✓ 也正确 - 显式指定 common
-{t("save", { ns: "common" })}
+{
+  t('save', { ns: 'common' });
+}
 ```
 
 但其他命名空间必须显式指定：
 
 ```tsx
 // ✗ 错误 - media 不是默认命名空间
-{t("categoryNames.anime")}
+{
+  t('categoryNames.anime');
+}
 
 // ✓ 正确 - 必须指定 namespace
-{t("categoryNames.anime", { ns: "media" })}
+{
+  t('categoryNames.anime', { ns: 'media' });
+}
 ```
 
 ## 最佳实践
@@ -445,8 +462,8 @@ const { t } = useTranslation("settings")
 ```tsx
 // ✓ 推荐 - 在使用处翻译
 function SaveButton() {
-  const { t } = useTranslation()
-  return <button>{t("save", { ns: "common" })}</button>
+  const { t } = useTranslation();
+  return <button>{t('save', { ns: 'common' })}</button>;
 }
 ```
 
@@ -467,15 +484,15 @@ function SaveButton() {
 确保在 `mid-layout.tsx` 中已导入 i18n 配置：
 
 ```tsx
-import "@/lib/i18n"
+import '@/lib/i18n';
 ```
 
 ### Q: 如何获取当前语言？
 
 ```tsx
-import { getCurrentLanguage } from "@/lib/i18n"
+import { getCurrentLanguage } from '@/lib/i18n';
 
-const currentLang = getCurrentLanguage()  // "zh-CN", "en-US", 等
+const currentLang = getCurrentLanguage(); // "zh-CN", "en-US", 等
 ```
 
 ### Q: namespace 名称应该用斜杠还是点号？
@@ -490,8 +507,8 @@ i18next 支持 TypeScript 类型推导，但需要额外配置：
 
 ```tsx
 // 使用时类型会正确推导
-const { t } = useTranslation()
-t("save", { ns: "common" })  // string 类型
+const { t } = useTranslation();
+t('save', { ns: 'common' }); // string 类型
 ```
 
 ## 技术栈
@@ -503,11 +520,11 @@ t("save", { ns: "common" })  // string 类型
 
 ## 相关文件
 
-| 文件路径 | 说明 |
-|---------|------|
-| `src/lib/i18n/index.ts` | i18next 初始化配置 |
-| `src/lib/i18n/config.ts` | 语言配置常量 |
-| `src/lib/i18n/language-store.ts` | 语言状态管理 |
-| `src/shared/components/user-identity-provider.tsx` | 用户下拉菜单（含语言切换） |
-| `src/shared/components/layouts/sidebar-navigation.tsx` | 侧边栏导航（已国际化） |
+| 文件路径                                                        | 说明                             |
+| --------------------------------------------------------------- | -------------------------------- |
+| `src/lib/i18n/index.ts`                                         | i18next 初始化配置               |
+| `src/lib/i18n/config.ts`                                        | 语言配置常量                     |
+| `src/lib/i18n/language-store.ts`                                | 语言状态管理                     |
+| `src/shared/components/user-identity-provider.tsx`              | 用户下拉菜单（含语言切换）       |
+| `src/shared/components/layouts/sidebar-navigation.tsx`          | 侧边栏导航（已国际化）           |
 | `src/features/media-maintenance/components/add-item-dialog.tsx` | 添加词条对话框（完整 i18n 示例） |

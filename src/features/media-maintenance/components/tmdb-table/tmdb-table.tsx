@@ -1,20 +1,20 @@
-"use client"
+'use client';
 
-import React, { useRef, useEffect, useCallback, useState } from "react"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { useTranslation } from "react-i18next"
-import { useTMDBTableState } from "./hooks/useTMDBTableState"
-import { useTMDBTableSelection } from "./hooks/useTMDBTableSelection"
-import { useTMDBTableHistory } from "./hooks/useTMDBTableHistory"
-import { useTMDBTableKeyboard } from "./hooks/useTMDBTableKeyboard"
-import { useTMDBTableMouse } from "./hooks/useTMDBTableMouse"
-import { useTMDBTableClipboard } from "./hooks/useTMDBTableClipboard"
-import HeaderRenderer from "./components/HeaderRenderer"
-import RowRenderer from "./components/RowRenderer"
-import TableContextMenu from "../../../../shared/components/ui/table-context-menu"
-import BatchEditDialog from "../batch-edit-dialog"
-import type { TMDBTableProps, CellPosition, BatchEditData } from "./types"
+import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { useTranslation } from 'react-i18next';
+import { useTMDBTableState } from './hooks/useTMDBTableState';
+import { useTMDBTableSelection } from './hooks/useTMDBTableSelection';
+import { useTMDBTableHistory } from './hooks/useTMDBTableHistory';
+import { useTMDBTableKeyboard } from './hooks/useTMDBTableKeyboard';
+import { useTMDBTableMouse } from './hooks/useTMDBTableMouse';
+import { useTMDBTableClipboard } from './hooks/useTMDBTableClipboard';
+import HeaderRenderer from './components/HeaderRenderer';
+import RowRenderer from './components/RowRenderer';
+import TableContextMenu from '../../../../shared/components/ui/table-context-menu';
+import BatchEditDialog from '../batch-edit-dialog';
+import type { TMDBTableProps, CellPosition, BatchEditData } from './types';
 import {
   insertRow,
   deleteRow,
@@ -28,8 +28,8 @@ import {
   getMaxEpisodeNumber,
   findColumnIndex,
   calculateSelectionArea,
-} from "./lib"
-import { isOverviewColumn } from "./lib"
+  isOverviewColumn,
+} from './lib';
 
 const TMDBTableComponent: React.FC<TMDBTableProps> = ({
   data,
@@ -44,13 +44,13 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
   showColumnOperations = true,
   showRowOperations = true,
 }) => {
-  const { t } = useTranslation("ui")
-  const editInputRef = useRef<HTMLInputElement>(null)
-  const [batchEditData, setBatchEditData] = useState<BatchEditData | null>(null)
-  const [showBatchEditDialog, setShowBatchEditDialog] = useState(false)
+  const { t } = useTranslation('ui');
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const [batchEditData, setBatchEditData] = useState<BatchEditData | null>(null);
+  const [showBatchEditDialog, setShowBatchEditDialog] = useState(false);
 
-  void enableColumnResizing
-  void enableColumnReordering
+  void enableColumnResizing;
+  void enableColumnReordering;
 
   // 核心状态管理
   const {
@@ -69,7 +69,7 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     initialData: data,
     onDataChange,
     onCellChange,
-  })
+  });
 
   // 选择逻辑
   const {
@@ -84,59 +84,61 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     selectAll,
     setSelectedRows,
     setIsAllRowsSelected,
-  } = useTMDBTableSelection()
+  } = useTMDBTableSelection();
 
   // 历史记录
-  const { saveToHistory, undo, redo } = useTMDBTableHistory(data)
+  const { saveToHistory, undo, redo } = useTMDBTableHistory(data);
 
   // 剪贴板操作
   const { copy, paste, cut } = useTMDBTableClipboard({
     selectedCells,
     localData,
     updateCellData: (updates) => {
-      saveToHistory(localData)
+      saveToHistory(localData);
       updates.forEach(({ row, col, value }) => {
-        updateCellData(row, col, value)
-      })
+        updateCellData(row, col, value);
+      });
     },
-  })
+  });
 
   // 键盘导航处理
   const handleKeyboardNavigation = useCallback(
     (direction: string, shiftKey: boolean) => {
-      if (!activeCell) return
-
-      let newRow = activeCell.row
-      let newCol = activeCell.col
-
-      switch (direction) {
-        case "ArrowUp":
-          newRow = Math.max(0, activeCell.row - 1)
-          break
-        case "ArrowDown":
-          newRow = Math.min(localData.rows.length - 1, activeCell.row + 1)
-          break
-        case "ArrowLeft":
-          newCol = Math.max(0, activeCell.col - 1)
-          break
-        case "ArrowRight":
-          newCol = Math.min(localData.headers.length - 1, activeCell.col + 1)
-          break
+      if (!activeCell) {
+        return;
       }
 
-      const newCell = { row: newRow, col: newCol }
+      let newRow = activeCell.row;
+      let newCol = activeCell.col;
+
+      switch (direction) {
+        case 'ArrowUp':
+          newRow = Math.max(0, activeCell.row - 1);
+          break;
+        case 'ArrowDown':
+          newRow = Math.min(localData.rows.length - 1, activeCell.row + 1);
+          break;
+        case 'ArrowLeft':
+          newCol = Math.max(0, activeCell.col - 1);
+          break;
+        case 'ArrowRight':
+          newCol = Math.min(localData.headers.length - 1, activeCell.col + 1);
+          break;
+      }
+
+      const newCell = { row: newRow, col: newCol };
 
       if (shiftKey && activeCell) {
-        const cells = calculateSelectionArea(activeCell, newCell)
-        selectCells(cells)
-        onSelectionChange?.(cells)
+        const cells = calculateSelectionArea(activeCell, newCell);
+        selectCells(cells);
+        onSelectionChange?.(cells);
       } else {
-        selectCell(newCell)
-        onSelectionChange?.([newCell])
+        selectCell(newCell);
+        onSelectionChange?.([newCell]);
       }
     },
     [activeCell, localData, selectCell, selectCells, onSelectionChange]
-  )
+  );
 
   // 键盘事件处理
   useTMDBTableKeyboard({
@@ -145,34 +147,34 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
     activeCell,
     isEditing,
     onDelete: () => {
-      saveToHistory(localData)
+      saveToHistory(localData);
       selectedCells.forEach(({ row, col }) => {
-        updateCellData(row, col, "")
-      })
+        updateCellData(row, col, '');
+      });
     },
     onCopy: copy,
     onPaste: paste,
     onUndo: () => {
-      const previousData = undo()
+      const previousData = undo();
       if (previousData) {
-        syncExternalData(previousData)
+        syncExternalData(previousData);
       }
     },
     onRedo: () => {
-      const nextData = redo()
+      const nextData = redo();
       if (nextData) {
-        syncExternalData(nextData)
+        syncExternalData(nextData);
       }
     },
     onSelectAll: () => selectAll(localData.rows.length),
     onNavigate: handleKeyboardNavigation,
     onEdit: () => {
       if (activeCell) {
-        startEditing(activeCell.row, activeCell.col)
+        startEditing(activeCell.row, activeCell.col);
       }
     },
     onEscape: clearSelection,
-  })
+  });
 
   // 鼠标事件处理
   const {
@@ -184,217 +186,223 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
   } = useTMDBTableMouse({
     activeCell,
     onCellClick: (cell, event) => {
-      selectCell(cell)
-      onSelectionChange?.([cell])
+      selectCell(cell);
+      onSelectionChange?.([cell]);
     },
     onCellDoubleClick: (cell, event) => {
-      const columnName = localData.headers[cell.col]
-      if (isOverviewColumn(columnName || "")) {
+      const columnName = localData.headers[cell.col];
+      if (isOverviewColumn(columnName || '')) {
         setBatchEditData({
           row: cell.row,
           col: cell.col,
           value: localData.rows[cell.row]![cell.col]!,
-          columnName: columnName || "",
-        })
-        setShowBatchEditDialog(true)
+          columnName: columnName || '',
+        });
+        setShowBatchEditDialog(true);
       } else {
-        startEditing(cell.row, cell.col)
+        startEditing(cell.row, cell.col);
       }
     },
     onSelectionStart: (cell) => {
       // 开始框选
     },
     onSelectionChange: (cells) => {
-      selectCells(cells)
-      onSelectionChange?.(cells)
+      selectCells(cells);
+      onSelectionChange?.(cells);
     },
     onSelectionEnd: () => {
       // 结束框选
     },
     onShiftSelect: (cells) => {
-      selectCells(cells)
-      onSelectionChange?.(cells)
+      selectCells(cells);
+      onSelectionChange?.(cells);
     },
-  })
+  });
 
   // 同步外部数据
   useEffect(() => {
-    syncExternalData(data)
-  }, [data, syncExternalData])
+    syncExternalData(data);
+  }, [data, syncExternalData]);
 
   // 更新状态引用
   useEffect(() => {
-    updateStateRef()
-  }, [updateStateRef])
+    updateStateRef();
+  }, [updateStateRef]);
 
   // 聚焦到编辑输入框
   useEffect(() => {
     if (isEditing && editInputRef.current) {
-      editInputRef.current.focus()
+      editInputRef.current.focus();
     }
-  }, [isEditing])
+  }, [isEditing]);
 
   // 行操作函数
   const handleInsertRow = useCallback(
-    (index: number, position: "before" | "after") => {
-      saveToHistory(localData)
-      const newData = insertRow(localData, index, position)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+    (index: number, position: 'before' | 'after') => {
+      saveToHistory(localData);
+      const newData = insertRow(localData, index, position);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleDeleteRow = useCallback(
     (index: number) => {
-      if (localData.rows.length <= 1) return
-      saveToHistory(localData)
-      const newData = deleteRow(localData, index)
-      syncExternalData(newData)
-      onDataChange?.(newData)
-      clearSelection()
+      if (localData.rows.length <= 1) {
+        return;
+      }
+      saveToHistory(localData);
+      const newData = deleteRow(localData, index);
+      syncExternalData(newData);
+      onDataChange?.(newData);
+      clearSelection();
     },
     [localData, saveToHistory, syncExternalData, onDataChange, clearSelection]
-  )
+  );
 
   const handleDuplicateRow = useCallback(
     (index: number) => {
-      saveToHistory(localData)
-      const newData = duplicateRow(localData, index)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+      saveToHistory(localData);
+      const newData = duplicateRow(localData, index);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleMoveRow = useCallback(
-    (index: number, direction: "up" | "down") => {
-      saveToHistory(localData)
-      const newData = moveRow(localData, index, direction)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+    (index: number, direction: 'up' | 'down') => {
+      saveToHistory(localData);
+      const newData = moveRow(localData, index, direction);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   // 列操作函数
   const handleInsertColumn = useCallback(
-    (index: number, position: "before" | "after") => {
-      saveToHistory(localData)
-      const newData = insertColumn(localData, index, position)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+    (index: number, position: 'before' | 'after') => {
+      saveToHistory(localData);
+      const newData = insertColumn(localData, index, position);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleDeleteColumn = useCallback(
     (index: number) => {
-      if (localData.headers.length <= 1) return
-      saveToHistory(localData)
-      const newData = deleteColumn(localData, index)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+      if (localData.headers.length <= 1) {
+        return;
+      }
+      saveToHistory(localData);
+      const newData = deleteColumn(localData, index);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleDuplicateColumn = useCallback(
     (index: number) => {
-      saveToHistory(localData)
-      const newData = duplicateColumn(localData, index)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+      saveToHistory(localData);
+      const newData = duplicateColumn(localData, index);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleMoveColumn = useCallback(
-    (index: number, direction: "left" | "right") => {
-      saveToHistory(localData)
-      const newData = moveColumn(localData, index, direction)
-      syncExternalData(newData)
-      onDataChange?.(newData)
+    (index: number, direction: 'left' | 'right') => {
+      saveToHistory(localData);
+      const newData = moveColumn(localData, index, direction);
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   // 批量插入行
   const handleBatchInsertRows = useCallback(
-    (index: number, count: number, position: "before" | "after") => {
-      if (count <= 0) return
+    (index: number, count: number, position: 'before' | 'after') => {
+      if (count <= 0) {
+        return;
+      }
 
-      saveToHistory(localData)
+      saveToHistory(localData);
 
-      const episodeColumnIndex = findColumnIndex(localData, "episode_number")
-      const runtimeColumnIndex = findColumnIndex(localData, "runtime")
-      const maxEpisodeNumber = getMaxEpisodeNumber(localData, episodeColumnIndex)
+      const episodeColumnIndex = findColumnIndex(localData, 'episode_number');
+      const runtimeColumnIndex = findColumnIndex(localData, 'runtime');
+      const maxEpisodeNumber = getMaxEpisodeNumber(localData, episodeColumnIndex);
 
-      const prevRowIndex = position === "before" ? index - 1 : index
+      const prevRowIndex = position === 'before' ? index - 1 : index;
       const prevRow =
         prevRowIndex >= 0 && prevRowIndex < localData.rows.length
           ? localData.rows[prevRowIndex]
-          : null
+          : null;
       const prevRuntimeValue =
-        runtimeColumnIndex !== -1 && prevRow
-          ? prevRow[runtimeColumnIndex] || ""
-          : ""
+        runtimeColumnIndex !== -1 && prevRow ? prevRow[runtimeColumnIndex] || '' : '';
 
       const newData = batchInsertRows(localData, index, count, position, {
         episodeColumnIndex,
         runtimeColumnIndex,
         startEpisodeNumber: maxEpisodeNumber + 1,
         prevRuntimeValue,
-      })
+      });
 
-      syncExternalData(newData)
-      onDataChange?.(newData)
+      syncExternalData(newData);
+      onDataChange?.(newData);
     },
     [localData, saveToHistory, syncExternalData, onDataChange]
-  )
+  );
 
   const handleContextMenu = useCallback(
     (row: number, col: number) => {
-      const isAlreadySelected = selectedCells.some(
-        (cell) => cell.row === row && cell.col === col
-      )
+      const isAlreadySelected = selectedCells.some((cell) => cell.row === row && cell.col === col);
       if (isAlreadySelected) {
-        return
+        return;
       }
-      selectCell({ row, col })
-      onSelectionChange?.([{ row, col }])
+      selectCell({ row, col });
+      onSelectionChange?.([{ row, col }]);
     },
     [selectedCells, selectCell, onSelectionChange]
-  )
+  );
 
   const handleCellsUpdate = useCallback(
     (cells: { row: number; col: number; value: string }[]) => {
-      if (cells.length === 0) return
-      saveToHistory(localData)
+      if (cells.length === 0) {
+        return;
+      }
+      saveToHistory(localData);
       cells.forEach(({ row, col, value }) => {
-        updateCellData(row, col, value)
-      })
+        updateCellData(row, col, value);
+      });
     },
     [saveToHistory, localData, updateCellData]
-  )
+  );
 
   const handleBatchEditSave = useCallback(
     (value: string) => {
-      if (!batchEditData) return
-      saveToHistory(localData)
-      updateCellData(batchEditData.row, batchEditData.col, value)
-      setShowBatchEditDialog(false)
-      setBatchEditData(null)
+      if (!batchEditData) {
+        return;
+      }
+      saveToHistory(localData);
+      updateCellData(batchEditData.row, batchEditData.col, value);
+      setShowBatchEditDialog(false);
+      setBatchEditData(null);
     },
     [batchEditData, saveToHistory, localData, updateCellData]
-  )
+  );
 
   const adaptMouseHandler = useCallback(
     (handler: (cell: CellPosition, event: React.MouseEvent) => void) =>
       (row: number, col: number, event: React.MouseEvent) =>
         handler({ row, col }, event),
     []
-  )
+  );
 
   return (
     <TableContextMenu
@@ -405,10 +413,10 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
       onCut={cut}
       onPaste={paste}
       onDelete={() => {
-        saveToHistory(localData)
+        saveToHistory(localData);
         selectedCells.forEach(({ row, col }) => {
-          updateCellData(row, col, "")
-        })
+          updateCellData(row, col, '');
+        });
       }}
       onInsertRow={handleInsertRow}
       onDeleteRow={handleDeleteRow}
@@ -418,19 +426,20 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
       onDuplicateColumn={handleDuplicateColumn}
       onBatchInsertRow={(index, position, count) => handleBatchInsertRows(index, count, position)}
       onOpenOverviewEdit={(row, col) => {
-        const columnName = localData.headers[col]!
+        const columnName = localData.headers[col]!;
         setBatchEditData({
           row,
           col,
           value: localData.rows[row]![col]!,
           columnName,
-        })
-        setShowBatchEditDialog(true)
+        });
+        setShowBatchEditDialog(true);
       }}
     >
       <div className={className}>
         <ScrollArea className="h-full">
-          <div className="tmdb-table"
+          <div
+            className="tmdb-table"
             onMouseUp={handleCellMouseUp}
             onMouseLeave={handleCellMouseUp}
           >
@@ -445,10 +454,10 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
                           checked={isAllRowsSelected}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              selectAll(localData.rows.length)
+                              selectAll(localData.rows.length);
                             } else {
-                              setSelectedRows(new Set())
-                              setIsAllRowsSelected(false)
+                              setSelectedRows(new Set());
+                              setIsAllRowsSelected(false);
                             }
                           }}
                           className="w-4 h-4"
@@ -507,22 +516,22 @@ const TMDBTableComponent: React.FC<TMDBTableProps> = ({
       <BatchEditDialog
         open={showBatchEditDialog}
         onOpenChange={setShowBatchEditDialog}
-        value={batchEditData?.value || ""}
+        value={batchEditData?.value || ''}
         onSave={handleBatchEditSave}
         allColumnData={
           batchEditData
             ? localData.rows.map((row, index) => ({
                 rowIndex: index,
-                value: row[batchEditData.col] || "",
+                value: row[batchEditData.col] || '',
               }))
             : []
         }
         {...(batchEditData ? { currentRowIndex: batchEditData.row } : {})}
-        columnName={batchEditData?.columnName || ""}
+        columnName={batchEditData?.columnName || ''}
       />
     </TableContextMenu>
-  )
-}
+  );
+};
 
-export default TMDBTableComponent
-export { TMDBTableComponent as TMDBTable }
+export default TMDBTableComponent;
+export { TMDBTableComponent as TMDBTable };

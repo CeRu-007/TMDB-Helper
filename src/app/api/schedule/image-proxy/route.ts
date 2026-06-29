@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/lib/utils/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 
 const ALLOWED_HOSTS = [
   'i0.hdslb.com',
@@ -21,76 +21,77 @@ const ALLOWED_HOSTS = [
   'pic8.iqiyipic.com',
   'pic9.iqiyipic.com',
   'iqiyipic.com',
-] as const
+] as const;
 
-const BILIBILI_REFERER = 'https://www.bilibili.com/'
-const IQIYI_REFERER = 'https://www.iqiyi.com/'
+const BILIBILI_REFERER = 'https://www.bilibili.com/';
+const IQIYI_REFERER = 'https://www.iqiyi.com/';
 
 const DEFAULT_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
-} as const
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
+} as const;
 
 function validateUrl(urlString: string): URL | null {
   try {
-    const url = new URL(urlString)
-    return url
+    const url = new URL(urlString);
+    return url;
   } catch {
-    return null
+    return null;
   }
 }
 
 function isAllowedHost(url: URL): boolean {
-  return ALLOWED_HOSTS.some(host => url.hostname.includes(host))
+  return ALLOWED_HOSTS.some((host) => url.hostname.includes(host));
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const imageUrl = searchParams.get('url')
+  const searchParams = request.nextUrl.searchParams;
+  const imageUrl = searchParams.get('url');
 
   if (!imageUrl) {
-    return new NextResponse('Missing URL parameter', { status: 400 })
+    return new NextResponse('Missing URL parameter', { status: 400 });
   }
 
-  const decodedUrl = decodeURIComponent(imageUrl)
-  const url = validateUrl(decodedUrl)
+  const decodedUrl = decodeURIComponent(imageUrl);
+  const url = validateUrl(decodedUrl);
 
   if (!url) {
-    return new NextResponse('Invalid URL', { status: 400 })
+    return new NextResponse('Invalid URL', { status: 400 });
   }
 
   if (!isAllowedHost(url)) {
-    return NextResponse.redirect(decodedUrl)
+    return NextResponse.redirect(decodedUrl);
   }
 
   try {
     // 根据图片来源设置正确的Referer
-    const isIqiyiImage = url.hostname.includes('iqiyipic.com')
-    const referer = isIqiyiImage ? IQIYI_REFERER : BILIBILI_REFERER
+    const isIqiyiImage = url.hostname.includes('iqiyipic.com');
+    const referer = isIqiyiImage ? IQIYI_REFERER : BILIBILI_REFERER;
 
     const response = await fetch(decodedUrl, {
       headers: {
         ...DEFAULT_HEADERS,
-        'Referer': referer,
+        Referer: referer,
       },
       cache: 'force-cache',
-    })
+    });
 
     if (!response.ok) {
-      return new NextResponse('Failed to fetch image', { status: response.status })
+      return new NextResponse('Failed to fetch image', { status: response.status });
     }
 
-    const imageBuffer = await response.arrayBuffer()
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const imageBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
 
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400',
       },
-    })
+    });
   } catch (error) {
-    logger.error('Image proxy error:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    logger.error('Image proxy error:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

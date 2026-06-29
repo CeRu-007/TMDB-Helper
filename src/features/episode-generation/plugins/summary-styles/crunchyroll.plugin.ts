@@ -3,10 +3,21 @@
  * 动漫平台专业风格：结构化简洁表达，客观描述核心冲突
  */
 
-import { BasePlugin, PluginType, ISummaryStylePlugin, EpisodeContent, ParsedSummary, SummaryStyleConfig, SummaryConstraints } from '../core'
-import { cleanSummaryText } from '../../lib/text-cleaner'
+import {
+  BasePlugin,
+  PluginType,
+  ISummaryStylePlugin,
+  EpisodeContent,
+  ParsedSummary,
+  SummaryStyleConfig,
+  SummaryConstraints,
+} from '../core';
+import { cleanSummaryText } from '../../lib/text-cleaner';
 
-export const crunchyrollPlugin: ISummaryStylePlugin = new (class extends BasePlugin implements ISummaryStylePlugin {
+export const crunchyrollPlugin: ISummaryStylePlugin = new (class
+  extends BasePlugin
+  implements ISummaryStylePlugin
+{
   constructor() {
     super({
       id: 'crunchyroll',
@@ -20,12 +31,14 @@ export const crunchyrollPlugin: ISummaryStylePlugin = new (class extends BasePlu
       tags: ['platform', 'anime', 'professional', 'crunchyroll'],
       metadata: {
         category: 'platform',
-        difficulty: 'medium'
-      }
-    })
+        difficulty: 'medium',
+      },
+    });
   }
 
-  isExclusive = false
+  declare readonly type: PluginType.SummaryStyle;
+
+  isExclusive = false;
 
   defaultConfig: SummaryStyleConfig = {
     minWordCount: 50,
@@ -34,12 +47,12 @@ export const crunchyrollPlugin: ISummaryStylePlugin = new (class extends BasePlu
     maxTokens: 300,
     format: 'plain',
     allowQuestions: false,
-    requireDeclarative: true
-  }
+    requireDeclarative: true,
+  };
 
   buildPrompt(content: EpisodeContent, options?: Record<string, any>): string {
-    const config = { ...this.defaultConfig, ...options }
-    
+    const config = { ...this.defaultConfig, ...options };
+
     return `你是一位Crunchyroll平台的内容编辑，擅长撰写专业简洁的动漫剧集简介。
 
 任务：为第 ${content.episodeNumber} 集撰写Crunchyroll风格的分集简介
@@ -81,18 +94,21 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
   }
 
   parseResult(generated: string, options?: Record<string, any>): ParsedSummary {
-    const config = { ...this.defaultConfig, ...options }
-    
-    let summary = generated.trim()
-    summary = summary.replace(/^(简介[:：]?\s*|描述[:：]?\s*|Description[:：]?\s*|Summary[:：]?\s*)/i, '')
-    
-    const wordCount = summary.length
-    
-    let confidence = 100
+    const config = { ...this.defaultConfig, ...options };
+
+    let summary = generated.trim();
+    summary = summary.replace(
+      /^(简介[:：]?\s*|描述[:：]?\s*|Description[:：]?\s*|Summary[:：]?\s*)/i,
+      ''
+    );
+
+    const wordCount = summary.length;
+
+    let confidence = 100;
     if (wordCount < config.minWordCount * 0.8 || wordCount > config.maxWordCount * 1.2) {
-      confidence = 60
+      confidence = 60;
     } else if (wordCount < config.minWordCount || wordCount > config.maxWordCount) {
-      confidence = 80
+      confidence = 80;
     }
 
     return {
@@ -101,38 +117,38 @@ ${content.originalTitle ? `原标题：${content.originalTitle}` : ''}
       confidence,
       metadata: {
         pluginId: this.id,
-        pluginVersion: this.version
-      }
-    }
+        pluginVersion: this.version,
+      },
+    };
   }
 
   validate(summary: string, constraints?: SummaryConstraints) {
-    const errors: string[] = []
-    const warnings: string[] = []
-    const config = { ...this.defaultConfig, ...constraints }
-    
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const config = { ...this.defaultConfig, ...constraints };
+
     if (summary.length < config.minWordCount) {
-      errors.push(`简介过短：${summary.length} 字，要求至少 ${config.minWordCount} 字`)
+      errors.push(`简介过短：${summary.length} 字，要求至少 ${config.minWordCount} 字`);
     }
-    
+
     if (summary.length > config.maxWordCount) {
-      errors.push(`简介过长：${summary.length} 字，要求最多 ${config.maxWordCount} 字`)
+      errors.push(`简介过长：${summary.length} 字，要求最多 ${config.maxWordCount} 字`);
     }
 
     if (config.allowQuestions === false) {
       if (summary.includes('？') || summary.includes('?')) {
-        warnings.push('简介包含疑问句，建议使用陈述句')
+        warnings.push('简介包含疑问句，建议使用陈述句');
       }
     }
 
     return {
       valid: errors.length === 0,
       errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined
-    }
+      warnings: warnings.length > 0 ? warnings : undefined,
+    };
   }
 
   postProcess(summary: string): string {
-    return cleanSummaryText(summary)
+    return cleanSummaryText(summary);
   }
-})()
+})();

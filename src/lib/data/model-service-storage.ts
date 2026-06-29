@@ -76,8 +76,7 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
     {
       type: 'image_analysis',
       label: '影视图像识别分析',
-      description:
-        '用于"影视识别"页面的图像分析功能，识别影视作品海报、剧照并进行内容分析',
+      description: '用于"影视识别"页面的图像分析功能，识别影视作品海报、剧照并进行内容分析',
       requiredCapabilities: ['vision'],
       selectedModelIds: ['zhipu-glm-4v-flash'],
       primaryModelId: 'zhipu-glm-4v-flash',
@@ -85,8 +84,7 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
     {
       type: 'speech_to_text',
       label: '视频语音识别转文字',
-      description:
-        '用于"分集简介-AI生成"页面的音频转写功能，将视频中的语音转换为文字用于生成简介',
+      description: '用于"分集简介-AI生成"页面的音频转写功能，将视频中的语音转换为文字用于生成简介',
       requiredCapabilities: ['audio'],
       selectedModelIds: [],
       primaryModelId: '',
@@ -94,8 +92,7 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
     {
       type: 'episode_generation',
       label: '分集简介AI生成',
-      description:
-        '用于"分集简介-AI生成"页面，基于视频内容或字幕生成精彩的分集简介',
+      description: '用于"分集简介-AI生成"页面，基于视频内容或字幕生成精彩的分集简介',
       requiredCapabilities: ['chat'],
       selectedModelIds: ['zhipu-glm-4-flash'],
       primaryModelId: 'zhipu-glm-4-flash',
@@ -111,8 +108,7 @@ const DEFAULT_CONFIG: ModelServiceConfig = {
     {
       type: 'subtitle_ocr',
       label: '硬字幕OCR识别',
-      description:
-        '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
+      description: '用于"硬字幕提取"页面，通过多模态视觉模型识别视频帧中的硬字幕文本',
       requiredCapabilities: ['vision'],
       selectedModelIds: ['zhipu-glm-4v-flash'],
       primaryModelId: 'zhipu-glm-4v-flash',
@@ -169,16 +165,11 @@ export class ModelServiceStorage {
       // 检查并补充缺失的默认场景
       const modelIdsToUpdate = ['zhipu-glm-4-flash', 'zhipu-glm-4v-flash'];
       const modelExistsMap = new Map(
-        modelIdsToUpdate.map((id) => [
-          id,
-          result.models.some((m) => m.id === id),
-        ]),
+        modelIdsToUpdate.map((id) => [id, result.models.some((m) => m.id === id)])
       );
 
       for (const defaultScenario of DEFAULT_CONFIG.scenarios) {
-        const existingScenario = result.scenarios.find(
-          (s) => s.type === defaultScenario.type,
-        );
+        const existingScenario = result.scenarios.find((s) => s.type === defaultScenario.type);
 
         if (!existingScenario) {
           result.scenarios.push(defaultScenario);
@@ -187,11 +178,11 @@ export class ModelServiceStorage {
           continue;
         }
 
-        if (!defaultScenario.selectedModelIds?.length) continue;
+        if (!defaultScenario.selectedModelIds?.length) {
+          continue;
+        }
 
-        const scenarioModelIds = new Set(
-          existingScenario.selectedModelIds || [],
-        );
+        const scenarioModelIds = new Set(existingScenario.selectedModelIds || []);
 
         for (const modelId of defaultScenario.selectedModelIds) {
           if (modelExistsMap.get(modelId) && !scenarioModelIds.has(modelId)) {
@@ -202,11 +193,8 @@ export class ModelServiceStorage {
             needsSave = true;
             scenarioModelIds.add(modelId);
             const modelDisplayName =
-              DEFAULT_CONFIG.models.find((m) => m.id === modelId)?.displayName ||
-              modelId;
-            logger.info(
-              `为场景 ${defaultScenario.label} 添加模型: ${modelDisplayName}`,
-            );
+              DEFAULT_CONFIG.models.find((m) => m.id === modelId)?.displayName || modelId;
+            logger.info(`为场景 ${defaultScenario.label} 添加模型: ${modelDisplayName}`);
           }
         }
       }
@@ -246,9 +234,7 @@ export class ModelServiceStorage {
   static async addProvider(provider: ModelProvider): Promise<void> {
     const config = await this.getConfig();
 
-    const existingIndex = config.providers.findIndex(
-      (p) => p.id === provider.id,
-    );
+    const existingIndex = config.providers.findIndex((p) => p.id === provider.id);
     if (existingIndex !== -1) {
       config.providers[existingIndex] = { ...provider, updatedAt: Date.now() };
     } else {
@@ -346,21 +332,15 @@ export class ModelServiceStorage {
     const updatedScenarios = [...config.scenarios];
 
     for (const scenario of scenarios) {
-      const existingIndex = updatedScenarios.findIndex(
-        (s) => s.type === scenario.type,
-      );
+      const existingIndex = updatedScenarios.findIndex((s) => s.type === scenario.type);
       if (existingIndex >= 0) {
         updatedScenarios[existingIndex] = {
           ...updatedScenarios[existingIndex],
           ...scenario,
           selectedModelIds:
-            scenario.selectedModelIds ??
-            updatedScenarios[existingIndex].selectedModelIds,
-          primaryModelId:
-            scenario.primaryModelId ??
-            updatedScenarios[existingIndex].primaryModelId,
-          parameters:
-            scenario.parameters ?? updatedScenarios[existingIndex].parameters,
+            scenario.selectedModelIds ?? updatedScenarios[existingIndex].selectedModelIds,
+          primaryModelId: scenario.primaryModelId ?? updatedScenarios[existingIndex].primaryModelId,
+          parameters: scenario.parameters ?? updatedScenarios[existingIndex].parameters,
         };
       } else {
         updatedScenarios.push(scenario);

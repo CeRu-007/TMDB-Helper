@@ -1,2 +1,2 @@
-export * from "./date-format"
-export * from "./number-format"
+export { getIntlLocale } from './date-format';
+export * from './number-format';

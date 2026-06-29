@@ -224,14 +224,10 @@ function escapeCSVField(field: string): string {
  * 按剧集编号删除行
  * 这是一个专门的函数，用于安全地删除指定剧集
  */
-export function deleteEpisodesByNumbers(
-  data: CSVData,
-  episodesToDelete: number[],
-): CSVData {
+export function deleteEpisodesByNumbers(data: CSVData, episodesToDelete: number[]): CSVData {
   // 找到episode_number列的索引
   const episodeColumnIndex = data.headers.findIndex(
-    (header) =>
-      header.toLowerCase().includes('episode') || header.includes('剧集'),
+    (header) => header.toLowerCase().includes('episode') || header.includes('剧集')
   );
 
   if (episodeColumnIndex === -1) {
@@ -279,7 +275,7 @@ export function validateCSVData(data: CSVData): {
   data.rows.forEach((row, index) => {
     if (row.length !== data.headers.length) {
       errors.push(
-        `第${index + 1}行字段数量不匹配: 期望${data.headers.length}个，实际${row.length}个`,
+        `第${index + 1}行字段数量不匹配: 期望${data.headers.length}个，实际${row.length}个`
       );
     }
   });

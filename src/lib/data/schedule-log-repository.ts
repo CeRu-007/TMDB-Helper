@@ -5,8 +5,11 @@
 import { getDatabase } from '../database/connection';
 import { BaseRepository } from '../database/repositories/base.repository';
 import type { DatabaseResult } from '../database/types';
-import type { ScheduleLog, ScheduleLogRow } from '@/types/schedule';
-import { scheduleLogRowToScheduleLog } from '@/types/schedule';
+import {
+  type ScheduleLog,
+  type ScheduleLogRow,
+  scheduleLogRowToScheduleLog,
+} from '@/types/schedule';
 import { logger } from '@/lib/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -28,7 +31,9 @@ export class ScheduleLogRepository extends BaseRepository<ScheduleLog, ScheduleL
       .prepare('SELECT * FROM schedule_logs WHERE taskId = ? ORDER BY startAt DESC LIMIT 1')
       .get(taskId) as ScheduleLogRow | undefined;
 
-    if (!row) return undefined;
+    if (!row) {
+      return undefined;
+    }
     return scheduleLogRowToScheduleLog(row);
   }
 
@@ -41,13 +46,15 @@ export class ScheduleLogRepository extends BaseRepository<ScheduleLog, ScheduleL
     };
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO schedule_logs (
           id, taskId, status, startAt, endAt, message, details
         ) VALUES (
           @id, @taskId, @status, @startAt, @endAt, @message, @details
         )
-      `).run({
+      `
+      ).run({
         id: newLog.id,
         taskId: newLog.taskId,
         status: newLog.status,
@@ -67,20 +74,27 @@ export class ScheduleLogRepository extends BaseRepository<ScheduleLog, ScheduleL
     }
   }
 
-  updateStatus(id: string, status: ScheduleLog['status'], message?: string, details?: string): DatabaseResult {
+  updateStatus(
+    id: string,
+    status: ScheduleLog['status'],
+    message?: string,
+    details?: string
+  ): DatabaseResult {
     const db = getDatabase();
 
     try {
       const endAt = status !== 'running' ? new Date().toISOString() : null;
 
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE schedule_logs SET
           status = @status,
           endAt = @endAt,
           message = @message,
           details = @details
         WHERE id = @id
-      `).run({
+      `
+      ).run({
         id,
         status,
         endAt,
@@ -102,12 +116,14 @@ export class ScheduleLogRepository extends BaseRepository<ScheduleLog, ScheduleL
     const db = getDatabase();
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         DELETE FROM schedule_logs
         WHERE id NOT IN (
           SELECT id FROM schedule_logs ORDER BY startAt DESC LIMIT ?
         )
-      `).run(keepCount);
+      `
+      ).run(keepCount);
 
       return { success: true };
     } catch (error) {

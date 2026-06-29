@@ -2,12 +2,7 @@
 
 import React, { useState } from 'react';
 import { DELAY_2S } from '@/lib/constants/constants';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
@@ -53,7 +48,9 @@ interface ImportPreview {
 }
 
 // 辅助函数：检查数据是否重复
-async function checkForDuplicateItems(importItems: ImportItem[]): Promise<{ isDuplicate: boolean; message: string }> {
+async function checkForDuplicateItems(
+  importItems: ImportItem[]
+): Promise<{ isDuplicate: boolean; message: string }> {
   try {
     const currentItems = await StorageManager.getItemsWithRetry();
 
@@ -68,7 +65,7 @@ async function checkForDuplicateItems(importItems: ImportItem[]): Promise<{ isDu
     }
 
     // 比较项目ID
-    const currentIds = currentItems.map((item) => item.id).sort();
+    const currentIds = currentItems.map((item: any) => item.id).sort();
     const importIds = importItems.map((item) => item.id).sort();
 
     const isDuplicate = JSON.stringify(currentIds) === JSON.stringify(importIds);
@@ -98,7 +95,12 @@ function parseImportData(data: string): ImportItem[] {
     return parsedData as ImportItem[];
   }
 
-  if (parsedData && typeof parsedData === 'object' && 'items' in parsedData && Array.isArray(parsedData.items)) {
+  if (
+    parsedData &&
+    typeof parsedData === 'object' &&
+    'items' in parsedData &&
+    Array.isArray(parsedData.items)
+  ) {
     return parsedData.items as ImportItem[];
   }
 
@@ -106,7 +108,9 @@ function parseImportData(data: string): ImportItem[] {
 }
 
 // 辅助函数：执行导入操作
-async function performImport(items: ImportItem[]): Promise<{ success: boolean; itemCount: number }> {
+async function performImport(
+  items: ImportItem[]
+): Promise<{ success: boolean; itemCount: number }> {
   // 使用新的文件操作API直接导入
   const response = await fetch('/api/storage/file-operations', {
     method: 'POST',
@@ -135,10 +139,7 @@ async function performImport(items: ImportItem[]): Promise<{ success: boolean; i
   };
 }
 
-export default function ImportDataDialog({
-  open,
-  onOpenChange,
-}: ImportDataDialogProps) {
+export default function ImportDataDialog({ open, onOpenChange }: ImportDataDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [importing, setImporting] = useState(false);
@@ -158,9 +159,7 @@ export default function ImportDataDialog({
   const { importData } = useData();
 
   // 处理文件选择
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) {
       setFile(null);
@@ -183,22 +182,32 @@ export default function ImportDataDialog({
           setPreview({
             isValid: false,
             error: validation.error,
-            stats: validation.stats,
+            stats: {
+              itemCount: 0,
+              validItemCount: 0,
+              taskCount: 0,
+              validTaskCount: 0,
+              ...validation.stats,
+            },
           });
           return;
         }
 
         // 检查重复数据
         const { isDuplicate, message } = validation.data?.items
-          ? await checkForDuplicateItems(validation.data.items)
+          ? await checkForDuplicateItems(validation.data.items as ImportItem[])
           : { isDuplicate: false, message: '' };
 
         setPreview({
           isValid: true,
-          error: isDuplicate
-            ? `注意：${message}。您可以选择继续导入以确保数据一致性。`
-            : undefined,
-          stats: validation.stats,
+          error: isDuplicate ? `注意：${message}。您可以选择继续导入以确保数据一致性。` : undefined,
+          stats: {
+            itemCount: 0,
+            validItemCount: 0,
+            taskCount: 0,
+            validTaskCount: 0,
+            ...validation.stats,
+          },
           data: validation.data
             ? {
                 version: validation.data.version,
@@ -218,7 +227,9 @@ export default function ImportDataDialog({
 
   // 执行导入
   const handleImport = async () => {
-    if (!file || !preview?.isValid) return;
+    if (!file || !preview?.isValid) {
+      return;
+    }
 
     setImporting(true);
     setImportProgress(0);
@@ -267,7 +278,6 @@ export default function ImportDataDialog({
       setTimeout(() => {
         window.location.reload();
       }, DELAY_2S);
-
     } catch (error) {
       setImportStep('导入失败');
       setImportResult({
@@ -316,9 +326,7 @@ export default function ImportDataDialog({
               onChange={handleFileSelect}
               disabled={importing}
             />
-            <p className="text-sm text-muted-foreground">
-              支持 JSON 格式的备份文件
-            </p>
+            <p className="text-sm text-muted-foreground">支持 JSON 格式的备份文件</p>
           </div>
 
           {/* 文件预览 */}
@@ -360,15 +368,13 @@ export default function ImportDataDialog({
                           <div className="flex items-center justify-between">
                             <span className="text-sm">项目数量：</span>
                             <Badge variant="outline">
-                              {preview.stats.validItemCount}/
-                              {preview.stats.itemCount}
+                              {preview.stats.validItemCount}/{preview.stats.itemCount}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-sm">任务数量：</span>
                             <Badge variant="outline">
-                              {preview.stats.validTaskCount}/
-                              {preview.stats.taskCount}
+                              {preview.stats.validTaskCount}/{preview.stats.taskCount}
                             </Badge>
                           </div>
                         </div>
@@ -378,18 +384,14 @@ export default function ImportDataDialog({
                             {preview.data.version && (
                               <div className="flex items-center justify-between">
                                 <span className="text-sm">版本：</span>
-                                <span className="text-sm font-mono">
-                                  {preview.data.version}
-                                </span>
+                                <span className="text-sm font-mono">{preview.data.version}</span>
                               </div>
                             )}
                             {preview.data.exportDate && (
                               <div className="flex items-center justify-between">
                                 <span className="text-sm">导出时间：</span>
                                 <span className="text-sm">
-                                  {new Date(
-                                    preview.data.exportDate,
-                                  ).toLocaleString()}
+                                  {new Date(preview.data.exportDate).toLocaleString()}
                                 </span>
                               </div>
                             )}
@@ -399,30 +401,22 @@ export default function ImportDataDialog({
                     )}
 
                     {preview.stats &&
-                      (preview.stats.itemCount !==
-                        preview.stats.validItemCount ||
-                        preview.stats.taskCount !==
-                          preview.stats.validTaskCount) && (
+                      (preview.stats.itemCount !== preview.stats.validItemCount ||
+                        preview.stats.taskCount !== preview.stats.validTaskCount) && (
                         <Alert>
                           <Info className="h-4 w-4" />
                           <AlertDescription>
                             部分数据格式不正确将被跳过：
-                            {preview.stats.itemCount !==
-                              preview.stats.validItemCount && (
+                            {preview.stats.itemCount !== preview.stats.validItemCount && (
                               <span>
                                 {' '}
-                                {preview.stats.itemCount -
-                                  preview.stats.validItemCount}{' '}
-                                个无效项目
+                                {preview.stats.itemCount - preview.stats.validItemCount} 个无效项目
                               </span>
                             )}
-                            {preview.stats.taskCount !==
-                              preview.stats.validTaskCount && (
+                            {preview.stats.taskCount !== preview.stats.validTaskCount && (
                               <span>
                                 {' '}
-                                {preview.stats.taskCount -
-                                  preview.stats.validTaskCount}{' '}
-                                个无效任务
+                                {preview.stats.taskCount - preview.stats.validTaskCount} 个无效任务
                               </span>
                             )}
                           </AlertDescription>
@@ -445,9 +439,7 @@ export default function ImportDataDialog({
                 <p className="text-sm text-muted-foreground mt-2">
                   {importStep || '正在导入数据，请稍候...'}
                 </p>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {importProgress}% 完成
-                </div>
+                <div className="text-xs text-muted-foreground mt-1">{importProgress}% 完成</div>
               </CardContent>
             </Card>
           )}
@@ -477,32 +469,24 @@ export default function ImportDataDialog({
                         <div className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span>已导入项目：</span>
-                            <Badge variant="secondary">
-                              {importResult.stats.itemsImported}
-                            </Badge>
+                            <Badge variant="secondary">{importResult.stats.itemsImported}</Badge>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>已导入任务：</span>
-                            <Badge variant="secondary">
-                              {importResult.stats.tasksImported}
-                            </Badge>
+                            <Badge variant="secondary">{importResult.stats.tasksImported}</Badge>
                           </div>
                         </div>
                         <div className="space-y-1">
                           {importResult.stats.itemsSkipped > 0 && (
                             <div className="flex justify-between text-sm">
                               <span>跳过项目：</span>
-                              <Badge variant="outline">
-                                {importResult.stats.itemsSkipped}
-                              </Badge>
+                              <Badge variant="outline">{importResult.stats.itemsSkipped}</Badge>
                             </div>
                           )}
                           {importResult.stats.tasksSkipped > 0 && (
                             <div className="flex justify-between text-sm">
                               <span>跳过任务：</span>
-                              <Badge variant="outline">
-                                {importResult.stats.tasksSkipped}
-                              </Badge>
+                              <Badge variant="outline">{importResult.stats.tasksSkipped}</Badge>
                             </div>
                           )}
                         </div>

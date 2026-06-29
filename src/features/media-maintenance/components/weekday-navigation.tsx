@@ -1,39 +1,46 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
-import { TMDBItem } from '@/lib/data/storage'
-import { Calendar, Clock, CheckCircle2 } from 'lucide-react'
-import { FilterDropdown } from './filter-dropdown'
-import i18n from '@/lib/i18n'
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import { TMDBItem } from '@/lib/data/storage';
+import { Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { FilterDropdown } from './filter-dropdown';
+import i18n from '@/lib/i18n';
 
 interface WeekdayNavigationProps {
-  selectedDayFilter: "recent" | number
-  onDayFilterChange: (filter: "recent" | number) => void
-  filteredItems: TMDBItem[]
-  allItems: TMDBItem[]
-  categories: Array<{ id: string; name: string }>
-  selectedCategory: string
-  onCategoryChange?: (category: string) => void
-  activeTab?: string
-  onActiveTabChange?: (tab: string) => void
-  currentDay?: number
+  selectedDayFilter: 'recent' | number;
+  onDayFilterChange: (filter: 'recent' | number) => void;
+  filteredItems: TMDBItem[];
+  allItems: TMDBItem[];
+  categories: Array<{ id: string; name: string }>;
+  selectedCategory: string;
+  onCategoryChange?: (category: string) => void;
+  activeTab?: string;
+  onActiveTabChange?: (tab: string) => void;
+  currentDay?: number;
 }
 
 function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
-  const baseClasses = "flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2"
+  const baseClasses =
+    'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
 
   if (isSelected) {
     return `${baseClasses} bg-blue-100 text-blue-700 ${
-      isToday ? "border-yellow-400" : "border-blue-100"
-    }`
+      isToday ? 'border-yellow-400' : 'border-blue-100'
+    }`;
   }
 
   return `${baseClasses} text-muted-foreground hover:text-foreground hover:bg-accent ${
-    isToday ? "border-yellow-400" : "border-transparent"
-  }`
+    isToday ? 'border-yellow-400' : 'border-transparent'
+  }`;
 }
 
 export function WeekdayNavigation({
@@ -46,35 +53,39 @@ export function WeekdayNavigation({
   onCategoryChange,
   activeTab,
   onActiveTabChange,
-  currentDay = 0
+  currentDay = 0,
 }: WeekdayNavigationProps) {
-  const { t } = useTranslation('media')
-  const [mounted, setMounted] = useState(false)
-  const [localCurrentDay, setLocalCurrentDay] = useState(currentDay)
+  const { t } = useTranslation('media');
+  const [mounted, setMounted] = useState(false);
+  const [localCurrentDay, setLocalCurrentDay] = useState(currentDay);
 
-  const WEEKDAYS = useMemo(() => [
-    t('weekdaysList.monday'),
-    t('weekdaysList.tuesday'),
-    t('weekdaysList.wednesday'),
-    t('weekdaysList.thursday'),
-    t('weekdaysList.friday'),
-    t('weekdaysList.saturday'),
-    t('weekdaysList.sunday'),
-  ], [i18n.language])
+  const WEEKDAYS = useMemo(
+    () => [
+      t('weekdaysList.monday'),
+      t('weekdaysList.tuesday'),
+      t('weekdaysList.wednesday'),
+      t('weekdaysList.thursday'),
+      t('weekdaysList.friday'),
+      t('weekdaysList.saturday'),
+      t('weekdaysList.sunday'),
+    ],
+    [t]
+  );
 
   useEffect(() => {
-    setMounted(true)
-    const jsDay = new Date().getDay()
-    const adjustedDay = jsDay === 0 ? 6 : jsDay - 1
-    setLocalCurrentDay(adjustedDay)
-  }, [])
+    setMounted(true);
+    const jsDay = new Date().getDay();
+    const adjustedDay = jsDay === 0 ? 6 : jsDay - 1;
+    setLocalCurrentDay(adjustedDay);
+  }, []);
 
   const getItemsByDay = (items: TMDBItem[], day: number) => {
-    return items.filter((item) =>
-      item.weekday === day ||
-      (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
-    )
-  }
+    return items.filter(
+      (item) =>
+        item.weekday === day ||
+        (typeof item.secondWeekday === 'number' && item.secondWeekday === day)
+    );
+  };
 
   return (
     <div className="bg-background border-b border-border sticky top-0 z-10">
@@ -84,17 +95,17 @@ export function WeekdayNavigation({
             <ScrollAreaPrimitive.Viewport className="h-full w-full">
               <div className="flex space-x-1 pb-3">
                 <button
-                  onClick={() => onDayFilterChange("recent")}
-                  className={getDayButtonClasses(selectedDayFilter === "recent", false)}
+                  onClick={() => onDayFilterChange('recent')}
+                  className={getDayButtonClasses(selectedDayFilter === 'recent', false)}
                 >
-                  {t("recentlyUpdated", { ns: "common" })}
+                  {t('recentlyUpdated', { ns: 'common' })}
                 </button>
 
                 {WEEKDAYS.map((day, index) => {
-                  const jsWeekday = index === 6 ? 0 : index + 1
-                  const dayItems = getItemsByDay(filteredItems, jsWeekday)
-                  const isToday = mounted && index === localCurrentDay
-                  const isSelected = selectedDayFilter === jsWeekday
+                  const jsWeekday = index === 6 ? 0 : index + 1;
+                  const dayItems = getItemsByDay(filteredItems, jsWeekday);
+                  const isToday = mounted && index === localCurrentDay;
+                  const isSelected = selectedDayFilter === jsWeekday;
 
                   return (
                     <button
@@ -105,7 +116,9 @@ export function WeekdayNavigation({
                     >
                       <div className="flex items-center space-x-1">
                         <span>{day}</span>
-                        {isToday && <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />}
+                        {isToday && (
+                          <Calendar className="h-3 w-3 text-yellow-600" suppressHydrationWarning />
+                        )}
                         {dayItems.length > 0 && (
                           <span className="bg-gray-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
                             {dayItems.length}
@@ -113,7 +126,7 @@ export function WeekdayNavigation({
                         )}
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </ScrollAreaPrimitive.Viewport>
@@ -126,13 +139,13 @@ export function WeekdayNavigation({
           </ScrollAreaPrimitive.Root>
 
           <div className="flex items-center space-x-4 ml-4 flex-shrink-0 pb-3">
-            {onCategoryChange && (
-              <FilterDropdown items={allItems} categories={categories} />
-            )}
+            {onCategoryChange && <FilterDropdown items={allItems} categories={categories} />}
 
             {activeTab && onActiveTabChange && (
               <div className="flex items-center space-x-2" key={i18n.language}>
-                <span className="text-sm font-medium text-foreground">{t("status", { ns: "common" })}:</span>
+                <span className="text-sm font-medium text-foreground">
+                  {t('status', { ns: 'common' })}:
+                </span>
                 <Select value={activeTab} onValueChange={onActiveTabChange}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -141,13 +154,13 @@ export function WeekdayNavigation({
                     <SelectItem value="ongoing">
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4" />
-                        <span>{t("ongoing", { ns: "common" })}</span>
+                        <span>{t('ongoing', { ns: 'common' })}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="completed">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 className="h-4 w-4" />
-                        <span>{t("completed", { ns: "common" })}</span>
+                        <span>{t('completed', { ns: 'common' })}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -159,24 +172,22 @@ export function WeekdayNavigation({
           {(!activeTab || !onActiveTabChange) && (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground pb-3">
               <span>
-                {selectedCategory === "all"
-                  ? t("all", { ns: "common" })
-                  : t(`categoryNames.${selectedCategory}`, { ns: "media" })
-                }
+                {selectedCategory === 'all'
+                  ? t('all', { ns: 'common' })
+                  : t(`categoryNames.${selectedCategory}`, { ns: 'media' })}
               </span>
               <span>•</span>
               <span>
-                {selectedDayFilter === "recent"
-                  ? t("recentlyUpdated", { ns: "common" })
-                  : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}${t("aired", { ns: "common" })}`
-                }
+                {selectedDayFilter === 'recent'
+                  ? t('recentlyUpdated', { ns: 'common' })
+                  : `${WEEKDAYS[selectedDayFilter === 0 ? 6 : selectedDayFilter - 1]}${t('aired', { ns: 'common' })}`}
               </span>
               <span>•</span>
-              <span>{t("itemsCount", { count: filteredItems.length, ns: "common" })}</span>
+              <span>{t('itemsCount', { count: filteredItems.length, ns: 'common' })}</span>
             </div>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,16 +1,16 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useCallback } from "react"
-import { Input } from "@/shared/components/ui/input"
-import { ChevronUp, ChevronDown } from "lucide-react"
+import { useState, useEffect, useCallback } from 'react';
+import { Input } from '@/shared/components/ui/input';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface SeasonPickerProps {
-  value: number
-  min?: number
-  max?: number
-  onChange: (value: number) => void
-  label?: string
-  className?: string
+  value: number;
+  min?: number;
+  max?: number;
+  onChange: (value: number) => void;
+  label?: string;
+  className?: string;
 }
 
 export function SeasonPicker({
@@ -19,47 +19,50 @@ export function SeasonPicker({
   max = 999,
   onChange,
   label,
-  className = ""
+  className = '',
 }: SeasonPickerProps) {
-  const [inputValue, setInputValue] = useState<string>(String(value))
+  const [inputValue, setInputValue] = useState<string>(String(value));
 
   useEffect(() => {
-    setInputValue(String(value))
-  }, [value])
+    setInputValue(String(value));
+  }, [value]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    setInputValue(newValue)
-  }, [])
+    const newValue = e.target.value;
+    setInputValue(newValue);
+  }, []);
 
   const handleInputBlur = useCallback(() => {
-    const parsed = parseInt(inputValue, 10)
+    const parsed = parseInt(inputValue, 10);
     if (!isNaN(parsed)) {
-      const clamped = Math.max(min, Math.min(max, parsed))
-      onChange(clamped)
-      setInputValue(String(clamped))
+      const clamped = Math.max(min, Math.min(max, parsed));
+      onChange(clamped);
+      setInputValue(String(clamped));
     } else {
-      setInputValue(String(value))
+      setInputValue(String(value));
     }
-  }, [inputValue, min, max, onChange, value])
+  }, [inputValue, min, max, onChange, value]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleInputBlur()
-    }
-  }, [handleInputBlur])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleInputBlur();
+      }
+    },
+    [handleInputBlur]
+  );
 
   const handleIncrement = useCallback(() => {
-    const newValue = Math.min(max, value + 1)
-    onChange(newValue)
-    setInputValue(String(newValue))
-  }, [value, max, onChange])
+    const newValue = Math.min(max, value + 1);
+    onChange(newValue);
+    setInputValue(String(newValue));
+  }, [value, max, onChange]);
 
   const handleDecrement = useCallback(() => {
-    const newValue = Math.max(min, value - 1)
-    onChange(newValue)
-    setInputValue(String(newValue))
-  }, [value, min, onChange])
+    const newValue = Math.max(min, value - 1);
+    onChange(newValue);
+    setInputValue(String(newValue));
+  }, [value, min, onChange]);
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
@@ -95,5 +98,5 @@ export function SeasonPicker({
         </button>
       </div>
     </div>
-  )
+  );
 }

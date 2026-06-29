@@ -16,19 +16,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const rememberMe = Boolean(body.rememberMe);
 
     if (!username?.trim() || !password?.trim()) {
-      return NextResponse.json(
-        { success: false, error: '用户名或密码错误' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: '用户名或密码错误' }, { status: 401 });
     }
 
     const identifier = RateLimiter.getIdentifier(username, request);
     const rateLimitResult = RateLimiter.check(identifier);
 
     if (!rateLimitResult.allowed) {
-      const lockedMinutes = Math.ceil(
-        (rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000)
-      );
+      const lockedMinutes = Math.ceil((rateLimitResult.lockedUntil! - Date.now()) / (60 * 1000));
       return NextResponse.json(
         {
           success: false,
@@ -59,9 +54,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sessionDays = Math.max(user.sessionExpiryDays || 0, 15);
     const maxAge = (rememberMe ? sessionDays * 2 : sessionDays) * 24 * 60 * 60;
 
-    const isSecure = process.env.COOKIE_SECURE !== undefined
-      ? (process.env.COOKIE_SECURE === 'true')
-      : (process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true');
+    const isSecure =
+      process.env.COOKIE_SECURE !== undefined
+        ? process.env.COOKIE_SECURE === 'true'
+        : process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD !== 'true';
 
     const response = NextResponse.json({
       success: true,

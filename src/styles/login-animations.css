@@ -2,7 +2,8 @@
 
 /* 电影胶片孔洞动画 */
 @keyframes filmHole {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.1;
   }
@@ -65,7 +66,8 @@
 
 /* 卡片悬浮效果 */
 @keyframes cardFloat {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -79,7 +81,8 @@
 
 /* 渐变文字动画 */
 @keyframes gradientShift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -182,17 +185,42 @@
   animation: particle 15s linear infinite;
 }
 
-.particle:nth-child(1) { left: 10%; animation-delay: 0s; }
-.particle:nth-child(2) { left: 20%; animation-delay: 2s; }
-.particle:nth-child(3) { left: 30%; animation-delay: 4s; }
-.particle:nth-child(4) { left: 40%; animation-delay: 6s; }
-.particle:nth-child(5) { left: 50%; animation-delay: 8s; }
-.particle:nth-child(6) { left: 60%; animation-delay: 10s; }
-.particle:nth-child(7) { left: 70%; animation-delay: 12s; }
-.particle:nth-child(8) { left: 80%; animation-delay: 14s; }
-.particle:nth-child(9) { left: 90%; animation-delay: 16s; }
-
-
+.particle:nth-child(1) {
+  left: 10%;
+  animation-delay: 0s;
+}
+.particle:nth-child(2) {
+  left: 20%;
+  animation-delay: 2s;
+}
+.particle:nth-child(3) {
+  left: 30%;
+  animation-delay: 4s;
+}
+.particle:nth-child(4) {
+  left: 40%;
+  animation-delay: 6s;
+}
+.particle:nth-child(5) {
+  left: 50%;
+  animation-delay: 8s;
+}
+.particle:nth-child(6) {
+  left: 60%;
+  animation-delay: 10s;
+}
+.particle:nth-child(7) {
+  left: 70%;
+  animation-delay: 12s;
+}
+.particle:nth-child(8) {
+  left: 80%;
+  animation-delay: 14s;
+}
+.particle:nth-child(9) {
+  left: 90%;
+  animation-delay: 16s;
+}
 
 /* 图标样式已完全移除，使用Lucide React默认样式 */
 

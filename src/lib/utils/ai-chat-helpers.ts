@@ -10,16 +10,18 @@ export const getTimeBasedGreeting = () => {
 };
 
 export const truncateText = (text: string, maxLength: number): string => {
-  if (text.length <= maxLength) return text;
+  if (text.length <= maxLength) {
+    return text;
+  }
   return text.substring(0, maxLength - 3) + '...';
 };
 
 export const formatChatDate = (date: Date): string => {
-  return date.toLocaleDateString('zh-CN', { 
-    month: 'short', 
+  return date.toLocaleDateString('zh-CN', {
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
@@ -38,12 +40,12 @@ export const validateSuggestions = (suggestions: unknown[]): string[] => {
   }
 
   return suggestions
-    .map(s => {
+    .map((s) => {
       if (typeof s === 'string') {
         return cleanSuggestion(s);
       }
       return '';
     })
-    .filter(s => s.length > 0)
+    .filter((s) => s.length > 0)
     .slice(0, 3);
 };

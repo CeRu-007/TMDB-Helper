@@ -1,12 +1,12 @@
-export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.ass', '.vtt', '.ssa', '.sub']
+export const SUPPORTED_SUBTITLE_FORMATS = ['.srt', '.ass', '.vtt', '.ssa', '.sub'];
 
 export interface SubtitleTaskConfig {
-  taskName: string
-  messageType: 'text' | 'episode-summary'
-  promptBuilder: (content: string, fileName: string) => string
-  successMessage: string
-  errorPrefix: string
-  includeUserMessage?: boolean
+  taskName: string;
+  messageType: 'text' | 'episode-summary';
+  promptBuilder: (content: string, fileName: string) => string;
+  successMessage: string;
+  errorPrefix: string;
+  includeUserMessage?: boolean;
 }
 
 export const SUBTITLE_TASKS: Record<string, SubtitleTaskConfig> = {
@@ -21,7 +21,7 @@ export const SUBTITLE_TASKS: Record<string, SubtitleTaskConfig> = {
 ${content}`,
     successMessage: '分集简介生成完成',
     errorPrefix: '生成分集简介',
-    includeUserMessage: true
+    includeUserMessage: true,
   },
   analyzeDialogues: {
     taskName: '分析角色对话',
@@ -43,7 +43,7 @@ ${content}
 请直接输出分析结果，不需要其他说明。`,
     successMessage: '角色对话分析完成',
     errorPrefix: '分析角色对话',
-    includeUserMessage: false
+    includeUserMessage: false,
   },
   extractPlots: {
     taskName: '提取关键情节',
@@ -65,7 +65,7 @@ ${content}
 请直接输出关键情节列表，不需要其他说明。`,
     successMessage: '关键情节提取完成',
     errorPrefix: '提取关键情节',
-    includeUserMessage: false
+    includeUserMessage: false,
   },
   analyzePlot: {
     taskName: '分析并总结剧情',
@@ -87,7 +87,7 @@ ${content}
 请直接输出分析结果，不需要其他说明。`,
     successMessage: '剧情分析完成',
     errorPrefix: '分析剧情',
-    includeUserMessage: false
+    includeUserMessage: false,
   },
   createEngaging: {
     taskName: '创建吸引人的简介',
@@ -109,8 +109,8 @@ ${content}
 请直接输出简介内容，不需要其他说明。`,
     successMessage: '吸引人的简介创建完成',
     errorPrefix: '创建简介',
-    includeUserMessage: false
-  }
-}
+    includeUserMessage: false,
+  },
+};
 
-export const DEFAULT_SUGGESTIONS = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品']
+export const DEFAULT_SUGGESTIONS = ['深入探讨剧情细节', '了解世界观设定', '探索相关作品'];

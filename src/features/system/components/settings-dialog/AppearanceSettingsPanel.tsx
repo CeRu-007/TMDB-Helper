@@ -9,7 +9,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function AppearanceSettingsPanel() {
   const { t } = useTranslation('settings');
-  const { currentTheme, darkThemes, lightThemes, setTheme, updateTheme, isCustomized, resetTheme } = useThemeEngine();
+  const { currentTheme, darkThemes, lightThemes, setTheme, updateTheme, isCustomized, resetTheme } =
+    useThemeEngine();
 
   const [tab, setTab] = useState<'dark' | 'light'>(
     currentTheme.appearance === 'dark' ? 'dark' : 'light'

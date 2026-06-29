@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const gruvboxDarkTheme: ThemeConfig = {
   id: 'gruvbox-dark',
@@ -40,4 +40,4 @@ export const gruvboxDarkTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import { EpisodeCheckbox } from "@/shared/components/ui/checkbox"
-import type { Episode } from "@/lib/data/storage"
+import { EpisodeCheckbox } from '@/shared/components/ui/checkbox';
+import type { Episode } from '@/types/media/base';
 
 interface EpisodeItemProps {
-  episode: Episode
-  selectedSeason: number
-  highlightedEpisode?: number | null
-  onToggle: (episodeNumber: number, completed: boolean, seasonNumber: number) => void
-  onClick: (episodeNumber: number) => void
+  episode: Episode;
+  selectedSeason: number;
+  highlightedEpisode?: number | null;
+  onToggle: (episodeNumber: number, completed: boolean, seasonNumber: number) => void;
+  onClick: (episodeNumber: number) => void;
 }
 
 export function EpisodeItem({
@@ -16,7 +16,7 @@ export function EpisodeItem({
   selectedSeason,
   highlightedEpisode,
   onToggle,
-  onClick
+  onClick,
 }: EpisodeItemProps) {
   return (
     <EpisodeCheckbox
@@ -32,8 +32,12 @@ export function EpisodeItem({
       onClick={() => onClick(episode.number)}
       label={`${episode.number}`}
       className={[
-        highlightedEpisode === episode.number ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
-      ].join(" ").trim()}
+        highlightedEpisode === episode.number
+          ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+          : '',
+      ]
+        .join(' ')
+        .trim()}
     />
-  )
+  );
 }

@@ -5,78 +5,78 @@
 
 export interface ElectronAPI {
   // 应用信息
-  getAppDataPath: () => Promise<string>
-  getAppVersion: () => Promise<string>
+  getAppDataPath: () => Promise<string>;
+  getAppVersion: () => Promise<string>;
 
   // 窗口控制
-  minimizeWindow: () => void
-  maximizeWindow: () => void
-  unmaximizeWindow: () => void
-  closeWindow: () => void
-  isMaximized: () => Promise<boolean>
+  minimizeWindow: () => void;
+  maximizeWindow: () => void;
+  unmaximizeWindow: () => void;
+  closeWindow: () => void;
+  isMaximized: () => Promise<boolean>;
 
   // 目录操作
-  selectDirectory: () => Promise<string | null>
-  openDirectory: (dirPath: string) => Promise<boolean>
+  selectDirectory: () => Promise<string | null>;
+  openDirectory: (dirPath: string) => Promise<boolean>;
 
   // 原生文件拖拽
-  startDrag: (filePaths: string[]) => void
+  startDrag: (filePaths: string[]) => void;
 
   // 通过 webUtils 获取 File 对象的真实路径
-  getFilePath: (file: File) => string | null
+  getFilePath: (file: File) => string | null;
 
   // 打开图片目录：原生对话框 + 扫描 + 读取缩略图
   openImageDirectory: (existingPath?: string | null) => Promise<{
-    dirPath: string
-    dirName: string
+    dirPath: string;
+    dirName: string;
     entries: {
-      id: string
-      name: string
-      relativePath: string
-      size: number
-      type: string
-      isDirectory: boolean
-      thumbnailUrl: string
-    }[]
-  } | null>
+      id: string;
+      name: string;
+      relativePath: string;
+      size: number;
+      type: string;
+      isDirectory: boolean;
+      thumbnailUrl: string;
+    }[];
+  } | null>;
 
   // 菜单事件监听
-  onMenuImportData: (callback: () => void) => void
-  onMenuExportData: (callback: () => void) => void
+  onMenuImportData: (callback: () => void) => void;
+  onMenuExportData: (callback: () => void) => void;
 
   // 窗口事件监听
-  onWindowResize: (callback: (size: WindowSize) => void) => void
-  onFullscreenChange: (callback: (isFullscreen: boolean) => void) => void
+  onWindowResize: (callback: (size: WindowSize) => void) => void;
+  onFullscreenChange: (callback: (isFullscreen: boolean) => void) => void;
 
   // 事件监听器管理
-  removeAllListeners: (channel: string) => void
+  removeAllListeners: (channel: string) => void;
 
   // 平台信息
-  platform: 'win32' | 'darwin' | 'linux'
-  isElectron: true
+  platform: 'win32' | 'darwin' | 'linux';
+  isElectron: true;
 }
 
 /**
  * 窗口尺寸接口
  */
 export interface WindowSize {
-  width: number
-  height: number
+  width: number;
+  height: number;
 }
 
 /**
  * 平台类型
  */
-export type Platform = 'win32' | 'darwin' | 'linux'
+export type Platform = 'win32' | 'darwin' | 'linux';
 
 /**
  * 扩展全局 Window 接口
  */
 declare global {
   interface Window {
-    electronAPI?: ElectronAPI
-    isElectronApp?: boolean
+    electronAPI?: ElectronAPI;
+    isElectronApp?: boolean;
   }
 }
 
-export {}
+export {};

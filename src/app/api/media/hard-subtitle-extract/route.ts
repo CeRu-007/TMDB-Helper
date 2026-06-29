@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { v4 as uuidv4 } from 'uuid'
-import { HardSubtitleExtractTask, TaskStatus } from './types'
-import { DELAY_1S, DELAY_1500MS, DELAY_3000MS } from '@/lib/constants/constants'
-import { logger } from '@/lib/utils/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
+import { HardSubtitleExtractTask, TaskStatus } from './types';
+import { DELAY_1S, DELAY_1500MS, DELAY_3000MS } from '@/lib/constants/constants';
+import { logger } from '@/lib/utils/logger';
 
 // 任务存储（内存中，生产环境应使用数据库）
-const tasks = new Map<string, HardSubtitleExtractTask>()
+const tasks = new Map<string, HardSubtitleExtractTask>();
 
 /**
  * POST /api/media/hard-subtitle-extract
@@ -13,24 +13,21 @@ const tasks = new Map<string, HardSubtitleExtractTask>()
  */
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
+    const formData = await request.formData();
 
     // 获取视频文件或URL
-    const videoFile = formData.get('video') as File | null
-    const videoUrl = formData.get('videoUrl') as string | null
-    const configStr = formData.get('config') as string | null
+    const videoFile = formData.get('video') as File | null;
+    const videoUrl = formData.get('videoUrl') as string | null;
+    const configStr = formData.get('config') as string | null;
 
     if (!videoFile && !videoUrl) {
-      return NextResponse.json(
-        { error: '请提供视频文件或视频URL' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '请提供视频文件或视频URL' }, { status: 400 });
     }
 
-    const config = configStr ? JSON.parse(configStr) : {}
+    const config = configStr ? JSON.parse(configStr) : {};
 
     // 创建任务ID
-    const taskId = uuidv4()
+    const taskId = uuidv4();
 
     // 创建任务
     const task: HardSubtitleExtractTask = {
@@ -46,33 +43,33 @@ export async function POST(request: NextRequest) {
         sampleInterval: config.sampleInterval ?? 2.0,
         useVAD: config.useVAD ?? true,
         ocrModelId: config.ocrModelId ?? 'qwen-vl',
-        subtitleRegions: config.subtitleRegions ?? []
+        subtitleRegions: config.subtitleRegions ?? [],
       },
       videoUrl: videoUrl || undefined,
       videoFileName: videoFile?.name || undefined,
       result: undefined,
-      error: undefined
-    }
+      error: undefined,
+    };
 
     // 保存任务
-    tasks.set(taskId, task)
+    tasks.set(taskId, task);
 
     // 启动异步处理
-    processTask(taskId, videoFile).catch(console.error)
+    processTask(taskId, videoFile).catch(console.error);
 
     return NextResponse.json({
       success: true,
-      taskId
-    })
+      taskId,
+    });
   } catch (error) {
-    logger.error('启动任务失败:', error)
+    logger.error('启动任务失败:', error);
     return NextResponse.json(
       {
         error: '启动任务失败',
-        details: error instanceof Error ? error.message : '未知错误'
+        details: error instanceof Error ? error.message : '未知错误',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -82,23 +79,17 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const taskId = searchParams.get('taskId')
+    const { searchParams } = new URL(request.url);
+    const taskId = searchParams.get('taskId');
 
     if (!taskId) {
-      return NextResponse.json(
-        { error: '缺少taskId参数' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '缺少taskId参数' }, { status: 400 });
     }
 
-    const task = tasks.get(taskId)
+    const task = tasks.get(taskId);
 
     if (!task) {
-      return NextResponse.json(
-        { error: '任务不存在' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: '任务不存在' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -106,17 +97,17 @@ export async function GET(request: NextRequest) {
       status: task.status,
       progress: task.progress,
       result: task.result,
-      error: task.error
-    })
+      error: task.error,
+    });
   } catch (error) {
-    logger.error('查询任务状态失败:', error)
+    logger.error('查询任务状态失败:', error);
     return NextResponse.json(
       {
         error: '查询任务状态失败',
-        details: error instanceof Error ? error.message : '未知错误'
+        details: error instanceof Error ? error.message : '未知错误',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -124,56 +115,58 @@ export async function GET(request: NextRequest) {
  * 处理任务
  */
 async function processTask(taskId: string, videoFile: File | null) {
-  const task = tasks.get(taskId)
-  if (!task) return
+  const task = tasks.get(taskId);
+  if (!task) {
+    return;
+  }
 
   try {
-    task.status = 'processing'
-    task.updatedAt = Date.now()
-    tasks.set(taskId, task)
+    task.status = 'processing';
+    task.updatedAt = Date.now();
+    tasks.set(taskId, task);
 
     // 步骤1: 处理视频文件
-    task.progress = 5
-    task.statusMessage = '正在处理视频...'
-    tasks.set(taskId, task)
+    task.progress = 5;
+    task.statusMessage = '正在处理视频...';
+    tasks.set(taskId, task);
 
     // 这里需要集成 ffmpeg 处理视频
     // 暂时使用模拟数据
-    await simulateStep(DELAY_1S)
+    await simulateStep(DELAY_1S);
 
     // 步骤2: 提取音频并进行VAD检测
-    task.progress = 15
-    task.statusMessage = '正在进行语音检测...'
-    tasks.set(taskId, task)
+    task.progress = 15;
+    task.statusMessage = '正在进行语音检测...';
+    tasks.set(taskId, task);
 
-    await simulateStep(DELAY_1500MS)
+    await simulateStep(DELAY_1500MS);
 
     // 步骤3: 采样视频帧
-    task.progress = 30
-    task.statusMessage = '正在采样视频帧...'
-    tasks.set(taskId, task)
+    task.progress = 30;
+    task.statusMessage = '正在采样视频帧...';
+    tasks.set(taskId, task);
 
-    await simulateStep(DELAY_1S)
+    await simulateStep(DELAY_1S);
 
     // 步骤4: OCR识别
-    task.progress = 50
-    task.statusMessage = '正在进行OCR识别...'
-    tasks.set(taskId, task)
+    task.progress = 50;
+    task.statusMessage = '正在进行OCR识别...';
+    tasks.set(taskId, task);
 
-    await simulateStep(DELAY_3000MS)
+    await simulateStep(DELAY_3000MS);
 
     // 步骤5: 生成字幕
-    task.progress = 80
-    task.statusMessage = '正在生成字幕...'
-    tasks.set(taskId, task)
+    task.progress = 80;
+    task.statusMessage = '正在生成字幕...';
+    tasks.set(taskId, task);
 
-    await simulateStep(DELAY_1S)
+    await simulateStep(DELAY_1S);
 
     // 步骤6: 完成
-    task.progress = 100
-    task.statusMessage = '完成'
-    task.status = 'completed'
-    task.updatedAt = Date.now()
+    task.progress = 100;
+    task.statusMessage = '完成';
+    task.status = 'completed';
+    task.updatedAt = Date.now();
 
     // 生成模拟结果
     task.result = {
@@ -184,7 +177,7 @@ async function processTask(taskId: string, videoFile: File | null) {
           startTime: '00:00:01,000',
           endTime: '00:00:03,500',
           text: '这是一个测试字幕',
-          confidence: 0.95
+          confidence: 0.95,
         },
         {
           id: '2',
@@ -192,22 +185,22 @@ async function processTask(taskId: string, videoFile: File | null) {
           startTime: '00:00:04,000',
           endTime: '00:00:06,500',
           text: '硬字幕提取功能测试',
-          confidence: 0.92
-        }
+          confidence: 0.92,
+        },
       ],
       frames: [
         {
           timestamp: 1.5,
           imageUrl: '/api/media/hard-subtitle-extract/frame/1',
           recognizedText: '这是一个测试字幕',
-          confidence: 0.95
+          confidence: 0.95,
         },
         {
           timestamp: 5.0,
           imageUrl: '/api/media/hard-subtitle-extract/frame/2',
           recognizedText: '硬字幕提取功能测试',
-          confidence: 0.92
-        }
+          confidence: 0.92,
+        },
       ],
       srtContent: `1
 00:00:01,000 --> 00:00:03,500
@@ -216,16 +209,15 @@ async function processTask(taskId: string, videoFile: File | null) {
 2
 00:00:04,000 --> 00:00:06,500
 硬字幕提取功能测试
-`
-    }
+`,
+    };
 
-    tasks.set(taskId, task)
-
+    tasks.set(taskId, task);
   } catch (error) {
-    task.status = 'error'
-    task.error = error instanceof Error ? error.message : '未知错误'
-    task.updatedAt = Date.now()
-    tasks.set(taskId, task)
+    task.status = 'error';
+    task.error = error instanceof Error ? error.message : '未知错误';
+    task.updatedAt = Date.now();
+    tasks.set(taskId, task);
   }
 }
 
@@ -233,5 +225,5 @@ async function processTask(taskId: string, videoFile: File | null) {
  * 模拟处理步骤（实际实现时替换为真实逻辑）
  */
 async function simulateStep(duration: number) {
-  return new Promise(resolve => setTimeout(resolve, duration))
+  return new Promise((resolve) => setTimeout(resolve, duration));
 }

@@ -1,17 +1,13 @@
-"use client"
+'use client';
 
-import React from 'react'
+import React from 'react';
 
 interface HomeHeaderProps {
-  onShowSettings: () => void
-  onShowImport: () => void
-  onShowExport: () => void
+  onShowSettings: () => void;
+  onShowImport: () => void;
+  onShowExport: () => void;
 }
 
-export function HomeHeader({
-  onShowSettings,
-  onShowImport,
-  onShowExport
-}: HomeHeaderProps) {
-  return null
+export function HomeHeader({ onShowSettings, onShowImport, onShowExport }: HomeHeaderProps) {
+  return null;
 }

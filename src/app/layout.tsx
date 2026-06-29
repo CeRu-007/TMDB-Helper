@@ -1,25 +1,25 @@
-import type { Metadata, Viewport } from "next"
-import "./globals.css"
-import type React from "react"
-import MidLayout from "./mid-layout"
-import { ElectronClassProvider } from "./electron-class-provider"
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+import type React from 'react';
+import MidLayout from './mid-layout';
+import { ElectronClassProvider } from './electron-class-provider';
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
-  viewportFit: "cover",
-}
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
-  title: "TMDB维护助手",
-  description: "管理和维护TMDB词条的专业工具",
+  title: 'TMDB维护助手',
+  description: '管理和维护TMDB词条的专业工具',
   generator: 'v0.dev',
   icons: {
     icon: '/tmdb-helper-logo.png',
     shortcut: '/tmdb-helper-logo.png',
     apple: '/tmdb-helper-logo.png',
-  }
-}
+  },
+};
 
 const themeApplyScript = `
 (function() {
@@ -71,13 +71,9 @@ const themeApplyScript = `
 
   } catch(e) {}
 })();
-`
+`;
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
@@ -89,5 +85,5 @@ export default function RootLayout({
         </ElectronClassProvider>
       </body>
     </html>
-  )
+  );
 }

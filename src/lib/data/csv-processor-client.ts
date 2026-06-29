@@ -4,6 +4,7 @@
  */
 
 import type { CSVData } from '@/types/csv-editor';
+export type { CSVData };
 
 /**
  * 解析CSV内容为结构化数据
@@ -49,9 +50,7 @@ export function serializeCsvData(data: CSVData | any[]): string {
     }
     csvData = {
       headers: Object.keys(data[0] || {}),
-      rows: data.map((row) =>
-        csvData.headers.map((header) => String(row[header] || '')),
-      ),
+      rows: data.map((row) => csvData.headers.map((header) => String(row[header] || ''))),
     };
   } else {
     csvData = data as CSVData;
@@ -82,7 +81,9 @@ export function serializeCsvData(data: CSVData | any[]): string {
  * @returns 处理后的文本
  */
 export function processOverviewColumn(text: string): string {
-  if (!text) return '';
+  if (!text) {
+    return '';
+  }
 
   // 移除多余的空格和换行
   return text.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim();
@@ -151,12 +152,7 @@ function serializeCsvLine(fields: string[]): string {
       const str = String(field);
 
       // 如果包含逗号、引号或换行符，需要用引号包围
-      if (
-        str.includes(',') ||
-        str.includes('"') ||
-        str.includes('\n') ||
-        str.includes('\r')
-      ) {
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
         // 转义内部的引号
         const escaped = str.replace(/"/g, '""');
         return `"${escaped}"`;
@@ -231,9 +227,8 @@ export function getCsvStatistics(data: CSVData) {
   const totalColumns = data.headers?.length || 0;
   const emptyCells =
     data.rows?.reduce(
-      (count, row) =>
-        count + row.filter((cell) => !cell || cell.trim() === '').length,
-      0,
+      (count, row) => count + row.filter((cell) => !cell || cell.trim() === '').length,
+      0
     ) || 0;
 
   return {
@@ -276,7 +271,7 @@ export function cleanCsvNewlines(csvContent: string): string {
   }
 
   // 移除BOM头
-  if (csvContent.charCodeAt(0) === 0xFEFF) {
+  if (csvContent.charCodeAt(0) === 0xfeff) {
     csvContent = csvContent.slice(1);
   }
 
@@ -286,7 +281,7 @@ export function cleanCsvNewlines(csvContent: string): string {
   }
 
   // 解析头部
-  const headers = rawLines[0].split(',').map(h => h.trim().toLowerCase());
+  const headers = rawLines[0].split(',').map((h) => h.trim().toLowerCase());
   const expectedCount = headers.length;
 
   if (headers.indexOf('overview') === -1) {
@@ -300,7 +295,9 @@ export function cleanCsvNewlines(csvContent: string): string {
 
   for (let i = 1; i < rawLines.length; i++) {
     const line = rawLines[i];
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
 
     if (isNewRowStart(line)) {
       // 保存之前的集
@@ -332,7 +329,9 @@ export function cleanCsvNewlines(csvContent: string): string {
     let searchStart = 0;
     for (let j = 0; j < 5; j++) {
       const idx = firstLine.indexOf(',', searchStart);
-      if (idx === -1) break;
+      if (idx === -1) {
+        break;
+      }
       commaIndices.push(idx);
       searchStart = idx + 1;
     }
@@ -401,7 +400,7 @@ export function cleanCsvNewlines(csvContent: string): string {
   // 重新组装CSV内容
   return [
     rawLines[0], // 保留原始头部
-    ...cleanedRows.map(row => row.map(v => escapeCsvValue(v)).join(','))
+    ...cleanedRows.map((row) => row.map((v) => escapeCsvValue(v)).join(',')),
   ].join('\n');
 }
 
@@ -416,5 +415,3 @@ function escapeCsvValue(value: string): string {
   }
   return value;
 }
-
-

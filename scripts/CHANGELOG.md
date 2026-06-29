@@ -29,4 +29,4 @@
 
 - 基本的CSV文件格式修复功能
 - 支持单次修复和监视模式
-- 能够检测并修复overview和backdrop列的错位问题 
+- 能够检测并修复overview和backdrop列的错位问题

@@ -58,14 +58,14 @@ export class AuthService {
         const randomSecret = crypto.randomBytes(32).toString('hex');
         logger.warn(
           'WARNING: JWT_SECRET not set, generated a random secret for this session. ' +
-          'Tokens will be invalidated on restart. Set JWT_SECRET for persistent sessions.'
+            'Tokens will be invalidated on restart. Set JWT_SECRET for persistent sessions.'
         );
         this._jwtSecret = randomSecret;
         return this._jwtSecret;
       }
       logger.warn(
         'WARNING: Using default JWT_SECRET for %s only. ' +
-        'Set JWT_SECRET environment variable for production use.',
+          'Set JWT_SECRET environment variable for production use.',
         isElectron ? 'Electron desktop' : 'development'
       );
       this._jwtSecret = DEFAULT_DEV_SECRET;
@@ -76,7 +76,7 @@ export class AuthService {
       if (isProduction && !isElectron) {
         throw new Error(
           'JWT_SECRET must be changed from the default value in production. ' +
-          'Please set a strong, random secret key.'
+            'Please set a strong, random secret key.'
         );
       }
       logger.warn('WARNING: Using default JWT_SECRET. This is insecure for production.');
@@ -97,7 +97,10 @@ export class AuthService {
     return DEFAULT_SESSION_EXPIRY_DAYS;
   }
 
-  static async register(username: string, password: string): Promise<{ success: boolean; user?: Omit<User, 'passwordHash'>; error?: string }> {
+  static async register(
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; user?: Omit<User, 'passwordHash'>; error?: string }> {
     if (userRepository.hasAdmin()) {
       return { success: false, error: '管理员账户已存在' };
     }
@@ -125,7 +128,9 @@ export class AuthService {
       totalUsageTime: 0,
     };
 
-    const result = userRepository.createUser(user as import('@/lib/database/repositories/auth.repository').User);
+    const result = userRepository.createUser(
+      user as import('@/lib/database/repositories/auth.repository').User
+    );
     if (!result.success) {
       return { success: false, error: result.error || '注册失败' };
     }
@@ -148,18 +153,20 @@ export class AuthService {
         userRepository.updateLastLogin(user.id, lastLoginAt);
         return { ...user, lastLoginAt };
       }
-    } catch {
-    }
+    } catch {}
 
     return null;
   }
 
-  static generateToken(user: User | Omit<User, 'passwordHash'>, rememberMe: boolean = false): string {
+  static generateToken(
+    user: User | Omit<User, 'passwordHash'>,
+    rememberMe: boolean = false
+  ): string {
     const expiryDays = rememberMe ? user.sessionExpiryDays * 2 : user.sessionExpiryDays;
 
     const payload: object = {
       userId: user.id,
-      username: user.username
+      username: user.username,
     };
 
     const secret: jwt.Secret = this.getJwtSecret();
@@ -191,13 +198,19 @@ export class AuthService {
 
   static async changePassword(currentPassword: string, newPassword: string): Promise<boolean> {
     const user = userRepository.getAdmin();
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
 
     const isCurrentValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isCurrentValid) return false;
+    if (!isCurrentValid) {
+      return false;
+    }
 
     const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.valid) return false;
+    if (!passwordValidation.valid) {
+      return false;
+    }
 
     const newPasswordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     return userRepository.updatePassword(user.id, newPasswordHash).success;
@@ -211,13 +224,21 @@ export class AuthService {
     return userRepository.updateUsageTime(userId, additionalMinutes).success;
   }
 
-  static async getUserIdFromRequest(request: import('next/server').NextRequest): Promise<string | null> {
+  static async getUserIdFromRequest(
+    request: import('next/server').NextRequest
+  ): Promise<string | null> {
     const token = request.cookies.get('auth-token')?.value;
-    if (!token) return null;
+    if (!token) {
+      return null;
+    }
     const decoded = this.verifyToken(token);
-    if (!decoded) return null;
+    if (!decoded) {
+      return null;
+    }
     const user = await userRepository.getAdminAsync();
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     return decoded.userId;
   }
 }

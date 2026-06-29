@@ -1,6 +1,6 @@
 // 导出主组件
-export { default as TMDBTable } from "./tmdb-table"
-export { default } from "./tmdb-table"
+export { default as TMDBTable } from './tmdb-table';
+export { default } from './tmdb-table';
 
 // 导出类型
 export type {
@@ -20,13 +20,13 @@ export type {
   UseTMDBTableClipboardReturn,
   BatchInsertOptions,
   BatchModificationInfo,
-} from "./types"
+} from './types';
 
 // 导出 Hooks
-export * from "./hooks"
+export * from './hooks';
 
 // 导出工具函数
-export * from "./lib"
+export * from './lib';
 
 // 导出子组件
-export * from "./components"
+export * from './components';

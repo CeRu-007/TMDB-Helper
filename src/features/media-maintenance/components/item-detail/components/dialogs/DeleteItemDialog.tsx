@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   AlertDialogAction,
@@ -10,16 +10,16 @@ import {
   AlertDialogTitle,
   AlertDialogNoOverlay,
   AlertDialogNoOverlayContent,
-} from "@/shared/components/ui/alert-dialog"
-import type { TMDBItem } from "@/lib/data/storage"
-import { useTranslation } from "react-i18next"
+} from '@/shared/components/ui/alert-dialog';
+import type { TMDBItem } from '@/lib/data/storage';
+import { useTranslation } from 'react-i18next';
 
 interface DeleteItemDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  item: TMDBItem
-  onCancel: () => void
-  onConfirm: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  item: TMDBItem;
+  onCancel: () => void;
+  onConfirm: () => void;
 }
 
 export function DeleteItemDialog({
@@ -27,9 +27,9 @@ export function DeleteItemDialog({
   onOpenChange,
   item,
   onCancel,
-  onConfirm
+  onConfirm,
 }: DeleteItemDialogProps) {
-  const { t } = useTranslation('media')
+  const { t } = useTranslation('media');
 
   return (
     <AlertDialogNoOverlay open={open} onOpenChange={onOpenChange}>
@@ -42,14 +42,11 @@ export function DeleteItemDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>{t('dialogs.cancel')}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-red-500 hover:bg-red-600"
-          >
+          <AlertDialogAction onClick={onConfirm} className="bg-red-500 hover:bg-red-600">
             {t('dialogs.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogNoOverlayContent>
     </AlertDialogNoOverlay>
-  )
+  );
 }

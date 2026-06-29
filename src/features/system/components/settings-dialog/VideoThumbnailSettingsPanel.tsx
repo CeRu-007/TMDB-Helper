@@ -2,46 +2,52 @@
  * 视频缩略图设置面板
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Slider } from "@/shared/components/ui/slider"
-import { Checkbox } from "@/shared/components/ui/checkbox"
-import { Film } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import type { VideoThumbnailSettings } from "./types"
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Slider } from '@/shared/components/ui/slider';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Film } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { VideoThumbnailSettings } from './types';
 
 interface VideoThumbnailSettingsPanelProps {
-  videoThumbnailSettings: VideoThumbnailSettings
-  setVideoThumbnailSettings: (settings: VideoThumbnailSettings) => void
-  saveVideoThumbnailSettings: () => Promise<void>
+  videoThumbnailSettings: VideoThumbnailSettings;
+  setVideoThumbnailSettings: (settings: VideoThumbnailSettings) => void;
+  saveVideoThumbnailSettings: () => Promise<void>;
 }
 
 export default function VideoThumbnailSettingsPanel({
   videoThumbnailSettings,
   setVideoThumbnailSettings,
-  saveVideoThumbnailSettings
+  saveVideoThumbnailSettings,
 }: VideoThumbnailSettingsPanelProps) {
-  const { t } = useTranslation("settings")
+  const { t } = useTranslation('settings');
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">{t("videoThumbnail.title")}</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('videoThumbnail.title')}</h3>
         <p className="text-sm text-muted-foreground mb-6">
-          {t("videoThumbnail.extractionDesc", "简单的顺序帧提取，从指定时间开始按帧间隔提取缩略图")}
+          {t('videoThumbnail.extractionDesc', '简单的顺序帧提取，从指定时间开始按帧间隔提取缩略图')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("videoThumbnail.extractionSettings")}</CardTitle>
+          <CardTitle className="text-base">{t('videoThumbnail.extractionSettings')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="startTime">{t("videoThumbnail.startTime")}</Label>
+            <Label htmlFor="startTime">{t('videoThumbnail.startTime')}</Label>
             <Input
               id="startTime"
               type="number"
@@ -49,17 +55,20 @@ export default function VideoThumbnailSettingsPanel({
               step="0.1"
               value={videoThumbnailSettings.startTime}
               onChange={(e) =>
-                setVideoThumbnailSettings({ ...videoThumbnailSettings, startTime: Number(e.target.value) })
+                setVideoThumbnailSettings({
+                  ...videoThumbnailSettings,
+                  startTime: Number(e.target.value),
+                })
               }
               className="mt-1"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {t("videoThumbnail.startTimeTooltip")}
+              {t('videoThumbnail.startTimeTooltip')}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="thumbnailCount">{t("videoThumbnail.thumbnailCount")}</Label>
+            <Label htmlFor="thumbnailCount">{t('videoThumbnail.thumbnailCount')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <Slider
                 value={[videoThumbnailSettings.thumbnailCount]}
@@ -67,19 +76,24 @@ export default function VideoThumbnailSettingsPanel({
                 max={20}
                 step={1}
                 onValueChange={([value]) =>
-                  setVideoThumbnailSettings({ ...videoThumbnailSettings, thumbnailCount: value ?? 1 })
+                  setVideoThumbnailSettings({
+                    ...videoThumbnailSettings,
+                    thumbnailCount: value ?? 1,
+                  })
                 }
                 className="flex-1"
               />
-              <span className="font-medium w-8 text-center">{videoThumbnailSettings.thumbnailCount}</span>
+              <span className="font-medium w-8 text-center">
+                {videoThumbnailSettings.thumbnailCount}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("videoThumbnail.thumbnailCountTooltip")}
+              {t('videoThumbnail.thumbnailCountTooltip')}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="frameInterval">{t("videoThumbnail.frameInterval")}</Label>
+            <Label htmlFor="frameInterval">{t('videoThumbnail.frameInterval')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <Slider
                 value={[videoThumbnailSettings.frameInterval]}
@@ -87,19 +101,24 @@ export default function VideoThumbnailSettingsPanel({
                 max={300}
                 step={1}
                 onValueChange={([value]) =>
-                  setVideoThumbnailSettings({ ...videoThumbnailSettings, frameInterval: value ?? 30 })
+                  setVideoThumbnailSettings({
+                    ...videoThumbnailSettings,
+                    frameInterval: value ?? 30,
+                  })
                 }
                 className="flex-1"
               />
-              <span className="font-medium w-12 text-center">{videoThumbnailSettings.frameInterval}</span>
+              <span className="font-medium w-12 text-center">
+                {videoThumbnailSettings.frameInterval}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("videoThumbnail.frameIntervalTooltip")}
+              {t('videoThumbnail.frameIntervalTooltip')}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="threadCount">{t("videoThumbnail.threadCount")}</Label>
+            <Label htmlFor="threadCount">{t('videoThumbnail.threadCount')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <Slider
                 value={[videoThumbnailSettings.threadCount]}
@@ -111,23 +130,28 @@ export default function VideoThumbnailSettingsPanel({
                 }
                 className="flex-1"
               />
-              <span className="font-medium w-8 text-center">{videoThumbnailSettings.threadCount}</span>
+              <span className="font-medium w-8 text-center">
+                {videoThumbnailSettings.threadCount}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("videoThumbnail.threadCountTooltip")}
+              {t('videoThumbnail.threadCountTooltip')}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="outputFormat">{t("videoThumbnail.outputFormat")}</Label>
+            <Label htmlFor="outputFormat">{t('videoThumbnail.outputFormat')}</Label>
             <Select
               value={videoThumbnailSettings.outputFormat}
               onValueChange={(value) =>
-                setVideoThumbnailSettings({ ...videoThumbnailSettings, outputFormat: value as "jpg" | "png" })
+                setVideoThumbnailSettings({
+                  ...videoThumbnailSettings,
+                  outputFormat: value as 'jpg' | 'png',
+                })
               }
             >
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder={t("videoThumbnail.selectFormat")} />
+                <SelectValue placeholder={t('videoThumbnail.selectFormat')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="jpg">JPG</SelectItem>
@@ -135,7 +159,7 @@ export default function VideoThumbnailSettingsPanel({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("videoThumbnail.outputFormatDesc", "缩略图输出格式")}
+              {t('videoThumbnail.outputFormatDesc', '缩略图输出格式')}
             </p>
           </div>
 
@@ -144,15 +168,18 @@ export default function VideoThumbnailSettingsPanel({
               id="keepOriginalResolution"
               checked={videoThumbnailSettings.keepOriginalResolution}
               onCheckedChange={(checked) =>
-                setVideoThumbnailSettings({ ...videoThumbnailSettings, keepOriginalResolution: !!checked })
+                setVideoThumbnailSettings({
+                  ...videoThumbnailSettings,
+                  keepOriginalResolution: !!checked,
+                })
               }
             />
             <Label htmlFor="keepOriginalResolution" className="cursor-pointer">
-              {t("videoThumbnail.keepOriginal")}
+              {t('videoThumbnail.keepOriginal')}
             </Label>
           </div>
           <p className="text-xs text-muted-foreground pl-6">
-            {t("videoThumbnail.keepOriginalTooltip")}
+            {t('videoThumbnail.keepOriginalTooltip')}
           </p>
         </CardContent>
       </Card>
@@ -160,9 +187,9 @@ export default function VideoThumbnailSettingsPanel({
       <div className="flex justify-end">
         <Button onClick={saveVideoThumbnailSettings}>
           <Film className="h-4 w-4 mr-2" />
-          {t("videoThumbnail.saveSettings")}
+          {t('videoThumbnail.saveSettings')}
         </Button>
       </div>
     </div>
-  )
+  );
 }

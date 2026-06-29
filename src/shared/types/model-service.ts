@@ -1,51 +1,48 @@
-export type ModelProviderType = 'siliconflow' | 'modelscope' | 'zhipu' | 'custom'
+export type ModelProviderType = 'siliconflow' | 'modelscope' | 'zhipu' | 'custom';
 
 export interface ModelProvider {
-  id: string
-  name: string
-  type: ModelProviderType
-  apiKey: string
-  apiBaseUrl: string
-  enabled: boolean
-  isBuiltIn: boolean
-  createdAt: number
-  updatedAt: number
+  id: string;
+  name: string;
+  type: ModelProviderType;
+  apiKey: string;
+  apiBaseUrl: string;
+  enabled: boolean;
+  isBuiltIn: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface ModelConfig {
-  id: string
-  providerId: string
-  modelId: string
-  displayName: string
-  description?: string
-  enabled: boolean
-  capabilities: string[]
-  parameters?: Record<string, any>
-  isBuiltIn?: boolean // 标记是否为内置模型，不可删除
-  createdAt: number
-  updatedAt: number
+  id: string;
+  providerId: string;
+  modelId: string;
+  displayName: string;
+  description?: string;
+  enabled: boolean;
+  capabilities: string[];
+  parameters?: Record<string, any>;
+  isBuiltIn?: boolean; // 标记是否为内置模型，不可删除
+  createdAt: number;
+  updatedAt: number;
 }
 
 export type UsageScenarioType =
-  | 'image_analysis'
-  | 'speech_to_text'
-  | 'episode_generation'
-  | 'ai_chat'
-  | 'subtitle_ocr'
+  'image_analysis' | 'speech_to_text' | 'episode_generation' | 'ai_chat' | 'subtitle_ocr';
 
 export interface UsageScenario {
-  type: UsageScenarioType
-  label: string
-  description: string
-  selectedModelIds?: string[] // 支持多个模型
-  primaryModelId?: string // 主要使用的模型
-  requiredCapabilities: string[]
+  type: UsageScenarioType;
+  label: string;
+  description: string;
+  selectedModelIds?: string[]; // 支持多个模型
+  primaryModelId?: string; // 主要使用的模型
+  requiredCapabilities: string[];
+  parameters?: Record<string, any>;
 }
 
 export interface ModelServiceConfig {
-  providers: ModelProvider[]
-  models: ModelConfig[]
-  scenarios: UsageScenario[]
-  version: string
-  lastUpdated: number
+  providers: ModelProvider[];
+  models: ModelConfig[];
+  scenarios: UsageScenario[];
+  version: string;
+  lastUpdated: number;
 }

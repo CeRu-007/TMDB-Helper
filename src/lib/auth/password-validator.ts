@@ -34,17 +34,21 @@ export function validatePassword(password: string): PasswordValidationResult {
 
   const metCount = Object.values(checks).filter(Boolean).length;
   let strength: PasswordStrength;
-  if (metCount <= 2) strength = 'weak';
-  else if (metCount <= 3) strength = 'medium';
-  else strength = 'strong';
+  if (metCount <= 2) {
+    strength = 'weak';
+  } else if (metCount <= 3) {
+    strength = 'medium';
+  } else {
+    strength = 'strong';
+  }
 
   const valid = checks.minLength;
   let error: string | undefined;
-  if (!checks.minLength) error = '密码长度至少为6位';
+  if (!checks.minLength) {
+    error = '密码长度至少为6位';
+  }
 
-  return error
-    ? { valid, error, strength, checks }
-    : { valid, strength, checks };
+  return error ? { valid, error, strength, checks } : { valid, strength, checks };
 }
 
 export function validateUsername(username: string): UsernameValidationResult {

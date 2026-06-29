@@ -57,16 +57,18 @@
 }
 
 .status-indicator.running {
-  background: linear-gradient(90deg, 
-    rgba(59, 130, 246, 0.8), 
-    rgba(147, 197, 253, 0.8), 
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.8),
+    rgba(147, 197, 253, 0.8),
     rgba(59, 130, 246, 0.8)
   );
   animation: shimmer 2s ease-in-out infinite;
 }
 
 .status-indicator.success {
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     rgba(34, 197, 94, 0.8),
     rgba(134, 239, 172, 0.8),
     rgba(34, 197, 94, 0.8)
@@ -74,7 +76,8 @@
 }
 
 .status-indicator.error {
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     rgba(239, 68, 68, 0.8),
     rgba(252, 165, 165, 0.8),
     rgba(239, 68, 68, 0.8)
@@ -82,7 +85,8 @@
 }
 
 .status-indicator.user-interrupted {
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     rgba(249, 115, 22, 0.8),
     rgba(254, 215, 170, 0.8),
     rgba(249, 115, 22, 0.8)
@@ -91,7 +95,8 @@
 }
 
 .status-indicator.disabled {
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     rgba(156, 163, 175, 0.5),
     rgba(209, 213, 219, 0.5),
     rgba(156, 163, 175, 0.5)
@@ -109,7 +114,8 @@
 }
 
 @keyframes gentle-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.8;
   }
   50% {
@@ -170,7 +176,9 @@
 .action-button-glass {
   background: hsl(var(--card) / 0.1);
   border: 1px solid hsl(var(--border) / 0.15);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   will-change: background-color, border-color;
 }
 
@@ -211,14 +219,6 @@
   padding: 0 12px;
   min-width: auto;
 }
-
-
-
-
-
-
-
-
 
 /* 菜单层级优化 */
 .glass-card[data-radix-popper-content-wrapper] {
@@ -289,5 +289,3 @@
 .task-display-area.selection-mode {
   border: 2px solid hsl(var(--primary) / 0.4) !important;
 }
-
-

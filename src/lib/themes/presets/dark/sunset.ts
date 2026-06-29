@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const sunsetTheme: ThemeConfig = {
   id: 'sunset',
@@ -39,4 +39,4 @@ export const sunsetTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

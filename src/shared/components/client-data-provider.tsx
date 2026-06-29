@@ -1,41 +1,43 @@
-"use client"
+'use client';
 
-import React, { createContext, useContext, ReactNode } from "react"
-import { TMDBItem } from "@/lib/data/storage"
-import { useDataSync } from "@/shared/hooks/use-data-sync"
-import { useDataOperations } from "@/shared/hooks/use-data-operations"
+import React, { createContext, useContext, ReactNode } from 'react';
+import { TMDBItem } from '@/lib/data/storage';
+import { useDataSync } from '@/shared/hooks/use-data-sync';
+import { useDataOperations } from '@/shared/hooks/use-data-operations';
 
 interface DataContextType {
-  items: TMDBItem[]
-  baseItems: TMDBItem[]
-  loading: boolean
-  error: string | null
-  initialized: boolean
-  isConnected: boolean
-  pendingOperations: number
-  refreshData: () => Promise<void>
-  addItem: (item: TMDBItem) => Promise<void>
-  updateItem: (item: TMDBItem) => Promise<void>
-  deleteItem: (id: string) => Promise<void>
-  exportData: () => Promise<void>
-  importData: (jsonData: string) => Promise<void>
-  clearError: () => void
-  getOptimisticStats: () => any
+  items: TMDBItem[];
+  baseItems: TMDBItem[];
+  loading: boolean;
+  error: string | null;
+  initialized: boolean;
+  isConnected: boolean;
+  pendingOperations: number;
+  refreshData: () => Promise<void>;
+  addItem: (item: TMDBItem) => Promise<void>;
+  updateItem: (item: TMDBItem) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  exportData: () => Promise<void>;
+  importData: (
+    jsonData: string
+  ) => Promise<{ itemsImported: number; itemsSkipped: number } | undefined>;
+  clearError: () => void;
+  getOptimisticStats: () => any;
 }
 
-const DataContext = createContext<DataContextType | undefined>(undefined)
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function useData(): DataContextType {
-  const context = useContext(DataContext)
+  const context = useContext(DataContext);
   if (context === undefined) {
-    throw new Error("useData must be used within a DataProvider")
+    throw new Error('useData must be used within a DataProvider');
   }
-  return context
+  return context;
 }
 
 export function DataProvider({ children }: { children: ReactNode }): JSX.Element {
-  const { items, setItems, error, initialized, isConnected, refreshData, setError } = useDataSync()
-  const operations = useDataOperations(items, setItems, setError)
+  const { items, setItems, error, initialized, isConnected, refreshData, setError } = useDataSync();
+  const operations = useDataOperations(items, setItems, setError);
 
   const value: DataContextType = {
     items,
@@ -52,8 +54,8 @@ export function DataProvider({ children }: { children: ReactNode }): JSX.Element
     exportData: operations.exportData,
     importData: operations.importData,
     clearError: operations.clearError,
-    getOptimisticStats: operations.getOptimisticStats
-  }
+    getOptimisticStats: operations.getOptimisticStats,
+  };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>
-} 
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+}

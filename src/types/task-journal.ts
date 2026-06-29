@@ -1,44 +1,44 @@
 export interface TaskJournal {
-  id: string
-  itemId: string
-  itemTitle: string
-  status: 'success' | 'failed'
-  title: string
-  content: string
-  dataPreview: string | null
-  errorMessage: string | null
-  tmdbUrl: string | null
-  startAt: string
-  endAt: string | null
-  read: boolean
-  createdAt: string
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  status: 'success' | 'failed';
+  title: string;
+  content: string;
+  dataPreview: string | null;
+  errorMessage: string | null;
+  tmdbUrl: string | null;
+  startAt: string;
+  endAt: string | null;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface TaskJournalRow {
-  id: string
-  itemId: string
-  itemTitle: string
-  status: string
-  title: string
-  content: string
-  dataPreview: string | null
-  errorMessage: string | null
-  startAt: string
-  endAt: string | null
-  read: number
-  createdAt: string
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  status: string;
+  title: string;
+  content: string;
+  dataPreview: string | null;
+  errorMessage: string | null;
+  startAt: string;
+  endAt: string | null;
+  read: number;
+  createdAt: string;
 }
 
 export interface CreateTaskJournalInput {
-  itemId: string
-  itemTitle: string
-  status: 'success' | 'failed'
-  title: string
-  content: string
-  dataPreview?: string | null
-  errorMessage?: string | null
-  startAt: string
-  endAt?: string | null
+  itemId: string;
+  itemTitle: string;
+  status: 'success' | 'failed';
+  title: string;
+  content: string;
+  dataPreview?: string | null;
+  errorMessage?: string | null;
+  startAt: string;
+  endAt?: string | null;
 }
 
 export function taskJournalRowToTaskJournal(row: TaskJournalRow): TaskJournal {
@@ -56,7 +56,7 @@ export function taskJournalRowToTaskJournal(row: TaskJournalRow): TaskJournal {
     endAt: row.endAt,
     read: row.read === 1,
     createdAt: row.createdAt,
-  }
+  };
 }
 
 export function taskJournalToRow(journal: TaskJournal): TaskJournalRow {
@@ -73,5 +73,5 @@ export function taskJournalToRow(journal: TaskJournal): TaskJournalRow {
     endAt: journal.endAt,
     read: journal.read ? 1 : 0,
     createdAt: journal.createdAt,
-  }
+  };
 }

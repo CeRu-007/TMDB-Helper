@@ -14,17 +14,19 @@ const POLLING_INTERVAL = 4 * 60 * 60 * 1000;
 const INITIAL_DELAY = 5 * 1000;
 
 let globalState: UpdateCheckState | null = null;
-let globalListeners: Set<(state: UpdateCheckState) => void> = new Set();
+const globalListeners: Set<(state: UpdateCheckState) => void> = new Set();
 let pollingTimer: NodeJS.Timeout | null = null;
 let hasInitialized = false;
 
 function notifyListeners(state: UpdateCheckState) {
   globalState = state;
-  globalListeners.forEach(listener => listener(state));
+  globalListeners.forEach((listener) => listener(state));
 }
 
 function getNotifiedVersions(): Set<string> {
-  if (typeof window === 'undefined') return new Set();
+  if (typeof window === 'undefined') {
+    return new Set();
+  }
   try {
     const stored = localStorage.getItem(NOTIFIED_VERSIONS_KEY);
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -34,7 +36,9 @@ function getNotifiedVersions(): Set<string> {
 }
 
 function saveNotifiedVersion(version: string) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     const versions = getNotifiedVersions();
     versions.add(version);
@@ -43,7 +47,9 @@ function saveNotifiedVersion(version: string) {
 }
 
 function getDismissedVersions(): Set<string> {
-  if (typeof window === 'undefined') return new Set();
+  if (typeof window === 'undefined') {
+    return new Set();
+  }
   try {
     const stored = localStorage.getItem(DISMISSED_VERSIONS_KEY);
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -53,7 +59,9 @@ function getDismissedVersions(): Set<string> {
 }
 
 export function saveDismissedVersion(version: string) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     const versions = getDismissedVersions();
     versions.add(version);
@@ -66,10 +74,14 @@ export function isVersionDismissed(version: string): boolean {
 }
 
 function getCachedState(): UpdateCheckState | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return null;
+    if (!cached) {
+      return null;
+    }
     const { data, timestamp } = JSON.parse(cached);
     if (Date.now() - timestamp > CACHE_DURATION) {
       localStorage.removeItem(CACHE_KEY);
@@ -82,27 +94,33 @@ function getCachedState(): UpdateCheckState | null {
 }
 
 function saveCache(data: UpdateCheckResult) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
   } catch {}
 }
 
 function dispatchUpdateEvent(data: UpdateCheckResult) {
-  if (!data.hasUpdate || !data.latestVersion) return
+  if (!data.hasUpdate || !data.latestVersion) {
+    return;
+  }
 
-  const notified = getNotifiedVersions()
-  const dismissed = getDismissedVersions()
+  const notified = getNotifiedVersions();
+  const dismissed = getDismissedVersions();
 
   if (!notified.has(data.latestVersion) && !dismissed.has(data.latestVersion)) {
-    saveNotifiedVersion(data.latestVersion)
-    window.dispatchEvent(new CustomEvent('version-update-available', {
-      detail: {
-        currentVersion: data.currentVersion,
-        latestVersion: data.latestVersion,
-        releaseInfo: data.releaseInfo,
-      },
-    }))
+    saveNotifiedVersion(data.latestVersion);
+    window.dispatchEvent(
+      new CustomEvent('version-update-available', {
+        detail: {
+          currentVersion: data.currentVersion,
+          latestVersion: data.latestVersion,
+          releaseInfo: data.releaseInfo,
+        },
+      })
+    );
   }
 }
 
@@ -169,7 +187,9 @@ async function performCheck(options: UpdateCheckOptions = {}): Promise<UpdateChe
 }
 
 function startGlobalPolling() {
-  if (pollingTimer) return;
+  if (pollingTimer) {
+    return;
+  }
   pollingTimer = setInterval(() => {
     performCheck();
   }, POLLING_INTERVAL);
@@ -183,7 +203,9 @@ function stopGlobalPolling() {
 }
 
 function initializeGlobalCheck() {
-  if (hasInitialized) return;
+  if (hasInitialized) {
+    return;
+  }
   hasInitialized = true;
 
   const cached = getCachedState();
@@ -214,16 +236,18 @@ function initializeGlobalCheck() {
 }
 
 export function useUpdateCheck() {
-  const [state, setState] = useState<UpdateCheckState>(globalState || {
-    hasUpdate: false,
-    currentVersion: '',
-    latestVersion: '',
-    releaseInfo: null,
-    lastChecked: '',
-    isCached: false,
-    isLoading: false,
-    error: null,
-  });
+  const [state, setState] = useState<UpdateCheckState>(
+    globalState || {
+      hasUpdate: false,
+      currentVersion: '',
+      latestVersion: '',
+      releaseInfo: null,
+      lastChecked: '',
+      isCached: false,
+      isLoading: false,
+      error: null,
+    }
+  );
 
   const isFirstRender = useRef(true);
 

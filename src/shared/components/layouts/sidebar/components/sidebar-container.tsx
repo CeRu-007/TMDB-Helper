@@ -1,12 +1,12 @@
-import React from "react"
-import { SidebarNavigation } from "@/shared/components/layouts/sidebar-navigation"
+import React from 'react';
+import { SidebarNavigation } from '@/shared/components/layouts/sidebar-navigation';
 
 interface SidebarContainerProps {
-  collapsed: boolean
-  onMenuSelect: (menuId: string, submenuId?: string) => void
-  activeMenu: string
-  activeSubmenu: string
-  isMobile?: boolean
+  collapsed: boolean;
+  onMenuSelect: (menuId: string, submenuId?: string) => void;
+  activeMenu: string;
+  activeSubmenu: string;
+  isMobile?: boolean;
 }
 
 export function SidebarContainer({
@@ -14,7 +14,7 @@ export function SidebarContainer({
   onMenuSelect,
   activeMenu,
   activeSubmenu,
-  isMobile = false
+  isMobile = false,
 }: SidebarContainerProps) {
   const navigation = (
     <SidebarNavigation
@@ -23,10 +23,10 @@ export function SidebarContainer({
       activeSubmenu={activeSubmenu}
       collapsed={collapsed}
     />
-  )
+  );
 
   if (isMobile) {
-    return navigation
+    return navigation;
   }
 
   return (
@@ -35,5 +35,5 @@ export function SidebarContainer({
         {navigation}
       </div>
     </div>
-  )
+  );
 }

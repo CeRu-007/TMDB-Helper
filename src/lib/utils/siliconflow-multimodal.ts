@@ -70,7 +70,7 @@ export class SiliconFlowMultimodal {
     this.config = {
       baseUrl: 'https://api.siliconflow.cn/v1',
       timeout: 60000,
-      ...config
+      ...config,
     };
   }
 
@@ -78,7 +78,7 @@ export class SiliconFlowMultimodal {
    * 分析单个视频帧
    */
   async analyzeFrame(
-    imageBase64: string, 
+    imageBase64: string,
     prompt?: string,
     options: VisualAnalysisOptions = {}
   ): Promise<FrameAnalysisResult> {
@@ -86,7 +86,7 @@ export class SiliconFlowMultimodal {
       model = this.defaultVisualModel,
       temperature = 0.7,
       maxTokens = 500,
-      detail = 'high'
+      detail = 'high',
     } = options;
 
     const defaultPrompt = `请详细分析这个视频帧，包括：
@@ -111,31 +111,33 @@ export class SiliconFlowMultimodal {
       const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model,
-          messages: [{
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`,
-                  detail
-                }
-              },
-              {
-                type: 'text',
-                text: prompt || defaultPrompt
-              }
-            ]
-          }],
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${imageBase64}`,
+                    detail,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: prompt || defaultPrompt,
+                },
+              ],
+            },
+          ],
           temperature,
-          max_tokens: maxTokens
+          max_tokens: maxTokens,
         }),
-        signal: AbortSignal.timeout(this.config.timeout!)
+        signal: AbortSignal.timeout(this.config.timeout!),
       });
 
       if (!response.ok) {
@@ -160,19 +162,18 @@ export class SiliconFlowMultimodal {
             objects: parsed.objects || [],
             scene: parsed.scene,
             emotions: parsed.emotions || [],
-            actions: parsed.actions || []
-          }
+            actions: parsed.actions || [],
+          },
         };
       } catch {
         // 如果不是JSON格式，直接使用文本内容
         return {
           description: content,
           confidence: 0.7,
-          elements: {}
+          elements: {},
         };
       }
     } catch (error) {
-      
       throw new Error(`视频帧分析失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -185,30 +186,29 @@ export class SiliconFlowMultimodal {
     options: VisualAnalysisOptions = {}
   ): Promise<FrameAnalysisResult[]> {
     const results: FrameAnalysisResult[] = [];
-    
+
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i];
-      
+
       try {
         const result = await this.analyzeFrame(frame.imageBase64, undefined, options);
         result.timestamp = frame.timestamp;
         results.push(result);
-        
+
         // 避免API限流，添加延迟
         if (i < frames.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        
         results.push({
           description: '分析失败',
           confidence: 0,
           elements: {},
-          timestamp: frame.timestamp
+          timestamp: frame.timestamp,
         });
       }
     }
-    
+
     return results;
   }
 
@@ -220,16 +220,14 @@ export class SiliconFlowMultimodal {
     audioTranscript?: string,
     options: { model?: string; temperature?: number; maxTokens?: number } = {}
   ): Promise<string> {
-    const {
-      model = this.defaultTextModel,
-      temperature = 0.7,
-      maxTokens = 800
-    } = options;
+    const { model = this.defaultTextModel, temperature = 0.7, maxTokens = 800 } = options;
 
     const frameDescriptions = frameAnalyses
-      .filter(frame => frame.confidence > 0.5)
+      .filter((frame) => frame.confidence > 0.5)
       .map((frame, index) => {
-        const timestamp = frame.timestamp ? `[${Math.floor(frame.timestamp / 60)}:${(frame.timestamp % 60).toFixed(0).padStart(2, '0')}]` : `[帧${index + 1}]`;
+        const timestamp = frame.timestamp
+          ? `[${Math.floor(frame.timestamp / 60)}:${(frame.timestamp % 60).toFixed(0).padStart(2, '0')}]`
+          : `[帧${index + 1}]`;
         return `${timestamp} ${frame.description}`;
       })
       .join('\n');
@@ -252,19 +250,21 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }],
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
           temperature,
-          max_tokens: maxTokens
+          max_tokens: maxTokens,
         }),
-        signal: AbortSignal.timeout(this.config.timeout!)
+        signal: AbortSignal.timeout(this.config.timeout!),
       });
 
       if (!response.ok) {
@@ -274,7 +274,6 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       const data = await response.json();
       return data.choices[0]?.message?.content || '生成简介失败';
     } catch (error) {
-      
       throw new Error(`生成视频总结失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -287,11 +286,7 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
     audioBase64: string,
     options: AudioAnalysisOptions = {}
   ): Promise<AudioTranscriptionResult> {
-    const {
-      model = 'FunAudioLLM/SenseVoiceSmall',
-      language = 'auto',
-      format = 'wav'
-    } = options;
+    const { model = 'FunAudioLLM/SenseVoiceSmall', language = 'auto', format = 'wav' } = options;
 
     try {
       // 将base64转换为Blob
@@ -311,10 +306,10 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       const response = await fetch(`${this.config.baseUrl}/audio/transcriptions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: formData,
-        signal: AbortSignal.timeout(this.config.timeout || 300000)
+        signal: AbortSignal.timeout(this.config.timeout || 300000),
       });
 
       if (!response.ok) {
@@ -328,30 +323,35 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
       // 处理分段信息
       let segments = [];
       if (result.segments && Array.isArray(result.segments)) {
-        segments = result.segments.map((segment: SubtitleSegment) => ({
+        segments = result.segments.map((segment: any) => ({
           start: segment.start || 0,
           end: segment.end || 0,
           text: segment.text || '',
-          confidence: segment.confidence || 0.8
+          confidence: segment.confidence || 0.8,
         }));
       } else {
         // 基于句子的简单分段
-        const sentences = transcriptText.split(/[。！？.!?]+/).filter(s => s.trim().length > 0);
-        segments = sentences.map((sentence, index) => ({
+        const sentences = transcriptText
+          .split(/[。！？.!?]+/)
+          .filter((s: any) => s.trim().length > 0);
+        segments = sentences.map((sentence: string, index: number) => ({
           start: index * 5,
           end: (index + 1) * 5,
           text: sentence.trim(),
-          confidence: this.getModelConfidence(model)
+          confidence: this.getModelConfidence(model),
         }));
       }
 
       return {
         text: transcriptText,
         segments,
-        confidence: segments.length > 0 ? segments.reduce((sum, seg) => sum + (seg.confidence || 0), 0) / segments.length : 0.8
+        confidence:
+          segments.length > 0
+            ? segments.reduce((sum: number, seg: any) => sum + (seg.confidence || 0), 0) /
+              segments.length
+            : 0.8,
       };
     } catch (error) {
-      
       throw new Error(`语音转文字失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -360,12 +360,24 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
    * 根据模型获取默认置信度
    */
   private getModelConfidence(model: string): number {
-    if (model.includes('SenseVoiceLarge')) return 0.9;
-    if (model.includes('SenseVoiceSmall')) return 0.8;
-    if (model.includes('CosyVoice-300M-SFT')) return 0.85;
-    if (model.includes('CosyVoice-300M-Instruct')) return 0.82;
-    if (model.includes('CosyVoice-300M')) return 0.75;
-    if (model.includes('SpeechT5')) return 0.7;
+    if (model.includes('SenseVoiceLarge')) {
+      return 0.9;
+    }
+    if (model.includes('SenseVoiceSmall')) {
+      return 0.8;
+    }
+    if (model.includes('CosyVoice-300M-SFT')) {
+      return 0.85;
+    }
+    if (model.includes('CosyVoice-300M-Instruct')) {
+      return 0.82;
+    }
+    if (model.includes('CosyVoice-300M')) {
+      return 0.75;
+    }
+    if (model.includes('SpeechT5')) {
+      return 0.7;
+    }
     return 0.8;
   }
 
@@ -390,24 +402,21 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
     threshold: number = 0.7
   ): Promise<number[]> {
     const sceneChanges: number[] = [];
-    
+
     for (let i = 1; i < frameAnalyses.length; i++) {
       const prev = frameAnalyses[i - 1];
       const curr = frameAnalyses[i];
-      
+
       // 简单的场景变化检测：比较场景描述的相似度
       if (prev.elements.scene && curr.elements.scene) {
-        const similarity = this.calculateTextSimilarity(
-          prev.elements.scene,
-          curr.elements.scene
-        );
-        
+        const similarity = this.calculateTextSimilarity(prev.elements.scene, curr.elements.scene);
+
         if (similarity < threshold) {
           sceneChanges.push(curr.timestamp || i);
         }
       }
     }
-    
+
     return sceneChanges;
   }
 
@@ -417,10 +426,10 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
   private calculateTextSimilarity(text1: string, text2: string): number {
     const words1 = new Set(text1.toLowerCase().split(/\s+/));
     const words2 = new Set(text2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
+
+    const intersection = new Set([...words1].filter((x) => words2.has(x)));
     const union = new Set([...words1, ...words2]);
-    
+
     return intersection.size / union.size;
   }
 
@@ -431,11 +440,11 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
     try {
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(10000),
       });
-      
+
       return response.ok;
     } catch {
       return false;
@@ -449,27 +458,28 @@ ${audioTranscript ? `音频内容：\n${audioTranscript}\n` : ''}
     try {
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-        }
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
       });
-      
+
       if (!response.ok) {
         throw new Error('获取模型列表失败');
       }
-      
+
       const data = await response.json();
-      const visionModels = data.data
-        ?.filter((model: ModelInfo) =>
-          model.id.includes('VL') ||
-          model.id.includes('vision') ||
-          model.id.includes('Qwen2.5-VL') ||
-          model.id.includes('deepseek-vl')
-        )
-        ?.map((model: ModelInfo) => model.id) || [];
-      
+      const visionModels =
+        data.data
+          ?.filter(
+            (model: ModelInfo) =>
+              model.id.includes('VL') ||
+              model.id.includes('vision') ||
+              model.id.includes('Qwen2.5-VL') ||
+              model.id.includes('deepseek-vl')
+          )
+          ?.map((model: ModelInfo) => model.id) || [];
+
       return visionModels;
     } catch (error) {
-      
       return [this.defaultVisualModel];
     }
   }

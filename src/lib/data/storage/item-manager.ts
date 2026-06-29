@@ -3,6 +3,7 @@
  */
 import { logger } from '@/lib/utils/logger';
 import { TIMEOUT_15S } from '@/lib/constants/constants';
+import type { TMDBItem } from '@/types/tmdb-item';
 
 export class ItemManager {
   private static readonly API_BASE_URL = '/api/storage';
@@ -19,10 +20,7 @@ export class ItemManager {
   /**
    * 通用的API调用方法，带有超时和错误处理
    */
-  private static async makeApiCall(
-    url: string,
-    options: RequestInit = {},
-  ): Promise<Response> {
+  private static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_15S); // 15秒超时
 
@@ -54,17 +52,11 @@ export class ItemManager {
 
         // 移除了abortErrorMonitor，直接抛出错误
         throw new Error(errorMessage);
-      } else if (
-        error instanceof TypeError &&
-        error.message.includes('Failed to fetch')
-      ) {
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         // 检查是否是本地开发环境
-        const isLocalhost =
-          url.includes('localhost') || url.includes('127.0.0.1');
+        const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
         if (isLocalhost) {
-          throw new Error(
-            '本地服务器连接失败：请确认Next.js开发服务器正在运行 (npm run dev)',
-          );
+          throw new Error('本地服务器连接失败：请确认Next.js开发服务器正在运行 (npm run dev)');
         } else {
           throw new Error('网络连接失败：无法连接到服务器');
         }
@@ -80,9 +72,7 @@ export class ItemManager {
   /**
    * 带重试机制的获取items方法
    */
-  static async getItemsWithRetry(
-    retries = this.MAX_RETRIES,
-  ): Promise<unknown[]> {
+  static async getItemsWithRetry(retries = this.MAX_RETRIES): Promise<unknown[]> {
     // 客户端：调用API
     if (typeof window !== 'undefined') {
       try {
@@ -91,9 +81,7 @@ export class ItemManager {
         });
 
         if (!response.ok) {
-          throw new Error(
-            `API请求失败: ${response.status} ${response.statusText}`,
-          );
+          throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -134,9 +122,7 @@ export class ItemManager {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `API请求失败: ${response.status} ${response.statusText}`,
-          );
+          throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
         }
 
         return true;
@@ -156,7 +142,8 @@ export class ItemManager {
     // 使用文件存储
     if (typeof window !== 'undefined') {
       try {
-        logger.debug('ItemManager', `开始更新项目: ${updatedItem.title} (ID: ${updatedItem.id})`);
+        const _item = updatedItem as TMDBItem;
+        logger.debug('ItemManager', `开始更新项目: ${_item.title} (ID: ${_item.id})`);
 
         const response = await ItemManager.makeApiCall(`${ItemManager.API_BASE_URL}/item`, {
           method: 'PUT',
@@ -165,9 +152,7 @@ export class ItemManager {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `API请求失败: ${response.status} ${response.statusText} - ${errorText}`,
-          );
+          throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         return true;
@@ -183,10 +168,11 @@ export class ItemManager {
       return false;
     }
     try {
-      const items = ItemManager.getItems();
-      const index = items.findIndex((item) => item.id === updatedItem.id);
+      const items = ItemManager.getItems() as TMDBItem[];
+      const u = updatedItem as TMDBItem;
+      const index = items.findIndex((item) => item.id === u.id);
       if (index !== -1) {
-        items[index] = updatedItem;
+        items[index] = u;
         return true;
       }
       return false;
@@ -204,14 +190,12 @@ export class ItemManager {
       try {
         const response = await ItemManager.makeApiCall(
           `${ItemManager.API_BASE_URL}/item?id=${encodeURIComponent(id)}`,
-          { method: 'DELETE' },
+          { method: 'DELETE' }
         );
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `API请求失败: ${response.status} ${response.statusText} - ${errorText}`,
-          );
+          throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         return true;
@@ -232,7 +216,7 @@ export class ItemManager {
    */
   static async findItemById(id: string): Promise<unknown | null> {
     try {
-      const items = await ItemManager.getItemsWithRetry();
+      const items = (await ItemManager.getItemsWithRetry()) as TMDBItem[];
       const item = items.find((item) => item.id === id);
       return item || null;
     } catch (error) {

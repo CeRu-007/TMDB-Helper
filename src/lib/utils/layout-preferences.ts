@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { safeJsonParse } from '@/lib/utils'
+import { safeJsonParse } from '@/lib/utils';
 
 /**
  * 布局偏好设置管理器
@@ -8,19 +8,19 @@ import { safeJsonParse } from '@/lib/utils'
  */
 
 export interface LayoutPreferences {
-  sidebarCollapsed?: boolean
-  collapsedGroups?: string[]
-  lastUpdated: string
+  sidebarCollapsed?: boolean;
+  collapsedGroups?: string[];
+  lastUpdated: string;
 }
 
 export class LayoutPreferencesManager {
-  private static readonly STORAGE_KEY = "tmdb_helper_layout_preferences"
-  
+  private static readonly STORAGE_KEY = 'tmdb_helper_layout_preferences';
+
   /**
    * 检查当前环境是否为客户端
    */
   static isClient(): boolean {
-    return typeof window !== 'undefined'
+    return typeof window !== 'undefined';
   }
 
   /**
@@ -28,7 +28,7 @@ export class LayoutPreferencesManager {
    */
   static async getPreferences(): Promise<LayoutPreferences> {
     if (!this.isClient()) {
-      return this.getDefaultPreferences()
+      return this.getDefaultPreferences();
     }
 
     // 优先以服务端为准；失败时再回退本地缓存
@@ -42,21 +42,19 @@ export class LayoutPreferencesManager {
           // 验证数据完整性
           if (preferences?.lastUpdated) {
             try {
-              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences))
+              localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences));
             } catch {}
             return preferences;
           }
         }
       }
-    } catch (error) {
-      
-    }
+    } catch (error) {}
 
     // 回退：尝试本地缓存
     try {
-      const cached = localStorage.getItem(this.STORAGE_KEY)
+      const cached = localStorage.getItem(this.STORAGE_KEY);
       if (cached) {
-        const pref = safeJsonParse<LayoutPreferences>(cached)
+        const pref = safeJsonParse<LayoutPreferences>(cached);
         if (pref?.lastUpdated) {
           return pref;
         }
@@ -64,7 +62,7 @@ export class LayoutPreferencesManager {
     } catch {}
 
     // 最终回退默认
-    return this.getDefaultPreferences()
+    return this.getDefaultPreferences();
   }
 
   /**
@@ -72,17 +70,16 @@ export class LayoutPreferencesManager {
    */
   static async savePreferences(preferences: Partial<LayoutPreferences>): Promise<boolean> {
     if (!this.isClient()) {
-      
-      return false
+      return false;
     }
 
     try {
-      const currentPreferences = await this.getPreferences()
+      const currentPreferences = await this.getPreferences();
       const updatedPreferences: LayoutPreferences = {
         ...currentPreferences,
         ...preferences,
-        lastUpdated: new Date().toISOString()
-      }
+        lastUpdated: new Date().toISOString(),
+      };
 
       const response = await fetch('/api/system/config', {
         method: 'POST',
@@ -92,21 +89,20 @@ export class LayoutPreferencesManager {
         body: JSON.stringify({
           action: 'set',
           key: 'layout_preferences',
-          value: updatedPreferences
-        })
+          value: updatedPreferences,
+        }),
       });
 
       if (response.ok) {
         // 成功后同步更新本地缓存，确保刷新首屏读取到最新布局
         try {
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPreferences))
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPreferences));
         } catch {}
-        return true
+        return true;
       }
       return false;
     } catch (error) {
-      
-      return false
+      return false;
     }
   }
 
@@ -116,19 +112,19 @@ export class LayoutPreferencesManager {
   static getDefaultPreferences(): LayoutPreferences {
     return {
       sidebarCollapsed: false,
-      lastUpdated: new Date().toISOString()
-    }
+      lastUpdated: new Date().toISOString(),
+    };
   }
 
   /**
    * 设置侧边栏折叠状态
    */
   static async setSidebarCollapsed(collapsed: boolean): Promise<boolean> {
-    return await this.savePreferences({ sidebarCollapsed: collapsed })
+    return await this.savePreferences({ sidebarCollapsed: collapsed });
   }
 
   static async setCollapsedGroups(groups: string[]): Promise<boolean> {
-    return await this.savePreferences({ collapsedGroups: groups })
+    return await this.savePreferences({ collapsedGroups: groups });
   }
 
   /**
@@ -136,7 +132,7 @@ export class LayoutPreferencesManager {
    */
   static async resetToDefault(): Promise<boolean> {
     if (!this.isClient()) {
-      return false
+      return false;
     }
 
     try {
@@ -148,14 +144,13 @@ export class LayoutPreferencesManager {
         body: JSON.stringify({
           action: 'set',
           key: 'layout_preferences',
-          value: JSON.stringify(this.getDefaultPreferences())
-        })
+          value: JSON.stringify(this.getDefaultPreferences()),
+        }),
       });
 
       return response.ok;
     } catch (error) {
-      
-      return false
+      return false;
     }
   }
 }

@@ -1,21 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { Label } from '@/shared/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Download, FileText, Database, Info } from 'lucide-react';
 import { useData } from '@/shared/components/client-data-provider';
@@ -29,13 +19,12 @@ interface ExportDataDialogProps {
 
 interface ExportOptions {
   format: 'json' | 'csv';
+  includeTmdbData: boolean;
+  includeWatchHistory: boolean;
 }
 
-export default function ExportDataDialog({
-  open,
-  onOpenChange,
-}: ExportDataDialogProps) {
-  const { t } = useTranslation('data-management')
+export default function ExportDataDialog({ open, onOpenChange }: ExportDataDialogProps) {
+  const { t } = useTranslation('data-management');
   const [options, setOptions] = useState<ExportOptions>({
     format: 'json',
     includeTmdbData: true,
@@ -130,23 +119,17 @@ export default function ExportDataDialog({
 
     const csvContent = [
       csvHeaders.join(','),
-      ...csvRows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
-      ),
+      ...csvRows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     downloadFile(
       csvContent,
       `tmdb-helper-items-${new Date().toISOString().split('T')[0]}.csv`,
-      'text/csv',
+      'text/csv'
     );
   };
 
-  const downloadFile = (
-    content: string,
-    filename: string,
-    mimeType: string,
-  ) => {
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

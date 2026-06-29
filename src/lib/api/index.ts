@@ -1,7 +1,7 @@
 // Base classes for API routes
-export { BaseAPIRoute } from './base-api-route'
-export { AuthenticatedAPIRoute } from './authenticated-api-route'
-export { ValidatedAPIRoute } from './validated-api-route'
+export { BaseAPIRoute } from './base-api-route';
+export { AuthenticatedAPIRoute } from './authenticated-api-route';
+export { ValidatedAPIRoute } from './validated-api-route';
 
 // Utility classes and functions
 export {
@@ -10,8 +10,8 @@ export {
   ResponseHelper,
   CommonSchemas,
   APIErrorHandler,
-  APICache
-} from './api-utils'
+  APICache,
+} from './api-utils';
 
 // Re-export commonly used types
-export type { ApiResponse, ApiError, ApiRequestConfig } from '@/types/api'
+export type { ApiResponse, ApiError, ApiRequestConfig } from '@/types/api';

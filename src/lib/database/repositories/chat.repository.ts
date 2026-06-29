@@ -33,7 +33,9 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
       .prepare('SELECT * FROM chatHistories WHERE id = ? AND deletedAt IS NULL')
       .get(id) as ChatHistoryRow | undefined;
 
-    if (!row) return undefined;
+    if (!row) {
+      return undefined;
+    }
 
     const history = this.rowToChatHistory(row);
     history.messages = this.getMessages(id);
@@ -93,10 +95,12 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
 
     try {
       const now = new Date().toISOString();
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO chatHistories (id, title, createdAt, updatedAt, deletedAt)
         VALUES (@id, @title, @createdAt, @updatedAt, @deletedAt)
-      `).run({
+      `
+      ).run({
         id: history.id,
         title: history.title,
         createdAt: history.createdAt.toISOString(),
@@ -128,9 +132,11 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
     const db = getDatabase();
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE chatHistories SET title = @title, updatedAt = @updatedAt WHERE id = @id AND deletedAt IS NULL
-      `).run({
+      `
+      ).run({
         id: history.id,
         title: history.title,
         updatedAt: history.updatedAt.toISOString(),
@@ -154,7 +160,8 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
 
     try {
       const now = new Date().toISOString();
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO messages (
           id, chatId, role, content, timestamp, type, fileName, fileContent,
           isStreaming, suggestions, rating, isEdited, canContinue, createdAt, updatedAt
@@ -162,7 +169,8 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
           @id, @chatId, @role, @content, @timestamp, @type, @fileName, @fileContent,
           @isStreaming, @suggestions, @rating, @isEdited, @canContinue, @createdAt, @updatedAt
         )
-      `).run({
+      `
+      ).run({
         id: message.id,
         chatId: chatId,
         role: message.role,
@@ -200,7 +208,8 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
     const db = getDatabase();
 
     try {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE messages SET
           content = @content,
           isStreaming = @isStreaming,
@@ -210,7 +219,8 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
           canContinue = @canContinue,
           updatedAt = @updatedAt
         WHERE id = @id
-      `).run({
+      `
+      ).run({
         id: message.id,
         content: message.content,
         isStreaming: message.isStreaming ? 1 : 0,
@@ -257,7 +267,9 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
     try {
       const now = new Date().toISOString();
       const result = db
-        .prepare('UPDATE chatHistories SET deletedAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL')
+        .prepare(
+          'UPDATE chatHistories SET deletedAt = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL'
+        )
         .run(now, now, id);
 
       return {
@@ -332,7 +344,11 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
    */
   getHistoryCount(): number {
     const db = getDatabase();
-    return (db.prepare('SELECT COUNT(*) as count FROM chatHistories WHERE deletedAt IS NULL').get() as { count: number }).count;
+    return (
+      db.prepare('SELECT COUNT(*) as count FROM chatHistories WHERE deletedAt IS NULL').get() as {
+        count: number;
+      }
+    ).count;
   }
 
   /**
@@ -341,7 +357,11 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
   getMessageCount(chatId?: string): number {
     const db = getDatabase();
     if (chatId) {
-      return (db.prepare('SELECT COUNT(*) as count FROM messages WHERE chatId = ?').get(chatId) as { count: number }).count;
+      return (
+        db.prepare('SELECT COUNT(*) as count FROM messages WHERE chatId = ?').get(chatId) as {
+          count: number;
+        }
+      ).count;
     }
     return (db.prepare('SELECT COUNT(*) as count FROM messages').get() as { count: number }).count;
   }
@@ -358,9 +378,11 @@ export class ChatRepository extends BaseRepository<ChatHistory, ChatHistoryRow> 
 
       if (existing) {
         // 更新现有历史
-        db.prepare(`
+        db.prepare(
+          `
           UPDATE chatHistories SET title = @title, updatedAt = @updatedAt WHERE id = @id
-        `).run({
+        `
+        ).run({
           id: history.id,
           title: history.title,
           updatedAt: history.updatedAt.toISOString(),

@@ -16,18 +16,21 @@ export async function POST(request: NextRequest) {
     // 记录数据库路径
     const dbPath = getDatabasePath();
     logger.info(`[API] 添加项目请求 - 数据库路径: ${dbPath}`);
-    
+
     // 确保数据库已初始化
     await ServerStorageManager.init();
-    
+
     const data = await request.json();
     const item = data.item as TMDBItem;
 
     if (!item || !item.id) {
-      return NextResponse.json({
-        error: '无效的项目数据',
-        success: false
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: '无效的项目数据',
+          success: false,
+        },
+        { status: 400 }
+      );
     }
 
     // 确保时间戳存在
@@ -47,20 +50,26 @@ export async function POST(request: NextRequest) {
       logger.info(`[API] 项目添加成功: ${item.title} (${item.id})`);
       return NextResponse.json({ success: true, item, userId }, { status: 201 });
     } else {
-      return NextResponse.json({
-        error: '添加项目失败',
-        success: false
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: '添加项目失败',
+          success: false,
+        },
+        { status: 500 }
+      );
     }
   } catch (error) {
     logger.error('[API] 添加项目错误:', error);
     logger.error('[API] 添加项目详细错误:', error);
 
-    return NextResponse.json({
-      error: ErrorHandler.toUserMessage(error),
-      success: false,
-      details: error instanceof Error ? error.message : '未知错误',
-    }, { status: ErrorHandler.getStatusCode(error) });
+    return NextResponse.json(
+      {
+        error: ErrorHandler.toUserMessage(error),
+        success: false,
+        details: error instanceof Error ? error.message : '未知错误',
+      },
+      { status: ErrorHandler.getStatusCode(error) }
+    );
   }
 }
 
@@ -74,10 +83,13 @@ export async function PUT(request: NextRequest) {
     const item = data.item as TMDBItem;
 
     if (!item || !item.id) {
-      return NextResponse.json({
-        error: '无效的项目数据',
-        success: false
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: '无效的项目数据',
+          success: false,
+        },
+        { status: 400 }
+      );
     }
 
     // 更新时间戳
@@ -100,17 +112,23 @@ export async function PUT(request: NextRequest) {
 
       return NextResponse.json({ success: true, item, userId }, { status: 200 });
     } else {
-      return NextResponse.json({
-        error: '更新项目失败，项目可能不存在',
-        success: false
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: '更新项目失败，项目可能不存在',
+          success: false,
+        },
+        { status: 404 }
+      );
     }
   } catch (error) {
-    logger.error('更新项目失败', error)
-    return NextResponse.json({
-      error: ErrorHandler.toUserMessage(error),
-      success: false,
-    }, { status: ErrorHandler.getStatusCode(error) });
+    logger.error('更新项目失败', error);
+    return NextResponse.json(
+      {
+        error: ErrorHandler.toUserMessage(error),
+        success: false,
+      },
+      { status: ErrorHandler.getStatusCode(error) }
+    );
   }
 }
 
@@ -119,15 +137,18 @@ export async function DELETE(request: NextRequest) {
   try {
     // 确保数据库已初始化
     await ServerStorageManager.init();
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({
-        error: '缺少项目ID',
-        success: false
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: '缺少项目ID',
+          success: false,
+        },
+        { status: 400 }
+      );
     }
 
     // 获取用户ID
@@ -138,21 +159,30 @@ export async function DELETE(request: NextRequest) {
 
     if (success) {
       logger.info(`[API] 项目删除成功: ${id}`);
-      return NextResponse.json({ 
-        success: true, 
-        userId
-      }, { status: 200 });
+      return NextResponse.json(
+        {
+          success: true,
+          userId,
+        },
+        { status: 200 }
+      );
     } else {
-      return NextResponse.json({
-        error: '删除项目失败，项目可能不存在',
-        success: false
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: '删除项目失败，项目可能不存在',
+          success: false,
+        },
+        { status: 404 }
+      );
     }
   } catch (error) {
-    logger.error('删除项目失败', error)
-    return NextResponse.json({
-      error: ErrorHandler.toUserMessage(error),
-      success: false,
-    }, { status: ErrorHandler.getStatusCode(error) });
+    logger.error('删除项目失败', error);
+    return NextResponse.json(
+      {
+        error: ErrorHandler.toUserMessage(error),
+        success: false,
+      },
+      { status: ErrorHandler.getStatusCode(error) }
+    );
   }
 }

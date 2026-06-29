@@ -25,10 +25,7 @@ export class StorageBase {
   /**
    * 通用的API调用方法，带有超时和错误处理
    */
-  protected static async makeApiCall(
-    url: string,
-    options: RequestInit = {},
-  ): Promise<Response> {
+  protected static async makeApiCall(url: string, options: RequestInit = {}): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_15S);
 

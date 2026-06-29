@@ -1,23 +1,30 @@
-import { StyleOption } from './types'
-import { getAllTitleStyles, getAllSummaryStyles } from '@/features/episode-generation/plugins/plugin-service'
+import { StyleOption } from './types';
+import {
+  getAllTitleStyles,
+  getAllSummaryStyles,
+} from '@/features/episode-generation/plugins/plugin-service';
 
 // 硅基流动支持的模型列表
 export const SILICONFLOW_MODELS = [
-  { id: "deepseek-ai/DeepSeek-V2.5", name: "DeepSeek-V2.5", description: "强大的中文理解能力" },
-  { id: "Qwen/Qwen2.5-72B-Instruct", name: "Qwen2.5-72B", description: "阿里通义千问大模型" },
-  { id: "meta-llama/Meta-Llama-3.1-70B-Instruct", name: "Llama-3.1-70B", description: "Meta开源大模型" },
-  { id: "01-ai/Yi-1.5-34B-Chat", name: "Yi-1.5-34B", description: "零一万物大模型" },
-  { id: "THUDM/glm-4-9b-chat", name: "GLM-4-9B", description: "智谱AI大模型" }
-]
+  { id: 'deepseek-ai/DeepSeek-V2.5', name: 'DeepSeek-V2.5', description: '强大的中文理解能力' },
+  { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen2.5-72B', description: '阿里通义千问大模型' },
+  {
+    id: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+    name: 'Llama-3.1-70B',
+    description: 'Meta开源大模型',
+  },
+  { id: '01-ai/Yi-1.5-34B-Chat', name: 'Yi-1.5-34B', description: '零一万物大模型' },
+  { id: 'THUDM/glm-4-9b-chat', name: 'GLM-4-9B', description: '智谱AI大模型' },
+];
 
 // 标题风格选项（从插件系统获取）
-export const TITLE_STYLES: StyleOption[] = getAllTitleStyles()
+export const TITLE_STYLES: StyleOption[] = getAllTitleStyles();
 
 // 简介风格选项（从插件系统获取）
-export const SUMMARY_STYLES: StyleOption[] = getAllSummaryStyles()
+export const SUMMARY_STYLES: StyleOption[] = getAllSummaryStyles();
 
 // 兼容性：保持原有的GENERATION_STYLES用于向后兼容
-export const GENERATION_STYLES = SUMMARY_STYLES
+export const GENERATION_STYLES = SUMMARY_STYLES;
 
 // 超强浏览器菜单禁用样式
 export const REWRITE_MODE_STYLES = `
@@ -88,4 +95,4 @@ export const REWRITE_MODE_STYLES = `
   body.rewrite-mode-active [data-translate] {
     display: none !important;
   }
-`
+`;

@@ -11,10 +11,7 @@ export async function GET(request: NextRequest) {
     const mediaType = searchParams.get('mediaType');
 
     if (!tmdbId || !mediaType) {
-      return NextResponse.json(
-        { error: '缺少必要参数: tmdbId 和 mediaType' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必要参数: tmdbId 和 mediaType' }, { status: 400 });
     }
 
     // 确保数据库已初始化

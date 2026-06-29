@@ -1,122 +1,137 @@
-"use client"
+'use client';
 
-import { useEffect, useState, useCallback } from "react"
-import { logger } from "@/lib/utils/logger"
-import { useIsClient } from "@/lib/hooks/use-is-client"
-import { StorageManager, TMDBItem } from "@/lib/data/storage"
-import { realtimeSyncManager, DataChangeEvent } from "@/lib/data/realtime-sync-manager"
-import { useAuth } from "@/shared/components/auth-provider"
+import { useEffect, useState, useCallback } from 'react';
+import { logger } from '@/lib/utils/logger';
+import { useIsClient } from '@/lib/hooks/use-is-client';
+import { StorageManager, TMDBItem } from '@/lib/data/storage';
+import { realtimeSyncManager, DataChangeEvent } from '@/lib/data/realtime-sync-manager';
+import { useAuth } from '@/shared/components/auth-provider';
 
 export function useDataSync() {
-  const [items, setItems] = useState<TMDBItem[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [initialized, setInitialized] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
-  const isClient = useIsClient()
-  const { isAuthenticated } = useAuth()
+  const [items, setItems] = useState<TMDBItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const isClient = useIsClient();
+  const { isAuthenticated } = useAuth();
 
   const loadData = useCallback(async () => {
-    if (!isClient) return
+    if (!isClient) {
+      return;
+    }
 
-    setError(null)
+    setError(null);
 
     try {
-      const data = await StorageManager.getItemsWithRetry()
-      setItems(data)
-      setInitialized(true)
+      const data = await StorageManager.getItemsWithRetry();
+      setItems(data as TMDBItem[]);
+      setInitialized(true);
     } catch (err) {
-      logger.error('[useDataSync] 加载数据失败', err)
-      setError("加载数据失败，请刷新页面重试")
+      logger.error('[useDataSync] 加载数据失败', err);
+      setError('加载数据失败，请刷新页面重试');
     }
-  }, [isClient])
+  }, [isClient]);
 
   // Initialize real-time sync
   useEffect(() => {
-    if (!isClient) return
+    if (!isClient) {
+      return;
+    }
 
-    let mounted = true
+    let mounted = true;
 
     if (!isAuthenticated) {
-      realtimeSyncManager.cleanup()
-      setIsConnected(false)
-      return
+      realtimeSyncManager.cleanup();
+      setIsConnected(false);
+      return;
     }
 
     const initializeSync = async () => {
       try {
-        const initPromise = realtimeSyncManager.initialize()
+        const initPromise = realtimeSyncManager.initialize();
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), 5000)
-        )
+        );
 
-        await Promise.race([initPromise, timeoutPromise])
+        await Promise.race([initPromise, timeoutPromise]);
 
-        if (!mounted) return
-        setIsConnected(realtimeSyncManager.isConnectionActive())
+        if (!mounted) {
+          return;
+        }
+        setIsConnected(realtimeSyncManager.isConnectionActive());
 
         const checkConnection = setInterval(() => {
-          if (!mounted) return
-          setIsConnected(realtimeSyncManager.isConnectionActive())
-        }, 5000)
+          if (!mounted) {
+            return;
+          }
+          setIsConnected(realtimeSyncManager.isConnectionActive());
+        }, 5000);
 
-        return () => clearInterval(checkConnection)
+        return () => clearInterval(checkConnection);
       } catch (error) {
-        if (!mounted) return
-        logger.error('[useDataSync] SSE 初始化失败', error)
-        setIsConnected(false)
+        if (!mounted) {
+          return;
+        }
+        logger.error('[useDataSync] SSE 初始化失败', error);
+        setIsConnected(false);
       }
-    }
+      return;
+    };
 
-    loadData()
-    initializeSync()
+    loadData();
+    initializeSync();
 
     return () => {
-      mounted = false
-    }
-  }, [isClient, loadData, isAuthenticated])
+      mounted = false;
+    };
+  }, [isClient, loadData, isAuthenticated]);
 
   // Handle data change events
   useEffect(() => {
     const handleDataChange = (event: DataChangeEvent) => {
-      if (!mounted) return
+      if (!mounted) {
+        return;
+      }
 
       switch (event.type) {
         case 'item_added':
-          setItems(prevItems => [...prevItems, event.data])
-          break
+          setItems((prevItems) => [...prevItems, event.data as TMDBItem]);
+          break;
         case 'item_updated':
-        case 'episode_updated':
-          if (event.data && event.data.id) {
-            setItems(prevItems =>
-              prevItems.map(item =>
-                item.id === event.data.id ? event.data : item
-              )
-            )
+        case 'episode_updated': {
+          const updated = event.data as TMDBItem;
+          if (updated && updated.id) {
+            setItems((prevItems) =>
+              prevItems.map((item) => (item.id === updated.id ? updated : item))
+            );
           } else {
-            loadData()
+            loadData();
           }
-          break
-        case 'item_deleted':
-          if (event.data && event.data.id) {
-            setItems(prevItems => prevItems.filter(item => item.id !== event.data.id))
+          break;
+        }
+        case 'item_deleted': {
+          const deleted = event.data as { id: string };
+          if (deleted && deleted.id) {
+            setItems((prevItems) => prevItems.filter((item) => item.id !== deleted.id));
           } else {
-            loadData()
+            loadData();
           }
-          break
+          break;
+        }
         case 'task_completed':
-          loadData()
-          break
+          loadData();
+          break;
       }
-    }
+    };
 
-    let mounted = true
-    realtimeSyncManager.addEventListener('*', handleDataChange)
+    let mounted = true;
+    realtimeSyncManager.addEventListener('*', handleDataChange);
 
     return () => {
-      mounted = false
-      realtimeSyncManager.removeEventListener('*', handleDataChange)
-    }
-  }, [loadData])
+      mounted = false;
+      realtimeSyncManager.removeEventListener('*', handleDataChange);
+    };
+  }, [loadData]);
 
   return {
     items,
@@ -125,6 +140,6 @@ export function useDataSync() {
     initialized,
     isConnected,
     refreshData: loadData,
-    setError
-  }
+    setError,
+  };
 }

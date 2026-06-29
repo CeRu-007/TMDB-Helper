@@ -13,7 +13,9 @@ export class MigrationHelper {
    * 检查是否需要迁移
    */
   static needsMigration(): boolean {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+      return false;
+    }
 
     const migrationStatus = localStorage.getItem(this.MIGRATION_KEY);
     return !migrationStatus || migrationStatus !== this.CURRENT_VERSION;
@@ -23,7 +25,9 @@ export class MigrationHelper {
    * 执行迁移
    */
   static async performMigration(): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     try {
       // 1. 迁移API密钥
@@ -47,13 +51,10 @@ export class MigrationHelper {
       // 检查是否存在旧的API密钥
       const oldApiKey = localStorage.getItem('tmdb_api_key');
 
-      if (oldApiKey && !SecureConfigManager.hasConfig()) {
-        // 验证API密钥格式
-        if (SecureConfigManager.validateApiKey(oldApiKey)) {
-          SecureConfigManager.setTmdbApiKey(oldApiKey);
-          localStorage.removeItem('tmdb_api_key');
-        } else {
-        }
+      if (oldApiKey && !(await SecureConfigManager.hasConfig())) {
+        // 验证并保存API密钥
+        await SecureConfigManager.saveConfig({ tmdbApiKey: oldApiKey });
+        localStorage.removeItem('tmdb_api_key');
       }
     } catch (error) {}
   }

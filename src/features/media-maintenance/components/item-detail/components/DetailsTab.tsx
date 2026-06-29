@@ -1,31 +1,31 @@
-"use client"
+'use client';
 
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Button } from "@/shared/components/ui/button"
-import { AlertTriangle, X } from "lucide-react"
-import { SeasonSelector } from "./SeasonSelector"
-import { EpisodeBatchActions } from "./EpisodeBatchActions"
-import { EpisodeList } from "./EpisodeList"
-import type { TMDBItem, Season } from "@/lib/data/storage"
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Button } from '@/shared/components/ui/button';
+import { AlertTriangle, X } from 'lucide-react';
+import { SeasonSelector } from './SeasonSelector';
+import { EpisodeBatchActions } from './EpisodeBatchActions';
+import { EpisodeList } from './EpisodeList';
+import type { TMDBItem, Season } from '@/types/tmdb-item';
 
 interface DetailsTabProps {
-  item: TMDBItem
-  selectedSeason?: number
-  currentSeason: Season | null
-  editing: boolean
-  isRefreshingTMDBData: boolean
-  refreshError: string | null
-  customSeasonNumber: number
-  onSeasonClick: (seasonNumber: number) => void
-  onResetSeason: () => void
-  onDeleteSeason: () => void
-  onRefreshTMDB: () => void
-  onAddSeason: (seasonNumber: number, episodeCount: number) => void
-  onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void
-  onTotalEpisodesChange: (count: number) => void
-  onCustomSeasonNumberChange: (value: number) => void
-  onClearRefreshError: () => void
-  onSetCustomSeasonNumber: (value: number) => void
+  item: TMDBItem;
+  selectedSeason?: number;
+  currentSeason: Season | null;
+  editing: boolean;
+  isRefreshingTMDBData: boolean;
+  refreshError: string | null;
+  customSeasonNumber: number;
+  onSeasonClick: (seasonNumber: number) => void;
+  onResetSeason: () => void;
+  onDeleteSeason: () => void;
+  onRefreshTMDB: () => void;
+  onAddSeason: (seasonNumber: number, episodeCount: number) => void;
+  onEpisodeProgressUpdate: (currentEpisode: number, seasonNumber: number) => void;
+  onTotalEpisodesChange: (count: number) => void;
+  onCustomSeasonNumberChange: (value: number) => void;
+  onClearRefreshError: () => void;
+  onSetCustomSeasonNumber: (value: number) => void;
 }
 
 export function DetailsTab({
@@ -45,7 +45,7 @@ export function DetailsTab({
   onTotalEpisodesChange,
   onCustomSeasonNumberChange,
   onClearRefreshError,
-  onSetCustomSeasonNumber
+  onSetCustomSeasonNumber,
 }: DetailsTabProps) {
   return (
     <div className="flex-1 min-h-0">
@@ -54,11 +54,8 @@ export function DetailsTab({
           {/* 季数选择器 */}
           <SeasonSelector
             seasons={item.seasons || []}
-            selectedSeason={selectedSeason}
-            editing={editing}
-            isRefreshingTMDBData={isRefreshingTMDBData}
+            selectedSeason={selectedSeason ?? null}
             onSeasonClick={onSeasonClick}
-            onRefreshTMDB={onRefreshTMDB}
           />
 
           {/* 季数操作 */}
@@ -103,5 +100,5 @@ export function DetailsTab({
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

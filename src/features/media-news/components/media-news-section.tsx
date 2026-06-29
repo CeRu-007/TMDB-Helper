@@ -1,73 +1,79 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { 
-  Loader2, 
-  RefreshCw, 
-  AlertTriangle, 
-  Key, 
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import {
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Key,
   Calendar,
   Film,
   Star,
   Clock,
-  ExternalLink
-} from 'lucide-react'
-import Image from 'next/image'
-import Link from 'next/link'
+  ExternalLink,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface MediaNewsItem {
-  id: string
-  title: string
-  originalTitle?: string
-  releaseDate: string
-  posterUrl?: string
-  overview?: string
-  mediaType: 'movie' | 'tv'
-  voteAverage?: number
+  id: string;
+  title: string;
+  originalTitle?: string;
+  releaseDate: string;
+  posterUrl?: string;
+  overview?: string;
+  mediaType: 'movie' | 'tv';
+  voteAverage?: number;
 }
 
 interface MediaNewsSectionProps {
-  type: 'upcoming' | 'recent'
-  title: string
-  items: MediaNewsItem[]
-  loading: boolean
-  error: string | null
-  lastUpdated: string | null
-  isMissingApiKey: boolean
-  selectedRegion: string
-  onRegionChange: (region: string) => void
-  onRefresh: () => void
-  onShowSettings: () => void
+  type: 'upcoming' | 'recent';
+  title: string;
+  items: MediaNewsItem[];
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+  isMissingApiKey: boolean;
+  selectedRegion: string;
+  onRegionChange: (region: string) => void;
+  onRefresh: () => void;
+  onShowSettings: () => void;
 }
 
 const REGIONS = [
-  { id: "CN", name: "", icon: "🇨🇳" },
-  { id: "HK", name: "", icon: "🇭🇰" },
-  { id: "TW", name: "", icon: "🇹🇼" },
-  { id: "JP", name: "", icon: "🇯🇵" },
-  { id: "KR", name: "", icon: "🇰🇷" },
-  { id: "US", name: "", icon: "🇺🇸" },
-  { id: "GB", name: "", icon: "🇬🇧" },
-]
+  { id: 'CN', name: '', icon: '🇨🇳' },
+  { id: 'HK', name: '', icon: '🇭🇰' },
+  { id: 'TW', name: '', icon: '🇹🇼' },
+  { id: 'JP', name: '', icon: '🇯🇵' },
+  { id: 'KR', name: '', icon: '🇰🇷' },
+  { id: 'US', name: '', icon: '🇺🇸' },
+  { id: 'GB', name: '', icon: '🇬🇧' },
+];
 
 const getRegionName = (id: string, t: any) => {
   const names: Record<string, string> = {
-    CN: t("regions.CN"),
-    HK: t("regions.HK"),
-    TW: t("regions.TW"),
-    JP: t("regions.JP"),
-    KR: t("regions.KR"),
-    US: t("regions.US"),
-    GB: t("regions.GB"),
-  }
-  return names[id] || id
-}
+    CN: t('regions.CN'),
+    HK: t('regions.HK'),
+    TW: t('regions.TW'),
+    JP: t('regions.JP'),
+    KR: t('regions.KR'),
+    US: t('regions.US'),
+    GB: t('regions.GB'),
+  };
+  return names[id] || id;
+};
 
 export function MediaNewsSection({
   type,
@@ -80,50 +86,51 @@ export function MediaNewsSection({
   selectedRegion,
   onRegionChange,
   onRefresh,
-  onShowSettings
+  onShowSettings,
 }: MediaNewsSectionProps) {
-  const { t, i18n } = useTranslation("nav.news")
-  
+  const { t, i18n } = useTranslation('nav.news');
+
   const localeMap: Record<string, string> = {
     'zh-CN': 'zh-CN',
     'zh-TW': 'zh-TW',
     'zh-HK': 'zh-HK',
     'en-US': 'en-US',
     'ja-JP': 'ja-JP',
-    'ko-KR': 'ko-KR'
-  }
-  const currentLocale = localeMap[i18n.language] || 'zh-CN'
-  
+    'ko-KR': 'ko-KR',
+  };
+  const currentLocale = localeMap[i18n.language] || 'zh-CN';
+
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       return date.toLocaleDateString(currentLocale, {
         month: 'short',
-        day: 'numeric'
-      })
+        day: 'numeric',
+      });
     } catch {
-      return dateString
+      return dateString;
     }
-  }
+  };
 
   const getMediaTypeIcon = (mediaType: string) => {
-    return mediaType === 'movie' ? <Film className="h-3 w-3" /> : <Calendar className="h-3 w-3" />
-  }
+    return mediaType === 'movie' ? <Film className="h-3 w-3" /> : <Calendar className="h-3 w-3" />;
+  };
 
   const getMediaTypeName = (mediaType: string) => {
-    return mediaType === 'movie' ? t("mediaNewsSection.movie") : t("mediaNewsSection.tv")
-  }
+    return mediaType === 'movie' ? t('mediaNewsSection.movie') : t('mediaNewsSection.tv');
+  };
 
   return (
     <div className="space-y-4">
       {/* 标题和控制栏 */}
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-6">
         <div className="flex items-center space-x-3">
-          <h2 className="text-xl font-semibold text-foreground">
-            {title}
-          </h2>
+          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
           {lastUpdated && (
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0 sm:py-0.5">
+            <Badge
+              variant="outline"
+              className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0 sm:py-0.5"
+            >
               <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
               <span className="hidden sm:inline">{lastUpdated}</span>
               <span className="sm:hidden">{lastUpdated}</span>
@@ -182,7 +189,7 @@ export function MediaNewsSection({
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">{t("mediaNewsSection.refresh")}</span>
+            <span className="hidden sm:inline">{t('mediaNewsSection.refresh')}</span>
           </Button>
         </div>
       </div>
@@ -202,7 +209,7 @@ export function MediaNewsSection({
                   className="flex-shrink-0 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 border-red-300 dark:border-red-700 min-h-[36px]"
                 >
                   <Key className="h-3 w-3 mr-1" />
-                  {t("mediaNewsSection.configureApi")}
+                  {t('mediaNewsSection.configureApi')}
                 </Button>
               )}
             </div>
@@ -214,7 +221,7 @@ export function MediaNewsSection({
       {loading && !error && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          <span className="text-muted-foreground">{t("mediaNewsSection.loading")}</span>
+          <span className="text-muted-foreground">{t('mediaNewsSection.loading')}</span>
         </div>
       )}
 
@@ -240,7 +247,7 @@ export function MediaNewsSection({
                         {getMediaTypeIcon(item.mediaType)}
                       </div>
                     )}
-                    
+
                     {/* 评分徽章 */}
                     {item.voteAverage && item.voteAverage > 0 && (
                       <div className="absolute top-2 right-2">
@@ -271,7 +278,6 @@ export function MediaNewsSection({
                     )}
                   </div>
 
-                  
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatDate(item.releaseDate)}</span>
                     <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -287,10 +293,16 @@ export function MediaNewsSection({
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-8">
           <div className="text-muted-foreground mb-2">
-            {type === 'upcoming' ? <Calendar className="h-8 w-8 mx-auto" /> : <Film className="h-8 w-8 mx-auto" />}
+            {type === 'upcoming' ? (
+              <Calendar className="h-8 w-8 mx-auto" />
+            ) : (
+              <Film className="h-8 w-8 mx-auto" />
+            )}
           </div>
           <p className="text-muted-foreground">
-            {type === 'upcoming' ? t("mediaNewsSection.noContentUpcoming") : t("mediaNewsSection.noContentRecent")}
+            {type === 'upcoming'
+              ? t('mediaNewsSection.noContentUpcoming')
+              : t('mediaNewsSection.noContentRecent')}
           </p>
         </div>
       )}
@@ -299,10 +311,10 @@ export function MediaNewsSection({
       {!loading && !error && items.length > 12 && (
         <div className="text-center pt-4">
           <Button variant="outline" size="sm" className="min-h-[44px] min-w-[44px]">
-            {t("mediaNewsSection.loadMore", { count: items.length - 12 })}
+            {t('mediaNewsSection.loadMore', { count: items.length - 12 })}
           </Button>
         </div>
       )}
     </div>
-  )
+  );
 }

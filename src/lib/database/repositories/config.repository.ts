@@ -16,9 +16,12 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
    */
   async get<T = unknown>(key: string, defaultValue?: T): Promise<T | undefined> {
     const db = await getDatabaseAsync();
-    const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key) as ConfigRow | undefined;
+    const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key) as
+      ConfigRow | undefined;
 
-    if (!row) return defaultValue;
+    if (!row) {
+      return defaultValue;
+    }
 
     try {
       return JSON.parse(row.value) as T;
@@ -37,10 +40,12 @@ export class ConfigRepository extends BaseRepository<Record<string, unknown>, Co
       const serializedValue = typeof value === 'string' ? value : JSON.stringify(value);
       const now = new Date().toISOString();
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO config (key, value, createdAt, updatedAt) VALUES (@key, @value, @createdAt, @updatedAt)
         ON CONFLICT(key) DO UPDATE SET value = @value, updatedAt = @updatedAt
-      `).run({
+      `
+      ).run({
         key,
         value: serializedValue,
         createdAt: now,

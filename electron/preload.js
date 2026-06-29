@@ -59,7 +59,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
 
   // 是否为桌面应用
-  isElectron: true
+  isElectron: true,
 });
 
 // 在页面加载完成后注入桌面应用标识

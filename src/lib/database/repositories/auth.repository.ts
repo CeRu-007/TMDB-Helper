@@ -41,11 +41,12 @@ export class UserRepository extends BaseRepository<User, UserRow> {
 
   override findById(id: string): UserRow | undefined {
     const db = getDatabase();
-    const row = db
-      .prepare('SELECT * FROM users WHERE id = ? AND deletedAt IS NULL')
-      .get(id) as UserRow | undefined;
+    const row = db.prepare('SELECT * FROM users WHERE id = ? AND deletedAt IS NULL').get(id) as
+      UserRow | undefined;
 
-    if (!row) return undefined;
+    if (!row) {
+      return undefined;
+    }
 
     return row;
   }
@@ -56,7 +57,9 @@ export class UserRepository extends BaseRepository<User, UserRow> {
       .prepare('SELECT * FROM users WHERE username = ? AND deletedAt IS NULL')
       .get(username) as UserRow | undefined;
 
-    if (!row) return undefined;
+    if (!row) {
+      return undefined;
+    }
 
     return mapRowToUser(row);
   }
@@ -66,10 +69,12 @@ export class UserRepository extends BaseRepository<User, UserRow> {
 
     try {
       const now = new Date().toISOString();
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, loginCount, totalUsageTime, deletedAt)
         VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @loginCount, @totalUsageTime, @deletedAt)
-      `).run({
+      `
+      ).run({
         id: user.id,
         username: user.username,
         passwordHash: user.passwordHash,
@@ -99,7 +104,9 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE users SET lastLoginAt = ?, loginCount = loginCount + 1, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(lastLoginAt, lastLoginAt, id);
+      db.prepare(
+        'UPDATE users SET lastLoginAt = ?, loginCount = loginCount + 1, updatedAt = ? WHERE id = ? AND deletedAt IS NULL'
+      ).run(lastLoginAt, lastLoginAt, id);
       return { success: true };
     } catch (error) {
       return {
@@ -113,7 +120,9 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE users SET passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(passwordHash, new Date().toISOString(), id);
+      db.prepare(
+        'UPDATE users SET passwordHash = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL'
+      ).run(passwordHash, new Date().toISOString(), id);
       return { success: true };
     } catch (error) {
       logger.error('[UserRepository] 更新密码失败:', error);
@@ -128,7 +137,9 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE users SET avatarUrl = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(avatarUrl || null, new Date().toISOString(), id);
+      db.prepare(
+        'UPDATE users SET avatarUrl = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL'
+      ).run(avatarUrl || null, new Date().toISOString(), id);
       return { success: true };
     } catch (error) {
       logger.error('[UserRepository] 更新头像失败:', error);
@@ -143,7 +154,9 @@ export class UserRepository extends BaseRepository<User, UserRow> {
     const db = getDatabase();
 
     try {
-      db.prepare('UPDATE users SET totalUsageTime = totalUsageTime + ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL').run(additionalMinutes, new Date().toISOString(), id);
+      db.prepare(
+        'UPDATE users SET totalUsageTime = totalUsageTime + ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL'
+      ).run(additionalMinutes, new Date().toISOString(), id);
       return { success: true };
     } catch (error) {
       logger.error('[UserRepository] 更新使用时长失败:', error);
@@ -156,33 +169,43 @@ export class UserRepository extends BaseRepository<User, UserRow> {
 
   hasAdmin(): boolean {
     const db = getDatabase();
-    const count = (db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() as { count: number }).count;
+    const count = (
+      db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() as {
+        count: number;
+      }
+    ).count;
     return count > 0;
   }
 
   getAdminCount(): number {
     const db = getDatabase();
-    return (db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() as { count: number }).count;
+    return (
+      db.prepare('SELECT COUNT(*) as count FROM users WHERE deletedAt IS NULL').get() as {
+        count: number;
+      }
+    ).count;
   }
 
   getAdmin(): User | null {
     const db = getDatabase();
-    const row = db
-      .prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1')
-      .get() as UserRow | undefined;
+    const row = db.prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1').get() as
+      UserRow | undefined;
 
-    if (!row) return null;
+    if (!row) {
+      return null;
+    }
 
     return mapRowToUser(row);
   }
 
   async getAdminAsync(): Promise<User | null> {
     const db = await getDatabaseAsync();
-    const row = db
-      .prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1')
-      .get() as UserRow | undefined;
+    const row = db.prepare('SELECT * FROM users WHERE deletedAt IS NULL LIMIT 1').get() as
+      UserRow | undefined;
 
-    if (!row) return null;
+    if (!row) {
+      return null;
+    }
 
     return mapRowToUser(row);
   }
@@ -192,7 +215,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
 
     try {
       const now = new Date().toISOString();
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO users (id, username, passwordHash, createdAt, updatedAt, lastLoginAt, sessionExpiryDays, avatarUrl, loginCount, totalUsageTime, deletedAt)
         VALUES (@id, @username, @passwordHash, @createdAt, @updatedAt, @lastLoginAt, @sessionExpiryDays, @avatarUrl, @loginCount, @totalUsageTime, @deletedAt)
         ON CONFLICT(id) DO UPDATE SET
@@ -202,7 +226,8 @@ export class UserRepository extends BaseRepository<User, UserRow> {
           sessionExpiryDays = @sessionExpiryDays,
           avatarUrl = @avatarUrl,
           updatedAt = @updatedAt
-      `).run({
+      `
+      ).run({
         id: user.id,
         username: user.username,
         passwordHash: user.passwordHash,

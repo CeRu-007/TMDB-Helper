@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types'
+import type { ThemeConfig } from '../../types';
 
 export const forestTheme: ThemeConfig = {
   id: 'forest',
@@ -39,4 +39,4 @@ export const forestTheme: ThemeConfig = {
     opacity: 1,
     blur: 0,
   },
-}
+};

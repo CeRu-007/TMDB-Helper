@@ -2,7 +2,7 @@ import type { TMDBItem } from '@/types/tmdb-item';
 import { logger } from '@/lib/utils/logger';
 import { initializeStorage } from './server-storage-service';
 import { itemsRepository } from '@/lib/database/repositories/items.repository';
-import type { DatabaseResult } from './database/types';
+import type { DatabaseResult } from '@/lib/database/types';
 
 // 初始化标志
 let initialized = false;
@@ -125,7 +125,9 @@ export class ServerStorageManager {
   /**
    * 批量导入项目
    */
-  static async importItems(items: TMDBItem[]): Promise<DatabaseResult<{ imported: number; skipped: number }>> {
+  static async importItems(
+    items: TMDBItem[]
+  ): Promise<DatabaseResult<{ imported: number; skipped: number }>> {
     await ensureInitialized();
     return itemsRepository.importItems(items);
   }

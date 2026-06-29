@@ -10,24 +10,24 @@
  * - 客户端组件中使用：通过 API 调用
  */
 
-import type { TMDBItem } from '@/types/tmdb-item'
+import type { TMDBItem } from '@/types/tmdb-item';
 
 // 环境检测
-const isServer = typeof window === 'undefined'
-const isClient = !isServer
+const isServer = typeof window === 'undefined';
+const isClient = !isServer;
 
 // 服务端存储服务（动态导入，避免客户端打包）
-let _serverService: typeof import('./server-storage-service').ServerStorageService | null = null
+let _serverService: typeof import('./server-storage-service').ServerStorageService | null = null;
 
 async function getServerService() {
   if (!isServer) {
-    throw new Error('ServerStorageService can only be used on the server side')
+    throw new Error('ServerStorageService can only be used on the server side');
   }
   if (!_serverService) {
-    const serverModule = await import('./server-storage-service')
-    _serverService = serverModule.ServerStorageService
+    const serverModule = await import('./server-storage-service');
+    _serverService = serverModule.ServerStorageService;
   }
-  return _serverService
+  return _serverService;
 }
 
 /**
@@ -41,16 +41,16 @@ export class UnifiedStorageService {
    */
   static async getItems(): Promise<TMDBItem[]> {
     if (isServer) {
-      const service = await getServerService()
-      return service.readItemsFromFile()
+      const service = await getServerService();
+      return service.readItemsFromFile();
     }
 
     // 客户端通过 API 获取
-    const response = await fetch('/api/storage/items')
+    const response = await fetch('/api/storage/items');
     if (!response.ok) {
-      throw new Error('Failed to fetch items')
+      throw new Error('Failed to fetch items');
     }
-    return response.json()
+    return response.json();
   }
 
   /**
@@ -58,16 +58,16 @@ export class UnifiedStorageService {
    */
   static async saveItems(items: TMDBItem[]): Promise<boolean> {
     if (isServer) {
-      const service = await getServerService()
-      return service.writeItemsToFile(items)
+      const service = await getServerService();
+      return service.writeItemsToFile(items);
     }
 
     const response = await fetch('/api/storage/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
-    })
-    return response.ok
+    });
+    return response.ok;
   }
 
   // ==================== 批量操作 ====================
@@ -77,16 +77,16 @@ export class UnifiedStorageService {
    */
   static async importData(items: TMDBItem[]): Promise<boolean> {
     if (isServer) {
-      const service = await getServerService()
-      return service.writeItemsToFile(items)
+      const service = await getServerService();
+      return service.writeItemsToFile(items);
     }
 
     const response = await fetch('/api/storage/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
-    })
-    return response.ok
+    });
+    return response.ok;
   }
 
   /**
@@ -94,16 +94,16 @@ export class UnifiedStorageService {
    */
   static async exportData(): Promise<{ items: TMDBItem[] }> {
     if (isServer) {
-      const service = await getServerService()
-      const items = service.readItemsFromFile()
-      return { items }
+      const service = await getServerService();
+      const items = service.readItemsFromFile();
+      return { items };
     }
 
-    const response = await fetch('/api/storage/data')
+    const response = await fetch('/api/storage/data');
     if (!response.ok) {
-      throw new Error('Failed to export data')
+      throw new Error('Failed to export data');
     }
-    return response.json()
+    return response.json();
   }
 
   // ==================== 工具方法 ====================
@@ -112,16 +112,16 @@ export class UnifiedStorageService {
    * 检查是否有任何项目
    */
   static async hasAnyItems(): Promise<boolean> {
-    const items = await this.getItems()
-    return items.length > 0
+    const items = await this.getItems();
+    return items.length > 0;
   }
 
   /**
    * 获取项目数量
    */
   static async getItemCount(): Promise<number> {
-    const items = await this.getItems()
-    return items.length
+    const items = await this.getItems();
+    return items.length;
   }
 
   /**
@@ -129,13 +129,13 @@ export class UnifiedStorageService {
    */
   static async clearAllData(): Promise<boolean> {
     if (isServer) {
-      const service = await getServerService()
-      return service.clearAllData()
+      const service = await getServerService();
+      return service.writeItemsToFile([]);
     }
 
     const response = await fetch('/api/storage/data', {
       method: 'DELETE',
-    })
-    return response.ok
+    });
+    return response.ok;
   }
 }

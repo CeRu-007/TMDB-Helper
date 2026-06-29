@@ -178,7 +178,10 @@ export interface MigrationStatus {
 }
 
 // 帮助函数：将 TMDBItem 转换为数据库行
-export function tmdbItemToRow(item: TMDBItem, timestamps?: { createdAt?: string; updatedAt?: string }): ItemRow {
+export function tmdbItemToRow(
+  item: TMDBItem,
+  timestamps?: { createdAt?: string; updatedAt?: string }
+): ItemRow {
   const now = new Date().toISOString();
   return {
     id: item.id,
@@ -229,7 +232,7 @@ export function tmdbItemToRow(item: TMDBItem, timestamps?: { createdAt?: string;
 export function rowToTMDBItem(
   row: ItemRow,
   seasons?: (SeasonRow & { episodes?: EpisodeRow[] })[],
-  episodes?: EpisodeRow[],
+  episodes?: EpisodeRow[]
 ): TMDBItem {
   const item: TMDBItem = {
     id: row.id,
@@ -253,9 +256,16 @@ export function rowToTMDBItem(
     networkId: row.networkId ?? undefined,
     networkName: row.networkName ?? undefined,
     networkLogoUrl: row.networkLogoUrl ?? undefined,
-    status: (row.status && row.status !== 'ongoing' && row.status !== 'completed') ? 'ongoing' : (row.status ?? undefined),
+    status:
+      row.status && row.status !== 'ongoing' && row.status !== 'completed'
+        ? 'ongoing'
+        : (row.status ?? undefined),
     completed: row.completed === 1,
-    platformUrls: row.platformUrls ? JSON.parse(row.platformUrls) : (row.platformUrl ? [row.platformUrl] : undefined),
+    platformUrls: row.platformUrls
+      ? JSON.parse(row.platformUrls)
+      : row.platformUrl
+        ? [row.platformUrl]
+        : undefined,
     defaultPlatformUrl: row.defaultPlatformUrl ?? undefined,
     networks: row.networks ? JSON.parse(row.networks) : undefined,
     totalEpisodes: row.totalEpisodes ?? undefined,

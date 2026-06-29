@@ -94,4 +94,4 @@ export const content = `# 원래 영화 언어
 # 사용 언어
 
 원래 버전에서 사용되는 주요 언어만. 대화가 없는 영화는 "No Language" 사용.
-`
+`;

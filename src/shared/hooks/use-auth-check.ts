@@ -1,22 +1,22 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from 'react'
-import type { AuthUser } from '@/shared/types/auth.types'
-import { logger } from '@/lib/utils/logger'
+import { useEffect, useState } from 'react';
+import type { AuthUser } from '@/shared/types/auth.types';
+import { logger } from '@/lib/utils/logger';
 
 export function useAuthCheck(): {
-  user: AuthUser | null
-  isLoading: boolean
-  isAuthenticated: boolean
+  user: AuthUser | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
 } {
   const [state, setState] = useState({
     user: null as AuthUser | null,
     isLoading: true,
     isAuthenticated: false,
-  })
+  });
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     const checkAuth = async () => {
       try {
@@ -24,33 +24,39 @@ export function useAuthCheck(): {
           method: 'GET',
           credentials: 'include',
           cache: 'no-store',
-        })
+        });
 
-        if (cancelled) return
+        if (cancelled) {
+          return;
+        }
 
         if (response.ok) {
-          const data = await response.json()
-          if (cancelled) return
+          const data = await response.json();
+          if (cancelled) {
+            return;
+          }
           if (data.success) {
-            setState({ user: data.user, isLoading: false, isAuthenticated: true })
-            return
+            setState({ user: data.user, isLoading: false, isAuthenticated: true });
+            return;
           }
         } else {
-          logger.warn('[AuthCheck] verify failed:', response.status, response.statusText)
+          logger.warn('[AuthCheck] verify failed:', response.status, response.statusText);
         }
       } catch (err) {
-        logger.error('[AuthCheck] fetch error:', err)
+        logger.error('[AuthCheck] fetch error:', err);
       }
 
       if (!cancelled) {
-        setState({ user: null, isLoading: false, isAuthenticated: false })
+        setState({ user: null, isLoading: false, isAuthenticated: false });
       }
-    }
+    };
 
-    checkAuth()
+    checkAuth();
 
-    return () => { cancelled = true }
-  }, [])
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  return state
+  return state;
 }

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           items: [],
           message: '缺少用户身份信息',
         },
-        { status: 200 },
+        { status: 200 }
       );
     }
 
@@ -48,15 +48,12 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
         count: items.length,
       },
-      { status: 200 },
+      { status: 200 }
     );
 
     // 如果是强制请求，设置不缓存的头部
     if (force) {
-      response.headers.set(
-        'Cache-Control',
-        'no-cache, no-store, must-revalidate',
-      );
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
     }
@@ -70,7 +67,7 @@ export async function GET(request: NextRequest) {
         details: error instanceof Error ? error.message : String(error),
         items: [],
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -88,7 +85,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '缺少操作类型',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -101,7 +98,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: '缺少用户身份信息',
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -121,7 +118,7 @@ export async function POST(request: NextRequest) {
                 timestamp: new Date().toISOString(),
               },
             },
-            { status: 200 },
+            { status: 200 }
           );
         } catch (error) {
           return NextResponse.json(
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
               error: '数据一致性验证失败',
               details: error instanceof Error ? error.message : String(error),
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
 
@@ -149,7 +146,7 @@ export async function POST(request: NextRequest) {
                 syncStatus: 'up_to_date',
               },
             },
-            { status: 200 },
+            { status: 200 }
           );
         } catch (error) {
           return NextResponse.json(
@@ -158,7 +155,7 @@ export async function POST(request: NextRequest) {
               error: '同步检查失败',
               details: error instanceof Error ? error.message : String(error),
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
 
@@ -168,7 +165,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: `不支持的操作类型: ${action}`,
           },
-          { status: 400 },
+          { status: 400 }
         );
     }
   } catch (error) {
@@ -178,7 +175,7 @@ export async function POST(request: NextRequest) {
         error: '批量操作失败',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

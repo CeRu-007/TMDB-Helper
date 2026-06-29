@@ -35,8 +35,7 @@ export class OperationQueueManager {
   private itemQueues: Map<string, QueuedOperation[]> = new Map(); // 按itemId分组的队列
   private processingItems: Set<string> = new Set(); // 正在处理的项目ID
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map(); // 防抖定时器
-  private operationCallbacks: Map<string, (result: OperationResult) => void> =
-    new Map();
+  private operationCallbacks: Map<string, (result: OperationResult) => void> = new Map();
 
   // 配置参数
   private readonly DEFAULT_DEBOUNCE_MS = 300; // 默认防抖延迟
@@ -57,11 +56,8 @@ export class OperationQueueManager {
    * 添加操作到队列
    */
   public async enqueueOperation(
-    operation: Omit<
-      QueuedOperation,
-      'id' | 'timestamp' | 'status' | 'retryCount'
-    >,
-    callback?: (result: OperationResult) => void,
+    operation: Omit<QueuedOperation, 'id' | 'timestamp' | 'status' | 'retryCount'>,
+    callback?: (result: OperationResult) => void
   ): Promise<string> {
     const operationId = `op_${operation.itemId}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
@@ -116,7 +112,7 @@ export class OperationQueueManager {
     queue.push(queuedOperation);
 
     logger.debug('OperationQueue', `操作已入队: ${operationId}`, {
-      queueLength: queue.length
+      queueLength: queue.length,
     });
 
     // 启动防抖处理
@@ -128,9 +124,7 @@ export class OperationQueueManager {
   /**
    * 合并操作（去重和优化）
    */
-  private async mergeOperation(
-    newOperation: QueuedOperation,
-  ): Promise<string[]> {
+  private async mergeOperation(newOperation: QueuedOperation): Promise<string[]> {
     const queue = this.itemQueues.get(newOperation.itemId) || [];
     const mergedOperations: string[] = [];
 
@@ -146,10 +140,7 @@ export class OperationQueueManager {
       ) {
         // 合并数据（使用最新的数据）
         newOperation.data = { ...existingOp.data, ...newOperation.data };
-        newOperation.priority = Math.max(
-          existingOp.priority,
-          newOperation.priority,
-        );
+        newOperation.priority = Math.max(existingOp.priority, newOperation.priority);
 
         // 记录被合并的操作
         mergedOperations.push(existingOp.id);
@@ -165,10 +156,7 @@ export class OperationQueueManager {
   /**
    * 判断两个操作是否可以合并
    */
-  private canMergeOperations(
-    op1: QueuedOperation,
-    op2: QueuedOperation,
-  ): boolean {
+  private canMergeOperations(op1: QueuedOperation, op2: QueuedOperation): boolean {
     // 相同项目的相同类型操作可以合并
     if (op1.itemId === op2.itemId && op1.type === op2.type) {
       // 时间间隔在防抖范围内
@@ -215,11 +203,7 @@ export class OperationQueueManager {
     try {
       // 获取分布式锁
       const lockKey = `item_update_${itemId}`;
-      const lockResult = await DistributedLock.acquireLock(
-        lockKey,
-        'storage_write',
-        30000,
-      );
+      const lockResult = await DistributedLock.acquireLock(lockKey, 'storage_write', 30000);
 
       if (!lockResult.success) {
         // 延迟重试
@@ -254,7 +238,7 @@ export class OperationQueueManager {
         this.notifyOperationResult(
           op.id,
           false,
-          error instanceof Error ? error.message : '处理失败',
+          error instanceof Error ? error.message : '处理失败'
         );
       }
 
@@ -285,13 +269,12 @@ export class OperationQueueManager {
         operation.status = 'failed';
         operation.retryCount++;
 
-        const errorMessage =
-          error instanceof Error ? error.message : '未知错误';
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
 
         if (operation.retryCount < operation.maxRetries) {
           logger.warn('OperationQueue', `操作失败，准备重试: ${operation.id}`, {
             retryCount: operation.retryCount,
-            maxRetries: operation.maxRetries
+            maxRetries: operation.maxRetries,
           });
 
           // 重新入队重试
@@ -310,7 +293,7 @@ export class OperationQueueManager {
    */
   private async executeOperation(operation: QueuedOperation): Promise<boolean> {
     logger.debug('OperationQueue', `执行操作: ${operation.id}`, {
-      type: operation.type
+      type: operation.type,
     });
 
     try {
@@ -331,10 +314,7 @@ export class OperationQueueManager {
     } catch (error) {
       // 特殊处理 AbortError 和超时错误
       if (error instanceof Error) {
-        if (
-          error.message.includes('请求超时') ||
-          error.message.includes('请求被中止')
-        ) {
+        if (error.message.includes('请求超时') || error.message.includes('请求被中止')) {
           // 对于网络问题，我们认为这是可重试的错误
           return false;
         } else if (error.message.includes('API调用失败')) {
@@ -350,11 +330,7 @@ export class OperationQueueManager {
   /**
    * 通知操作结果
    */
-  private notifyOperationResult(
-    operationId: string,
-    success: boolean,
-    error?: string,
-  ): void {
+  private notifyOperationResult(operationId: string, success: boolean, error?: string): void {
     const callback = this.operationCallbacks.get(operationId);
     if (callback) {
       callback({
@@ -418,9 +394,7 @@ export class OperationQueueManager {
   /**
    * 设置操作执行器
    */
-  public setOperationExecutor(
-    executor: (operation: QueuedOperation) => Promise<boolean>,
-  ): void {
+  public setOperationExecutor(executor: (operation: QueuedOperation) => Promise<boolean>): void {
     this.executeOperation = executor;
   }
 }

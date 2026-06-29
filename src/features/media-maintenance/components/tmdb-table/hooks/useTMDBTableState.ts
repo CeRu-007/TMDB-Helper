@@ -1,86 +1,77 @@
-import { useState, useCallback, useRef, useEffect } from "react"
-import type {
-  CSVData,
-  UseTMDBTableStateOptions,
-  UseTMDBTableStateReturn,
-} from "../types"
+import { useState, useCallback, useRef, useEffect } from 'react';
+import type { CSVData, UseTMDBTableStateOptions, UseTMDBTableStateReturn } from '../types';
 
 export function useTMDBTableState({
   initialData,
   onDataChange,
   onCellChange,
 }: UseTMDBTableStateOptions): UseTMDBTableStateReturn {
-  const [localData, setLocalData] = useState<CSVData>(initialData)
-  const [isEditing, setIsEditing] = useState(false)
+  const [localData, setLocalData] = useState<CSVData>(initialData);
+  const [isEditing, setIsEditing] = useState(false);
   const [editCell, setEditCell] = useState<{
-    row: number
-    col: number
-    value: string
-  } | null>(null)
+    row: number;
+    col: number;
+    value: string;
+  } | null>(null);
 
   const stateRef = useRef({
     localData,
     isEditing,
     editCell,
-  })
+  });
 
-  const isInternalUpdateRef = useRef(false)
+  const isInternalUpdateRef = useRef(false);
 
   const updateStateRef = useCallback(() => {
     stateRef.current = {
       localData,
       isEditing,
       editCell,
-    }
-  }, [localData, isEditing, editCell])
+    };
+  }, [localData, isEditing, editCell]);
 
   const updateCellData = useCallback(
     (row: number, col: number, value: string) => {
-      isInternalUpdateRef.current = true
+      isInternalUpdateRef.current = true;
       setLocalData((prevData) => {
-        const newData = { ...prevData }
-        newData.rows = [...newData.rows]
+        const newData = { ...prevData };
+        newData.rows = [...newData.rows];
 
         if (newData.rows[row]) {
-          newData.rows[row] = [...newData.rows[row]!]
-          newData.rows[row]![col] = value
+          newData.rows[row] = [...newData.rows[row]!];
+          newData.rows[row]![col] = value;
         }
 
-        return newData
-      })
-      onCellChange?.(row, col, value)
+        return newData;
+      });
+      onCellChange?.(row, col, value);
     },
     [onCellChange]
-  )
+  );
 
   useEffect(() => {
     if (isInternalUpdateRef.current) {
-      isInternalUpdateRef.current = false
-      onDataChange?.(localData)
+      isInternalUpdateRef.current = false;
+      onDataChange?.(localData);
     }
-  }, [localData, onDataChange])
+  }, [localData, onDataChange]);
 
   // 开始编辑
   const startEditing = useCallback(
     (row: number, col: number) => {
-      if (
-        row < 0 ||
-        row >= localData.rows.length ||
-        col < 0 ||
-        col >= localData.headers.length
-      ) {
-        return
+      if (row < 0 || row >= localData.rows.length || col < 0 || col >= localData.headers.length) {
+        return;
       }
 
       setEditCell({
         row,
         col,
         value: localData.rows[row]![col]!,
-      })
-      setIsEditing(true)
+      });
+      setIsEditing(true);
     },
     [localData]
-  )
+  );
 
   // 完成编辑
   const finishEditing = useCallback(() => {
@@ -89,28 +80,28 @@ export function useTMDBTableState({
       editCell.row < localData.rows.length &&
       editCell.col < localData.headers.length
     ) {
-      updateCellData(editCell.row, editCell.col, editCell.value)
+      updateCellData(editCell.row, editCell.col, editCell.value);
     }
 
-    setIsEditing(false)
-    setEditCell(null)
-  }, [editCell, localData, updateCellData])
+    setIsEditing(false);
+    setEditCell(null);
+  }, [editCell, localData, updateCellData]);
 
   // 取消编辑
   const cancelEditing = useCallback(() => {
-    setIsEditing(false)
-    setEditCell(null)
-  }, [])
+    setIsEditing(false);
+    setEditCell(null);
+  }, []);
 
   // 更新编辑值
   const updateEditValue = useCallback((value: string) => {
-    setEditCell((prev) => (prev ? { ...prev, value } : null))
-  }, [])
+    setEditCell((prev) => (prev ? { ...prev, value } : null));
+  }, []);
 
   // 同步外部数据
   const syncExternalData = useCallback((data: CSVData) => {
-    setLocalData(data)
-  }, [])
+    setLocalData(data);
+  }, []);
 
   return {
     // 状态
@@ -127,5 +118,5 @@ export function useTMDBTableState({
     updateEditValue,
     syncExternalData,
     updateStateRef,
-  }
+  };
 }
