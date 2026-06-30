@@ -273,17 +273,6 @@ jobs:
           docker push ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
           docker push ${{ env.DOCKER_IMAGE }}:latest
 
-      - name: Export Docker image to tar
-        run: |
-          docker save -o tmdb-helper-${{ needs.prepare.outputs.tag }}.tar ${{ env.DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}
-
-      - name: Upload Docker tar as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: tmdb-helper-${{ needs.prepare.outputs.tag }}.tar
-          retention-days: 2
-
   electron-windows:
     needs: prepare
     runs-on: windows-latest
@@ -413,14 +402,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download Docker artifact
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_docker != true }}
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: dist/
-        continue-on-error: true
-
       - name: Download Windows artifact
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
@@ -464,8 +445,6 @@ jobs:
           tag_name: ${{ needs.prepare.outputs.tag }}
           name: ${{ needs.prepare.outputs.tag }}
           body_path: release-notes.md
-          files: |
-            dist/**/*.tar
           draft: false
           overwrite: true
         env:
