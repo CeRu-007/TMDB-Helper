@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-supported-brightgreen.svg)](https://hub.docker.com/r/ceru007/tmdb-helper)
 
-[Quick Start](#quick-start) · [Deployment](#deployment) · [Docs](https://github.com/CeRu-007/TMDB-Helper/wiki) · [Releases](https://github.com/CeRu-007/TMDB-Helper/releases)
+[中文](README.md) · [Quick Start](#quick-start) · [Deployment](#deployment) · [Docs](https://github.com/CeRu-007/TMDB-Helper/wiki) · [Releases](https://github.com/CeRu-007/TMDB-Helper/releases)
 
 <img width="2489" height="1352" alt="image" src="https://github.com/user-attachments/assets/7a599a85-3a42-4d31-a4a8-6ba0569d2093" />
 
