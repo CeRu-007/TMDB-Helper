@@ -12,7 +12,8 @@
 
 [中文](README.md) · [Quick Start](#quick-start) · [Deployment](#deployment) · [Docs](https://github.com/CeRu-007/TMDB-Helper/wiki) · [Releases](https://github.com/CeRu-007/TMDB-Helper/releases)
 
-<img width="2489" height="1352" alt="image" src="https://github.com/user-attachments/assets/7a599a85-3a42-4d31-a4a8-6ba0569d2093" />
+<img width="2549" height="1352" alt="屏幕截图_2026-06-30_17-43-50" src="https://github.com/user-attachments/assets/01535b18-e567-42c5-8c9c-c1c1564ab070" />
+
 
 </div>
 
