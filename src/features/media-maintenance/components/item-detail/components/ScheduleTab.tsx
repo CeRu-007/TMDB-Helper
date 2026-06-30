@@ -120,9 +120,23 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         );
 
         if (data.data.platformConfigs && data.data.platformConfigs.length > 0) {
-          const existingByUrl = new Map<string, PlatformSourceConfig>(data.data.platformConfigs.map((c: PlatformSourceConfig) => [c.url, c]));
+          const existingByUrl = new Map<string, PlatformSourceConfig>(
+            data.data.platformConfigs.map((c: PlatformSourceConfig) => [c.url, c])
+          );
           const mergedConfigs = (item.platformUrls || []).map((url): PlatformSourceConfig => {
-            return existingByUrl.get(url) ?? { url, enabled: true, keepFields: { name: false, air_date: false, runtime: false, overview: false, backdrop: false } };
+            return (
+              existingByUrl.get(url) ?? {
+                url,
+                enabled: true,
+                keepFields: {
+                  name: false,
+                  air_date: false,
+                  runtime: false,
+                  overview: false,
+                  backdrop: false,
+                },
+              }
+            );
           });
           setPlatformConfigs(mergedConfigs);
           setMultiPlatformMode(true);
@@ -502,17 +516,19 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                                 item.platformUrls || []
                               ).map((url) => {
                                 const existing = existingByUrl.get(url);
-                                return existing || {
-                                  url,
-                                  enabled: true,
-                                  keepFields: {
-                                    name: false,
-                                    air_date: false,
-                                    runtime: false,
-                                    overview: false,
-                                    backdrop: false,
-                                  },
-                                };
+                                return (
+                                  existing || {
+                                    url,
+                                    enabled: true,
+                                    keepFields: {
+                                      name: false,
+                                      air_date: false,
+                                      runtime: false,
+                                      overview: false,
+                                      backdrop: false,
+                                    },
+                                  }
+                                );
                               });
                               setPlatformConfigs(mergedConfigs);
                             }
