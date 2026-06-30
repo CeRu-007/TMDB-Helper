@@ -54,7 +54,7 @@ echo Starting server...
 echo Server logs will appear below:
 echo.
 
-start http://localhost:3000
+start http://localhost:4949
 echo Browser opened.
 echo.
 echo Press Ctrl+C to stop the server, or close this window.
