@@ -19,6 +19,8 @@
   "maintainedToEpisode": "維護至第{{count}}集",
   "completedShort": "完結",
   "viewDetails": "查看詳情",
+  "posterView": "海報視圖",
+  "backdropView": "背景視圖",
   "tmdb": "TMDB",
   "anime": "動漫",
   "tv": "電視劇",

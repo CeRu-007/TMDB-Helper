@@ -2,18 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { TMDBItem } from '@/lib/data/storage';
-import { Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { Calendar, LayoutGrid, Columns2 } from 'lucide-react';
 import { FilterDropdown } from './filter-dropdown';
+import { Separator } from '@/shared/components/ui/separator';
 import i18n from '@/lib/i18n';
+import { useUIStore } from '@/stores/ui-store';
+import { cn } from '@/lib/utils';
 
 interface WeekdayNavigationProps {
   selectedDayFilter: 'recent' | number;
@@ -29,8 +25,7 @@ interface WeekdayNavigationProps {
 }
 
 function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
-  const baseClasses =
-    'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
+  const baseClasses = 'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
 
   if (isSelected) {
     return `${baseClasses} bg-blue-100 text-blue-700 ${
@@ -56,6 +51,8 @@ export function WeekdayNavigation({
   currentDay = 0,
 }: WeekdayNavigationProps) {
   const { t } = useTranslation('media');
+  const viewMode = useUIStore((s) => s.viewMode);
+  const setViewMode = useUIStore((s) => s.setViewMode);
   const [mounted, setMounted] = useState(false);
   const [localCurrentDay, setLocalCurrentDay] = useState(currentDay);
 
@@ -138,34 +135,29 @@ export function WeekdayNavigation({
             </ScrollAreaPrimitive.ScrollAreaScrollbar>
           </ScrollAreaPrimitive.Root>
 
-          <div className="flex items-center space-x-4 ml-4 flex-shrink-0 pb-3">
-            {onCategoryChange && <FilterDropdown items={allItems} categories={categories} />}
+          <div className="flex items-center gap-2 flex-shrink-0 pb-3">
+            <Separator orientation="vertical" className="h-6 bg-muted max-sm:hidden" />
 
-            {activeTab && onActiveTabChange && (
-              <div className="flex items-center space-x-2" key={i18n.language}>
-                <span className="text-sm font-medium text-foreground">
-                  {t('status', { ns: 'common' })}:
-                </span>
-                <Select value={activeTab} onValueChange={onActiveTabChange}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    <SelectItem value="ongoing">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{t('ongoing', { ns: 'common' })}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="completed">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>{t('completed', { ns: 'common' })}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className={cn(
+                'p-2 rounded-lg transition-all duration-200',
+                'text-muted-foreground hover:text-foreground hover:bg-accent'
+              )}
+              title={viewMode === 'grid' ? t('backdropView') : t('posterView')}
+            >
+              {viewMode === 'grid' ? <LayoutGrid className="h-5 w-5" /> : <Columns2 className="h-5 w-5" />}
+            </button>
+
+            <Separator orientation="vertical" className="h-6 bg-muted max-sm:hidden" />
+
+            {onCategoryChange && (
+              <FilterDropdown
+                items={allItems}
+                categories={categories}
+                activeTab={activeTab}
+                onActiveTabChange={onActiveTabChange}
+              />
             )}
           </div>
 

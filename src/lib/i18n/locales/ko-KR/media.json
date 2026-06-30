@@ -19,6 +19,8 @@
   "maintainedToEpisode": "{{count}}편까지 유지보수됨",
   "completedShort": "완결",
   "viewDetails": "세부 정보 보기",
+  "posterView": "포스터 보기",
+  "backdropView": "배경 보기",
   "tmdb": "TMDB",
   "categoryAnime": "애니",
   "categoryTv": "드라마",

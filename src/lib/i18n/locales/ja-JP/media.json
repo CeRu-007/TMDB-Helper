@@ -19,6 +19,8 @@
   "maintainedToEpisode": "{{count}}話までメンテナンス済み",
   "completedShort": "完結",
   "viewDetails": "詳細を表示",
+  "posterView": "ポスター表示",
+  "backdropView": "背景表示",
   "tmdb": "TMDB",
   "categoryAnime": "アニメ",
   "categoryTv": "ドラマ",

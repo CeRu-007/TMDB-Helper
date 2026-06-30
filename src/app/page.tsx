@@ -27,7 +27,10 @@ import { getPlatformInfo } from '@/lib/utils';
 import { categories, type Category } from '@/lib/constants/categories';
 import { mapLanguageToRegion } from '@/lib/constants/regions';
 import i18n, { getInitialLanguage } from '@/lib/i18n';
-import { MediaCardGridSkeleton } from '@/features/media-maintenance/components/media-card-skeleton';
+import {
+  MediaCardGridSkeleton,
+  MediaListSkeleton,
+} from '@/features/media-maintenance/components/media-card-skeleton';
 import type { TMDBItem } from '@/lib/data/storage';
 import type { TFunction } from 'i18next';
 
@@ -41,6 +44,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Badge } from '@/shared/components/ui/badge';
 import MediaCard from '@/features/media-maintenance/components/media-card';
+import MediaListItem from '@/features/media-maintenance/components/media-list-item';
 
 import AddItemDialog from '@/features/media-maintenance/components/add-item-dialog';
 import SettingsDialog from '@/features/system/components/settings-dialog/SettingsDialog';
@@ -93,7 +97,8 @@ const renderMediaNews = (
   items: TMDBItem[],
   selectedRegion: string,
   t: TFunction,
-  i18n: { language: string }
+  i18n: { language: string },
+  viewMode: 'grid' | 'list'
 ) => {
   const isUpcoming = mediaNewsType === 'upcoming';
   const newsData = isUpcoming ? mediaNews.upcomingItems : mediaNews.recentItems;
@@ -117,7 +122,11 @@ const renderMediaNews = (
   if (loading) {
     return (
       <div className="overflow-y-auto max-h-[calc(100vh-350px)]">
-        <MediaCardGridSkeleton count={12} />
+        {viewMode === 'grid' ? (
+          <MediaCardGridSkeleton count={12} />
+        ) : (
+          <MediaListSkeleton count={12} />
+        )}
       </div>
     );
   }
@@ -260,6 +269,21 @@ const MediaCardList = function MediaCardList({
   );
 };
 
+interface MediaListProps {
+  items: TMDBItem[];
+  onItemClick: (itemId: string) => void;
+}
+
+const MediaList = function MediaList({ items, onItemClick }: MediaListProps) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {items.map((item) => (
+        <MediaListItem key={item.id} item={item} onItemClick={onItemClick} />
+      ))}
+    </div>
+  );
+};
+
 export default function HomePage() {
   const { t, i18n } = useTranslation('nav/image');
   const { toast } = useToast();
@@ -269,6 +293,7 @@ export default function HomePage() {
   const { currentDay } = useCurrentDay();
   const searchQuery = useUIStore((s) => s.searchQuery);
   const selectedPlatform = useUIStore((s) => s.selectedPlatform);
+  const viewMode = useUIStore((s) => s.viewMode);
   const [selectedRegion, setSelectedRegion] = useState<string>(() =>
     mapLanguageToRegion(getInitialLanguage())
   );
@@ -426,11 +451,15 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <MediaCardList
-                items={finalOngoingItems}
-                onItemClick={handleCardClick}
-                showAirTime={true}
-              />
+              {viewMode === 'grid' ? (
+                <MediaCardList
+                  items={finalOngoingItems}
+                  onItemClick={handleCardClick}
+                  showAirTime={true}
+                />
+              ) : (
+                <MediaList items={finalOngoingItems} onItemClick={handleCardClick} />
+              )}
 
               {finalOngoingItems.length === 0 && (
                 <div className="text-center py-16">
@@ -488,11 +517,15 @@ export default function HomePage() {
               currentDay={currentDay}
             />
             <div className="mt-6 overflow-y-auto">
-              <MediaCardList
-                items={finalCompletedItems}
-                onItemClick={handleCardClick}
-                showAirTime={true}
-              />
+              {viewMode === 'grid' ? (
+                <MediaCardList
+                  items={finalCompletedItems}
+                  onItemClick={handleCardClick}
+                  showAirTime={true}
+                />
+              ) : (
+                <MediaList items={finalCompletedItems} onItemClick={handleCardClick} />
+              )}
 
               {finalCompletedItems.length === 0 && (
                 <div className="text-center py-16">
@@ -596,7 +629,7 @@ export default function HomePage() {
             />
 
             <div className="overflow-y-auto">
-              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion, t, i18n)}
+              {renderMediaNews(mediaNewsType, mediaNews, items, selectedRegion, t, i18n, viewMode)}
             </div>
           </TabsContent>
 

@@ -34,6 +34,7 @@ interface FilterState {
   selectedCategory: string;
   searchQuery: string;
   selectedPlatform: string;
+  viewMode: 'grid' | 'list';
 }
 
 // 选中的项目类型
@@ -62,6 +63,7 @@ interface UIState extends DialogState, FilterState, SelectionState {
   setSelectedCategory: (category: string) => void;
   setSearchQuery: (query: string) => void;
   setSelectedPlatform: (platform: string) => void;
+  setViewMode: (mode: 'grid' | 'list') => void;
   resetFilters: () => void;
 
   // 选中项操作
@@ -91,6 +93,7 @@ const initialFilterState: FilterState = {
   selectedCategory: 'all',
   searchQuery: '',
   selectedPlatform: 'all',
+  viewMode: 'grid',
 };
 
 const initialSelectionState: SelectionState = {
@@ -152,6 +155,7 @@ export const useUIStore = create<UIState>()(
         setSearchQuery: (searchQuery) => set({ searchQuery }, false, 'setSearchQuery'),
         setSelectedPlatform: (selectedPlatform) =>
           set({ selectedPlatform }, false, 'setSelectedPlatform'),
+        setViewMode: (viewMode) => set({ viewMode }, false, 'setViewMode'),
         resetFilters: () => set(initialFilterState, false, 'resetFilters'),
 
         // 选中项操作
@@ -169,6 +173,7 @@ export const useUIStore = create<UIState>()(
           activeTab: state.activeTab,
           selectedDayFilter: state.selectedDayFilter,
           selectedCategory: state.selectedCategory,
+          viewMode: state.viewMode,
         }),
       }
     ),
@@ -195,6 +200,7 @@ export const useFilterState = () =>
     selectedCategory: state.selectedCategory,
     searchQuery: state.searchQuery,
     selectedPlatform: state.selectedPlatform,
+    viewMode: state.viewMode,
   }));
 
 export const useSelectionState = () =>

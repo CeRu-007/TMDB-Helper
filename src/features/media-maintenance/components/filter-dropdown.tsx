@@ -17,6 +17,8 @@ import {
   Popcorn,
   Ticket,
   Radio,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { CachedImage } from '@/shared/components/ui/cached-image';
@@ -24,6 +26,8 @@ import { CachedImage } from '@/shared/components/ui/cached-image';
 interface FilterDropdownProps {
   items: TMDBItem[];
   categories: Array<{ id: string; name: string }>;
+  activeTab?: string;
+  onActiveTabChange?: (tab: string) => void;
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -95,7 +99,7 @@ function extractPlatforms(items: TMDBItem[]): PlatformOption[] {
   return Array.from(platformMap.values()).sort((a, b) => b.count - a.count);
 }
 
-export function FilterDropdown({ items, categories }: FilterDropdownProps) {
+export function FilterDropdown({ items, categories, activeTab, onActiveTabChange }: FilterDropdownProps) {
   const { t } = useTranslation('media');
   const searchQuery = useUIStore((s) => s.searchQuery);
   const setSearchQuery = useUIStore((s) => s.setSearchQuery);
@@ -107,18 +111,20 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
   const platforms = useMemo(() => extractPlatforms(items), [items]);
 
   const hasActiveFilter =
-    selectedCategory !== 'all' || selectedPlatform !== 'all' || searchQuery.trim() !== '';
+    selectedCategory !== 'all' || selectedPlatform !== 'all' || searchQuery.trim() !== '' || (activeTab && activeTab !== 'ongoing');
 
   const activeFilterCount = [
     selectedCategory !== 'all' ? 1 : 0,
     selectedPlatform !== 'all' ? 1 : 0,
     searchQuery.trim() ? 1 : 0,
+    activeTab && activeTab !== 'ongoing' ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   const clearAllFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
     setSelectedPlatform('all');
+    onActiveTabChange?.('ongoing');
   };
 
   return (
@@ -198,6 +204,50 @@ export function FilterDropdown({ items, categories }: FilterDropdownProps) {
             ))}
           </div>
         </div>
+
+        {onActiveTabChange && (
+          <div className="p-3 border-b">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {t('status', { ns: 'common' })}
+              </span>
+              {activeTab !== 'ongoing' && (
+                <button
+                  onClick={() => onActiveTabChange('ongoing')}
+                  className="text-xs text-blue-500 hover:text-blue-600"
+                >
+                  {t('all', { ns: 'common' })}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => onActiveTabChange('ongoing')}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                  activeTab === 'ongoing'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                )}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>{t('ongoing', { ns: 'common' })}</span>
+              </button>
+              <button
+                onClick={() => onActiveTabChange('completed')}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                  activeTab === 'completed'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                )}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>{t('completed', { ns: 'common' })}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {platforms.length > 0 && (
           <div className="p-3">

@@ -19,6 +19,8 @@
   "maintainedToEpisode": "Maintained to ep {{count}}",
   "completedShort": "Completed",
   "viewDetails": "View Details",
+  "posterView": "Poster View",
+  "backdropView": "Backdrop View",
   "tmdb": "TMDB",
   "categoryAnime": "Anime",
   "categoryTv": "TV",
