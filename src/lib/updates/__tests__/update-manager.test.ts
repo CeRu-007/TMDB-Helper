@@ -81,7 +81,7 @@ describe('UpdateManager', () => {
     });
 
     it('比较版本时只比较 major.minor（忽略 patch）', async () => {
-      const release = { ...mockRelease, tag_name: 'v0.7.5' };
+      const release = { ...mockRelease, tag_name: 'v0.7.6' };
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,

@@ -6,7 +6,7 @@
 
 **一个 TMDB 媒体维护工具**
 
-[![Version](https://img.shields.io/badge/version-0.7.5-blue.svg)](https://github.com/CeRu-007/TMDB-Helper/releases)
+[![Version](https://img.shields.io/badge/version-0.7.6-blue.svg)](https://github.com/CeRu-007/TMDB-Helper/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-supported-brightgreen.svg)](https://hub.docker.com/r/ceru007/tmdb-helper)
 
