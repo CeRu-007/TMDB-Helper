@@ -29,6 +29,50 @@ interface TMDBTVResponse {
   }>;
 }
 
+// TMDB 列表响应接口
+interface TMDBListResponse {
+  id: number;
+  name: string;
+  description: string;
+  item_count: number;
+  page: number;
+  total_pages: number;
+  total_results: number;
+  items: Array<{
+    id: number;
+    media_type: 'movie' | 'tv';
+    name?: string;
+    title?: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string | null;
+    vote_average: number;
+    vote_count: number;
+    first_air_date?: string;
+    release_date?: string;
+    original_language: string;
+    origin_country?: string[];
+  }>;
+}
+
+export interface TMDBListItemData {
+  id: number;
+  mediaType: 'movie' | 'tv';
+  title: string;
+  posterPath: string | null;
+  voteAverage: number;
+  firstAirDate: string | null;
+  overview: string | null;
+}
+
+export interface TMDBListData {
+  id: number;
+  name: string;
+  description: string;
+  itemCount: number;
+  items: TMDBListItemData[];
+}
+
 // 添加获取电视剧图片的响应接口
 interface TMDBTVImagesResponse {
   id: number;
@@ -223,6 +267,63 @@ export class TMDBService {
       return response.json();
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * 获取 TMDB 列表内容（支持分页）
+   */
+  static async getListItems(listId: string): Promise<TMDBListData | null> {
+    try {
+      const firstResponse = await this.fetchWithFallback(`/list/${listId}?language=zh-CN&page=1`);
+
+      if (!firstResponse.ok) {
+        return null;
+      }
+
+      const firstData = (await firstResponse.json()) as TMDBListResponse;
+
+      let allRawItems = firstData.items;
+
+      if (firstData.total_pages > 1) {
+        const pagePromises: Promise<TMDBListResponse | null>[] = [];
+        for (let p = 2; p <= firstData.total_pages; p++) {
+          pagePromises.push(
+            this.fetchWithFallback(`/list/${listId}?language=zh-CN&page=${p}`).then((res) =>
+              res.ok ? (res.json() as Promise<TMDBListResponse>) : null
+            )
+          );
+        }
+
+        const pageResults = await Promise.all(pagePromises);
+        for (const pageData of pageResults) {
+          if (pageData) {
+            allRawItems = allRawItems.concat(pageData.items);
+          }
+        }
+      }
+
+      const items: TMDBListItemData[] = allRawItems
+        .filter((item) => item.media_type === 'tv')
+        .map((item) => ({
+          id: item.id,
+          mediaType: item.media_type,
+          title: item.name || item.title || '',
+          posterPath: item.poster_path,
+          voteAverage: item.vote_average,
+          firstAirDate: item.first_air_date || null,
+          overview: item.overview,
+        }));
+
+      return {
+        id: firstData.id,
+        name: firstData.name,
+        description: firstData.description,
+        itemCount: allRawItems.length,
+        items,
+      };
+    } catch (error) {
+      return null;
     }
   }
 

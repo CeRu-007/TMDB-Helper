@@ -40,6 +40,7 @@ import {
   Image as ImageIcon,
   Plus,
   X,
+  List,
 } from 'lucide-react';
 import type { TMDBItem, Season, Episode } from '@/types/tmdb-item';
 import { StorageManager } from '@/lib/data/storage';
@@ -48,6 +49,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox';
 import { useToast } from '@/lib/hooks/use-toast';
 import { ClientConfigManager } from '@/lib/utils/client-config-manager';
 import { useTranslation } from 'react-i18next';
+import { useData } from '@/shared/components/client-data-provider';
 
 const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 const WEEKDAYS_KEYS_FOR_SELECT = [
@@ -114,6 +116,33 @@ export default function AddItemDialog({
   const [showBackdropPreview, setShowBackdropPreview] = useState(false);
   const [showPreviewCard, setShowPreviewCard] = useState(false);
   const { toast } = useToast();
+
+  // 批量导入模式类型
+  interface TMDBListItemData {
+    id: number;
+    mediaType: 'movie' | 'tv';
+    title: string;
+    posterPath: string | null;
+    voteAverage: number;
+    firstAirDate: string | null;
+    overview: string | null;
+  }
+
+  interface TMDBListData {
+    id: number;
+    name: string;
+    description: string;
+    itemCount: number;
+    items: TMDBListItemData[];
+  }
+
+  const [importMode, setImportMode] = useState<'single' | 'list'>('single');
+  const [listUrl, setListUrl] = useState('');
+  const [listData, setListData] = useState<TMDBListData | null>(null);
+  const [listLoading, setListLoading] = useState(false);
+  const [selectedListItems, setSelectedListItems] = useState<Set<number>>(new Set());
+  const [batchImporting, setBatchImporting] = useState(false);
+  const { refreshData } = useData();
 
   const CATEGORIES = [
     {
@@ -241,6 +270,366 @@ export default function AddItemDialog({
       formData,
       isManualTotalEpisodes,
     ]
+  );
+
+  // ===== 列表导入相关逻辑 =====
+
+  const parseListIdFromUrl = (url: string): string | null => {
+    try {
+      const urlObj = new URL(url);
+      const parts = urlObj.pathname.split('/').filter(Boolean);
+      const listIndex = parts.findIndex((p) => p === 'list');
+      if (listIndex !== -1 && parts[listIndex + 1]) {
+        return parts[listIndex + 1];
+      }
+      return null;
+    } catch {
+      return url.trim();
+    }
+  };
+
+  const handleFetchList = async () => {
+    const listId = parseListIdFromUrl(listUrl);
+    if (!listId) {
+      toast({
+        variant: 'destructive',
+        title: t('independentPage.addItem.listImport.invalidUrl', { ns: 'nav.maintenance' }),
+        description: t('independentPage.addItem.listImport.invalidUrlDesc', {
+          ns: 'nav.maintenance',
+        }),
+      });
+      return;
+    }
+
+    setListLoading(true);
+    setListData(null);
+    try {
+      const response = await fetch(`/api/tmdb/list?listId=${encodeURIComponent(listId)}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: t('independentPage.addItem.listImport.fetchError', { ns: 'nav.maintenance' }),
+          description:
+            result.error ||
+            t('independentPage.addItem.listImport.fetchErrorDesc', { ns: 'nav.maintenance' }),
+        });
+        return;
+      }
+
+      setListData(result.data);
+      setSelectedListItems(new Set(result.data.items.map((item: TMDBListItemData) => item.id)));
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: t('independentPage.addItem.listImport.fetchError', { ns: 'nav.maintenance' }),
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const handleBatchImport = async () => {
+    const itemsToImport = listData?.items.filter((item) => selectedListItems.has(item.id)) || [];
+    if (itemsToImport.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: t('independentPage.addItem.listImport.noSelection', { ns: 'nav.maintenance' }),
+        description: t('independentPage.addItem.listImport.noSelectionDesc', {
+          ns: 'nav.maintenance',
+        }),
+      });
+      return;
+    }
+
+    setBatchImporting(true);
+    try {
+      const payload = itemsToImport.map((item) => ({
+        tmdbId: item.id.toString(),
+        tmdbUrl: `https://www.themoviedb.org/tv/${item.id}`,
+        title: item.title,
+      }));
+
+      const response = await fetch('/api/storage/batch-import-from-tmdb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payload }),
+      });
+      const result = await response.json();
+
+      if (!result.success) {
+        toast({
+          variant: 'destructive',
+          title: t('independentPage.addItem.listImport.batchImportFailed', {
+            ns: 'nav.maintenance',
+          }),
+          description:
+            result.error ||
+            t('independentPage.addItem.listImport.fetchErrorDesc', { ns: 'nav.maintenance' }),
+        });
+        return;
+      }
+
+      const { imported, skipped, errors } = result.data;
+      const messages: string[] = [];
+      if (imported > 0)
+        messages.push(
+          t('independentPage.addItem.listImport.imported', {
+            ns: 'nav.maintenance',
+            count: imported,
+          })
+        );
+      if (skipped > 0)
+        messages.push(
+          t('independentPage.addItem.listImport.skipped', { ns: 'nav.maintenance', count: skipped })
+        );
+      if (errors > 0)
+        messages.push(
+          t('independentPage.addItem.listImport.errorCount', {
+            ns: 'nav.maintenance',
+            count: errors,
+          })
+        );
+
+      toast({
+        title: t('independentPage.addItem.listImport.batchImportComplete', {
+          ns: 'nav.maintenance',
+        }),
+        description: messages.join(', '),
+      });
+
+      onOpenChange(false);
+      refreshData();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: t('independentPage.addItem.listImport.batchImportFailed', { ns: 'nav.maintenance' }),
+        description:
+          error instanceof Error
+            ? error.message
+            : t('independentPage.addItem.listImport.fetchErrorDesc', { ns: 'nav.maintenance' }),
+      });
+    } finally {
+      setBatchImporting(false);
+    }
+  };
+
+  const toggleListItem = (id: number) => {
+    setSelectedListItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!listData) return;
+    if (selectedListItems.size === listData.items.length) {
+      setSelectedListItems(new Set());
+    } else {
+      setSelectedListItems(new Set(listData.items.map((item) => item.id)));
+    }
+  };
+
+  const renderListImport = () => (
+    <div className="space-y-4">
+      {/* URL 输入 */}
+      <div className="bg-gradient-to-r from-muted/20 to-muted/30 p-3 rounded-lg border">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Input
+              placeholder={t('independentPage.addItem.listImport.listUrlPlaceholder', {
+                ns: 'nav.maintenance',
+              })}
+              value={listUrl}
+              onChange={(e) => setListUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleFetchList();
+                }
+              }}
+              className="pr-10 h-9 sm:h-9 min-h-[44px] text-sm"
+            />
+            {listLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+              </div>
+            )}
+          </div>
+          <Button
+            type="button"
+            onClick={handleFetchList}
+            disabled={listLoading}
+            className="h-9 sm:h-9 min-h-[44px] px-4"
+            size="sm"
+          >
+            <List className="h-3 w-3 mr-1" />
+            {t('independentPage.addItem.listImport.fetchList', { ns: 'nav.maintenance' })}
+          </Button>
+        </div>
+      </div>
+
+      {/* 列表信息 */}
+      {listData && (
+        <div className="bg-muted/20 border rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-sm">{listData.name}</h3>
+              {listData.description && (
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                  {listData.description}
+                </p>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+              {t('independentPage.addItem.listImport.itemCount', {
+                ns: 'nav.maintenance',
+                count: listData.items.length,
+              })}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 条目预览表格 */}
+      {listData && listData.items.length > 0 && (
+        <div className="bg-background border rounded-lg overflow-hidden">
+          <div className="bg-muted/30 px-3 py-1.5 border-b flex items-center justify-between">
+            <h3 className="text-xs font-medium text-muted-foreground">
+              {t('independentPage.addItem.listImport.previewTitle', { ns: 'nav.maintenance' })}（
+              {listData.items.length}）
+            </h3>
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="text-xs text-primary hover:underline"
+            >
+              {selectedListItems.size === listData.items.length
+                ? t('independentPage.addItem.listImport.deselectAll', { ns: 'nav.maintenance' })
+                : t('independentPage.addItem.listImport.selectAll', { ns: 'nav.maintenance' })}
+            </button>
+          </div>
+          <ScrollArea className="h-[280px]">
+            <div className="p-2 space-y-1">
+              {listData.items.map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    'flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60',
+                    selectedListItems.has(item.id) && 'bg-primary/5'
+                  )}
+                  onClick={() => toggleListItem(item.id)}
+                >
+                  <Checkbox checked={selectedListItems.has(item.id)} className="flex-shrink-0" />
+                  <div className="flex-shrink-0 w-8 h-12 bg-muted rounded overflow-hidden">
+                    {item.posterPath ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w92${item.posterPath}`}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Tv className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-xs truncate">{item.title}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      {item.firstAirDate && <span>{item.firstAirDate.slice(0, 4)}</span>}
+                      {item.voteAverage > 0 && (
+                        <>
+                          <span>•</span>
+                          <Star className="h-2 w-2 text-yellow-500" />
+                          <span>{item.voteAverage.toFixed(1)}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <a
+                    href={`https://www.themoviedb.org/tv/${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent text-muted-foreground hover:text-blue-600 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    title={t('independentPage.addItem.listImport.viewOnTmdb', {
+                      ns: 'nav.maintenance',
+                    })}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* 空状态 */}
+      {listData && listData.items.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          <List className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">
+            {t('independentPage.addItem.listImport.noTvItems', { ns: 'nav.maintenance' })}
+          </p>
+        </div>
+      )}
+
+      {/* 初始状态 */}
+      {!listData && !listLoading && (
+        <div className="text-center py-6 text-muted-foreground">
+          <List className="h-12 w-12 mx-auto mb-3 opacity-20" />
+          <p className="text-base font-medium mb-1">
+            {t('independentPage.addItem.listImport.startHint', { ns: 'nav.maintenance' })}
+          </p>
+          <p className="text-sm">
+            {t('independentPage.addItem.listImport.startHintDesc', { ns: 'nav.maintenance' })}
+          </p>
+        </div>
+      )}
+
+      {/* 底部按钮 */}
+      {listData && listData.items.length > 0 && (
+        <div className="flex justify-center gap-4 pt-2 relative">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent"></div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="h-10 px-8 font-medium"
+          >
+            {t('independentPage.addItem.listImport.cancel', { ns: 'nav.maintenance' })}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleBatchImport}
+            disabled={batchImporting || selectedListItems.size === 0}
+            className="h-10 px-8 font-medium"
+          >
+            {batchImporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('independentPage.addItem.listImport.importing', { ns: 'nav.maintenance' })}
+              </>
+            ) : (
+              <>
+                {t('independentPage.addItem.listImport.importCount', {
+                  ns: 'nav.maintenance',
+                  count: selectedListItems.size,
+                })}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 
   // 处理对话框状态变化，统一重置表单
@@ -386,6 +775,11 @@ export default function AddItemDialog({
     setCustomBackdropUrl('');
     setShowBackdropPreview(false);
     setShowPreviewCard(false);
+    // 重置列表模式状态
+    setListUrl('');
+    setListData(null);
+    setSelectedListItems(new Set());
+    setImportMode('single');
   };
 
   // 提交表单
@@ -656,517 +1050,568 @@ export default function AddItemDialog({
 
         <DialogHeader className="text-center pb-3 border-b">
           <DialogTitle className="text-lg font-bold flex items-center justify-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {t('independentPage.addItem.title', { ns: 'nav.maintenance' })}
+            {importMode === 'single' ? (
+              <Sparkles className="h-4 w-4 text-primary" />
+            ) : (
+              <List className="h-4 w-4 text-primary" />
+            )}
+            {importMode === 'single'
+              ? t('independentPage.addItem.title', { ns: 'nav.maintenance' })
+              : t('independentPage.addItem.listImport.title', { ns: 'nav.maintenance' })}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {t('independentPage.addItem.searchHint', { ns: 'nav.maintenance' })}
+            {importMode === 'single'
+              ? t('independentPage.addItem.searchHint', { ns: 'nav.maintenance' })
+              : t('independentPage.addItem.listImport.description', { ns: 'nav.maintenance' })}
           </DialogDescription>
         </DialogHeader>
 
-        <div className={cn('overflow-y-auto p-4', selectedResult ? 'flex-1' : 'flex-none')}>
-          <div className="space-y-4">
-            {/* 搜索栏 */}
-            <div className="bg-gradient-to-r from-muted/20 to-muted/30 p-3 rounded-lg border">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder={t('independentPage.addItem.searchPlaceholder', {
-                      ns: 'nav.maintenance',
-                    })}
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSearch();
-                      }
-                    }}
-                    className="pr-10 h-9 sm:h-9 min-h-[44px] text-sm"
-                  />
-                  {loading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  onClick={handleSearch}
-                  className="h-9 sm:h-9 min-h-[44px] px-4"
-                  size="sm"
-                >
-                  <Search className="h-3 w-3 mr-1" />
-                  {t('independentPage.addItem.search', { ns: 'nav.maintenance' })}
-                </Button>
-              </div>
-            </div>
-
-            {/* 搜索结果区域 - 只有搜索结果时才显示 */}
-            {searchResults.length > 0 && (
-              <div className="bg-background border rounded-lg overflow-hidden">
-                <div className="bg-muted/30 px-3 py-1.5 border-b">
-                  <h3 className="text-xs font-medium text-muted-foreground">
-                    {t('independentPage.addItem.searchResults', { ns: 'nav.maintenance' })} (
-                    {searchResults.length})
-                  </h3>
-                </div>
-                <ScrollArea className="h-[240px]">
-                  <div className="p-2 space-y-1">
-                    {searchResults.map((result) => (
-                      <div
-                        key={`${result.media_type}-${result.id}`}
-                        className={cn(
-                          'p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60',
-                          selectedResult?.id === result.id &&
-                            'bg-primary/15 border border-primary/30'
-                        )}
-                        onClick={() => handleSelectResult(result)}
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0 w-10 h-14 bg-muted rounded overflow-hidden mr-3">
-                            {result.poster_path ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
-                                alt={getDisplayTitle(result)}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Tv className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-xs truncate">
-                              {getDisplayTitle(result)}
-                            </div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
-                              <span>{t('tvSeries', { ns: 'common' })}</span>
-                              {result.adult && (
-                                <>
-                                  <span>•</span>
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs px-1.5 py-0 h-auto"
-                                  >
-                                    {t('adult', { ns: 'common' })}
-                                  </Badge>
-                                </>
-                              )}
-                              <span>•</span>
-                              <span>{formatDate(result.first_air_date)}</span>
-                              {result.vote_average && (
-                                <>
-                                  <span>•</span>
-                                  <Star className="h-2 w-2 text-yellow-500" />
-                                  <span>{result.vote_average.toFixed(1)}</span>
-                                </>
-                              )}
-                            </div>
-                            {selectedResult?.id === result.id && result.overview && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {result.overview}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex-shrink-0 flex items-center gap-1">
-                            <a
-                              href={`https://www.themoviedb.org/${result.media_type}/${result.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent text-muted-foreground hover:text-blue-600 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                              title={t('independentPage.addItem.viewOnTmdb', {
-                                ns: 'nav.maintenance',
-                              })}
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
-                            {result.backdrop_path && (
-                              <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
-                            )}
-                            {selectedResult?.id === result.id && (
-                              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
+        {/* 模式切换 */}
+        <div className="flex gap-1 px-4 pt-3 pb-0">
+          <button
+            type="button"
+            onClick={() => setImportMode('single')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+              importMode === 'single'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-accent'
             )}
-
-            {/* 空状态提示 - 当没有搜索结果且搜索过时显示 */}
-            {searchResults.length === 0 && searchQuery.trim() !== '' && !loading && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">
-                  {t('independentPage.addItem.noResults', { ns: 'nav.maintenance' })}
-                </p>
-                <p className="text-xs mt-1">
-                  {t('independentPage.addItem.noResultsHint', { ns: 'nav.maintenance' })}
-                </p>
-              </div>
+          >
+            <Search className="h-3.5 w-3.5" />
+            {t('independentPage.addItem.listImport.singleSearchTab', { ns: 'nav.maintenance' })}
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportMode('list')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+              importMode === 'list'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-accent'
             )}
+          >
+            <List className="h-3.5 w-3.5" />
+            {t('independentPage.addItem.listImport.listImportTab', { ns: 'nav.maintenance' })}
+          </button>
+        </div>
 
-            {/* 初始状态提示 - 当没有搜索时显示 */}
-            {searchResults.length === 0 && searchQuery.trim() === '' && !loading && (
-              <div className="text-center py-6 text-muted-foreground">
-                <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-base font-medium mb-1">
-                  {t('independentPage.addItem.startSearch', { ns: 'nav.maintenance' })}
-                </p>
-                <p className="text-sm">
-                  {t('independentPage.addItem.startSearchHint', { ns: 'nav.maintenance' })}
-                </p>
-              </div>
-            )}
-
-            {/* 表单 */}
-            {selectedResult && (
-              <div className="bg-gradient-to-br from-muted/10 to-muted/20 p-3 rounded-lg border">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* 基本信息行 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-3">
-                      <Label htmlFor="title" className="text-sm font-medium">
-                        {t('independentPage.addItem.form.title', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <Input
-                        id="title"
-                        value={getDisplayTitle(selectedResult)}
-                        disabled
-                        className="bg-muted/50 font-medium h-10"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="category" className="text-sm font-medium">
-                        {t('independentPage.addItem.form.category', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <Select
-                        value={formData.category}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, category: value as CategoryType })
+        <div
+          className={cn(
+            'overflow-y-auto p-4',
+            importMode === 'list' || selectedResult ? 'flex-1' : 'flex-none'
+          )}
+        >
+          {importMode === 'list' ? (
+            /* ========== 列表导入模式 ========== */
+            renderListImport()
+          ) : (
+            <div className="space-y-4">
+              {/* 搜索栏 */}
+              <div className="bg-gradient-to-r from-muted/20 to-muted/30 p-3 rounded-lg border">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder={t('independentPage.addItem.searchPlaceholder', {
+                        ns: 'nav.maintenance',
+                      })}
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
                         }
-                      >
-                        <SelectTrigger className="h-10">
-                          <SelectValue
-                            placeholder={t('independentPage.addItem.form.selectCategory', {
-                              ns: 'nav.maintenance',
-                            })}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              <div className="flex items-center">
-                                {category.icon}
-                                <span className="ml-2">{category.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {selectedResult.media_type === 'tv' && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="totalEpisodes" className="text-sm font-medium">
-                            {t('independentPage.addItem.form.totalEpisodes', {
-                              ns: 'nav.maintenance',
-                            })}
-                          </Label>
-                          {tmdbSeasons && tmdbSeasons.length > 1 && (
-                            <span className="text-xs text-muted-foreground">
-                              {t('independentPage.addItem.form.seasons', {
-                                ns: 'nav.maintenance',
-                                count: tmdbSeasons.length,
-                              })}
-                            </span>
-                          )}
-                        </div>
-                        <Input
-                          id="totalEpisodes"
-                          type="number"
-                          min="1"
-                          value={formData.totalEpisodes}
-                          onChange={(e) => {
-                            const newValue = parseInt(e.target.value) || 1;
-                            setFormData({
-                              ...formData,
-                              totalEpisodes: newValue,
-                            });
-                            // 标记用户已手动设置总集数
-                            setIsManualTotalEpisodes(true);
-                          }}
-                          className="h-10"
-                        />
-                        {/* 季数信息展示 - 使用紧凑的标签式设计 */}
-                        {tmdbSeasons && tmdbSeasons.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {tmdbSeasons.map((season: Season, index: number) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-[10px] h-5 px-2 py-0 border-blue-200 text-blue-600"
-                              >
-                                S{season.seasonNumber} {season.totalEpisodes || 0}
-                                {t('independentPage.addItem.form.episodes', {
-                                  ns: 'nav.maintenance',
-                                })}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                      }}
+                      className="pr-10 h-9 sm:h-9 min-h-[44px] text-sm"
+                    />
+                    {loading && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
                       </div>
                     )}
                   </div>
+                  <Button
+                    type="button"
+                    onClick={handleSearch}
+                    className="h-9 sm:h-9 min-h-[44px] px-4"
+                    size="sm"
+                  >
+                    <Search className="h-3 w-3 mr-1" />
+                    {t('independentPage.addItem.search', { ns: 'nav.maintenance' })}
+                  </Button>
+                </div>
+              </div>
 
-                  {/* 时间设置行 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-3">
-                      <Label htmlFor="weekday" className="text-sm font-medium">
-                        {t('independentPage.addItem.weekday', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <Select
-                        value={formData.weekday.toString()}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, weekday: parseInt(value) })
-                        }
-                      >
-                        <SelectTrigger className="h-10">
-                          <SelectValue
-                            placeholder={t('independentPage.addItem.selectWeekday', {
-                              ns: 'nav.maintenance',
-                            })}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">{t('weekdaysList.sunday')}</SelectItem>
-                          {WEEKDAYS.map((day, index) => (
-                            <SelectItem key={index} value={(index + 1).toString()}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="airTime" className="text-sm font-medium">
-                        {t('independentPage.addItem.airTime', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <Input
-                        id="airTime"
-                        placeholder={t('independentPage.addItem.airTimePlaceholder', {
-                          ns: 'nav.maintenance',
-                        })}
-                        value={formData.airTime}
-                        onChange={(e) => setFormData({ ...formData, airTime: e.target.value })}
-                        className="h-10"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="secondWeekday" className="text-sm font-medium">
-                        {t('independentPage.addItem.secondWeekday', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <Select
-                        value={formData.secondWeekday.toString()}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, secondWeekday: parseInt(value) })
-                        }
-                      >
-                        <SelectTrigger className="h-10">
-                          <SelectValue
-                            placeholder={t('independentPage.addItem.selectWeekday', {
-                              ns: 'nav.maintenance',
-                            })}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="-1">{t('none', { ns: 'common' })}</SelectItem>
-                          <SelectItem value="0">{t('weekdaysList.sunday')}</SelectItem>
-                          {WEEKDAY_KEYS.map((day, index) => (
-                            <SelectItem key={index} value={(index + 1).toString()}>
-                              {t(`weekdaysList.${day}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+              {/* 搜索结果区域 - 只有搜索结果时才显示 */}
+              {searchResults.length > 0 && (
+                <div className="bg-background border rounded-lg overflow-hidden">
+                  <div className="bg-muted/30 px-3 py-1.5 border-b">
+                    <h3 className="text-xs font-medium text-muted-foreground">
+                      {t('independentPage.addItem.searchResults', { ns: 'nav.maintenance' })} (
+                      {searchResults.length})
+                    </h3>
                   </div>
-
-                  {/* 每日更新选项 - 移动到这里 */}
-                  <div className="flex items-center space-x-2 p-3 bg-accent/50 rounded-md border border-border">
-                    <Checkbox
-                      id="isDailyUpdate"
-                      checked={formData.isDailyUpdate}
-                      onCheckedChange={(checked) =>
-                        setFormData({
-                          ...formData,
-                          isDailyUpdate: checked === true,
-                        })
-                      }
-                      className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                    />
-                    <Label
-                      htmlFor="isDailyUpdate"
-                      className="text-sm flex items-center cursor-pointer font-medium"
-                    >
-                      <Zap className="h-4 w-4 mr-2 text-amber-500" />
-                      {t('independentPage.addItem.setAsDailyUpdate', { ns: 'nav.maintenance' })}
-                    </Label>
-                  </div>
-
-                  {/* URL和背景图行 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">
-                        {t('independentPage.addItem.platformUrlLabel', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <div className="space-y-1">
-                        {(formData.platformUrls.length > 0 ? formData.platformUrls : ['']).map(
-                          (url, idx) => (
-                            <div key={idx} className="flex gap-1">
-                              <Input
-                                placeholder="https://example.com/show-page"
-                                value={url}
-                                onChange={(e) => {
-                                  const urls = [...formData.platformUrls];
-                                  urls[idx] = e.target.value;
-                                  setFormData({
-                                    ...formData,
-                                    platformUrls: urls.filter((u) => u !== ''),
-                                  });
-                                }}
-                                className="h-10 flex-1"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 flex-shrink-0"
-                                onClick={() => {
-                                  const urls = formData.platformUrls.filter((_, i) => i !== idx);
-                                  setFormData({ ...formData, platformUrls: urls });
-                                }}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                  <ScrollArea className="h-[240px]">
+                    <div className="p-2 space-y-1">
+                      {searchResults.map((result) => (
+                        <div
+                          key={`${result.media_type}-${result.id}`}
+                          className={cn(
+                            'p-2 rounded-md cursor-pointer transition-all hover:bg-accent/60',
+                            selectedResult?.id === result.id &&
+                              'bg-primary/15 border border-primary/30'
+                          )}
+                          onClick={() => handleSelectResult(result)}
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0 w-10 h-14 bg-muted rounded overflow-hidden mr-3">
+                              {result.poster_path ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
+                                  alt={getDisplayTitle(result)}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Tv className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
                             </div>
-                          )
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs w-full"
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              platformUrls: [...formData.platformUrls, ''],
-                            })
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-xs truncate">
+                                {getDisplayTitle(result)}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 flex-wrap">
+                                <span>{t('tvSeries', { ns: 'common' })}</span>
+                                {result.adult && (
+                                  <>
+                                    <span>•</span>
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-xs px-1.5 py-0 h-auto"
+                                    >
+                                      {t('adult', { ns: 'common' })}
+                                    </Badge>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span>{formatDate(result.first_air_date)}</span>
+                                {result.vote_average && (
+                                  <>
+                                    <span>•</span>
+                                    <Star className="h-2 w-2 text-yellow-500" />
+                                    <span>{result.vote_average.toFixed(1)}</span>
+                                  </>
+                                )}
+                              </div>
+                              {selectedResult?.id === result.id && result.overview && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {result.overview}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex-shrink-0 flex items-center gap-1">
+                              <a
+                                href={`https://www.themoviedb.org/${result.media_type}/${result.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent text-muted-foreground hover:text-blue-600 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                                title={t('independentPage.addItem.viewOnTmdb', {
+                                  ns: 'nav.maintenance',
+                                })}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                              {result.backdrop_path && (
+                                <ImageIcon className="h-2.5 w-2.5 text-blue-500" />
+                              )}
+                              {selectedResult?.id === result.id && (
+                                <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* 空状态提示 - 当没有搜索结果且搜索过时显示 */}
+              {searchResults.length === 0 && searchQuery.trim() !== '' && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">
+                    {t('independentPage.addItem.noResults', { ns: 'nav.maintenance' })}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {t('independentPage.addItem.noResultsHint', { ns: 'nav.maintenance' })}
+                  </p>
+                </div>
+              )}
+
+              {/* 初始状态提示 - 当没有搜索时显示 */}
+              {searchResults.length === 0 && searchQuery.trim() === '' && !loading && (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-base font-medium mb-1">
+                    {t('independentPage.addItem.startSearch', { ns: 'nav.maintenance' })}
+                  </p>
+                  <p className="text-sm">
+                    {t('independentPage.addItem.startSearchHint', { ns: 'nav.maintenance' })}
+                  </p>
+                </div>
+              )}
+
+              {/* 表单 */}
+              {selectedResult && (
+                <div className="bg-gradient-to-br from-muted/10 to-muted/20 p-3 rounded-lg border">
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* 基本信息行 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-3">
+                        <Label htmlFor="title" className="text-sm font-medium">
+                          {t('independentPage.addItem.form.title', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <Input
+                          id="title"
+                          value={getDisplayTitle(selectedResult)}
+                          disabled
+                          className="bg-muted/50 font-medium h-10"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="category" className="text-sm font-medium">
+                          {t('independentPage.addItem.form.category', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <Select
+                          value={formData.category}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, category: value as CategoryType })
                           }
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          {t('independentPage.addItem.addPlatformUrl', { ns: 'nav.maintenance' })}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        💡 {t('independentPage.addItem.tmdbImportHint', { ns: 'nav.maintenance' })}
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="backdropUrl" className="text-sm font-medium">
-                        {t('independentPage.addItem.backdropUrlLabel', { ns: 'nav.maintenance' })}
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="backdropUrl"
-                          placeholder="https://example.com/backdrop.jpg"
-                          value={customBackdropUrl}
-                          onChange={handleCustomBackdropChange}
-                          className="h-10"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handlePreviewBackdrop}
-                          disabled={!customBackdropUrl}
-                          className="h-10 px-3"
-                        >
-                          {t('independentPage.addItem.preview', { ns: 'nav.maintenance' })}
-                        </Button>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-xs text-muted-foreground flex items-center">
-                          {backdropUrl ? (
-                            <>
-                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                              {t('independentPage.addItem.backdropSet', { ns: 'nav.maintenance' })}
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                              {t('independentPage.addItem.backdropNotSet', {
+                          <SelectTrigger className="h-10">
+                            <SelectValue
+                              placeholder={t('independentPage.addItem.form.selectCategory', {
                                 ns: 'nav.maintenance',
                               })}
-                            </>
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIES.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                <div className="flex items-center">
+                                  {category.icon}
+                                  <span className="ml-2">{category.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {selectedResult.media_type === 'tv' && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="totalEpisodes" className="text-sm font-medium">
+                              {t('independentPage.addItem.form.totalEpisodes', {
+                                ns: 'nav.maintenance',
+                              })}
+                            </Label>
+                            {tmdbSeasons && tmdbSeasons.length > 1 && (
+                              <span className="text-xs text-muted-foreground">
+                                {t('independentPage.addItem.form.seasons', {
+                                  ns: 'nav.maintenance',
+                                  count: tmdbSeasons.length,
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            id="totalEpisodes"
+                            type="number"
+                            min="1"
+                            value={formData.totalEpisodes}
+                            onChange={(e) => {
+                              const newValue = parseInt(e.target.value) || 1;
+                              setFormData({
+                                ...formData,
+                                totalEpisodes: newValue,
+                              });
+                              // 标记用户已手动设置总集数
+                              setIsManualTotalEpisodes(true);
+                            }}
+                            className="h-10"
+                          />
+                          {/* 季数信息展示 - 使用紧凑的标签式设计 */}
+                          {tmdbSeasons && tmdbSeasons.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {tmdbSeasons.map((season: Season, index: number) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="text-[10px] h-5 px-2 py-0 border-blue-200 text-blue-600"
+                                >
+                                  S{season.seasonNumber} {season.totalEpisodes || 0}
+                                  {t('independentPage.addItem.form.episodes', {
+                                    ns: 'nav.maintenance',
+                                  })}
+                                </Badge>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {backdropUrl && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs"
-                            onClick={handleResetBackdrop}
-                          >
-                            {t('independentPage.addItem.reset', { ns: 'nav.maintenance' })}
-                          </Button>
-                        )}
+                      )}
+                    </div>
+
+                    {/* 时间设置行 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-3">
+                        <Label htmlFor="weekday" className="text-sm font-medium">
+                          {t('independentPage.addItem.weekday', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <Select
+                          value={formData.weekday.toString()}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, weekday: parseInt(value) })
+                          }
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue
+                              placeholder={t('independentPage.addItem.selectWeekday', {
+                                ns: 'nav.maintenance',
+                              })}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">{t('weekdaysList.sunday')}</SelectItem>
+                            {WEEKDAYS.map((day, index) => (
+                              <SelectItem key={index} value={(index + 1).toString()}>
+                                {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="airTime" className="text-sm font-medium">
+                          {t('independentPage.addItem.airTime', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <Input
+                          id="airTime"
+                          placeholder={t('independentPage.addItem.airTimePlaceholder', {
+                            ns: 'nav.maintenance',
+                          })}
+                          value={formData.airTime}
+                          onChange={(e) => setFormData({ ...formData, airTime: e.target.value })}
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="secondWeekday" className="text-sm font-medium">
+                          {t('independentPage.addItem.secondWeekday', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <Select
+                          value={formData.secondWeekday.toString()}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, secondWeekday: parseInt(value) })
+                          }
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue
+                              placeholder={t('independentPage.addItem.selectWeekday', {
+                                ns: 'nav.maintenance',
+                              })}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="-1">{t('none', { ns: 'common' })}</SelectItem>
+                            <SelectItem value="0">{t('weekdaysList.sunday')}</SelectItem>
+                            {WEEKDAY_KEYS.map((day, index) => (
+                              <SelectItem key={index} value={(index + 1).toString()}>
+                                {t(`weekdaysList.${day}`)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 底部按钮 */}
-                  <div className="flex justify-center gap-4 pt-6 relative">
-                    {/* 渐变分割效果 */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent"></div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => onOpenChange(false)}
-                      className="h-10 px-8 font-medium"
-                    >
-                      {t('independentPage.addItem.cancel', { ns: 'nav.maintenance' })}
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={detailLoading || loading}
-                      className="h-10 px-8 font-medium"
-                    >
-                      {detailLoading || loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {detailLoading
-                            ? t('independentPage.addItem.loading', { ns: 'nav.maintenance' })
-                            : t('independentPage.addItem.adding', { ns: 'nav.maintenance' })}
-                        </>
-                      ) : (
-                        t('independentPage.addItem.addItem', { ns: 'nav.maintenance' })
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
+                    {/* 每日更新选项 - 移动到这里 */}
+                    <div className="flex items-center space-x-2 p-3 bg-accent/50 rounded-md border border-border">
+                      <Checkbox
+                        id="isDailyUpdate"
+                        checked={formData.isDailyUpdate}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            isDailyUpdate: checked === true,
+                          })
+                        }
+                        className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                      />
+                      <Label
+                        htmlFor="isDailyUpdate"
+                        className="text-sm flex items-center cursor-pointer font-medium"
+                      >
+                        <Zap className="h-4 w-4 mr-2 text-amber-500" />
+                        {t('independentPage.addItem.setAsDailyUpdate', { ns: 'nav.maintenance' })}
+                      </Label>
+                    </div>
+
+                    {/* URL和背景图行 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">
+                          {t('independentPage.addItem.platformUrlLabel', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <div className="space-y-1">
+                          {(formData.platformUrls.length > 0 ? formData.platformUrls : ['']).map(
+                            (url, idx) => (
+                              <div key={idx} className="flex gap-1">
+                                <Input
+                                  placeholder="https://example.com/show-page"
+                                  value={url}
+                                  onChange={(e) => {
+                                    const urls = [...formData.platformUrls];
+                                    urls[idx] = e.target.value;
+                                    setFormData({
+                                      ...formData,
+                                      platformUrls: urls.filter((u) => u !== ''),
+                                    });
+                                  }}
+                                  className="h-10 flex-1"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 flex-shrink-0"
+                                  onClick={() => {
+                                    const urls = formData.platformUrls.filter((_, i) => i !== idx);
+                                    setFormData({ ...formData, platformUrls: urls });
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs w-full"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                platformUrls: [...formData.platformUrls, ''],
+                              })
+                            }
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {t('independentPage.addItem.addPlatformUrl', { ns: 'nav.maintenance' })}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          💡{' '}
+                          {t('independentPage.addItem.tmdbImportHint', { ns: 'nav.maintenance' })}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="backdropUrl" className="text-sm font-medium">
+                          {t('independentPage.addItem.backdropUrlLabel', { ns: 'nav.maintenance' })}
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="backdropUrl"
+                            placeholder="https://example.com/backdrop.jpg"
+                            value={customBackdropUrl}
+                            onChange={handleCustomBackdropChange}
+                            className="h-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePreviewBackdrop}
+                            disabled={!customBackdropUrl}
+                            className="h-10 px-3"
+                          >
+                            {t('independentPage.addItem.preview', { ns: 'nav.maintenance' })}
+                          </Button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-muted-foreground flex items-center">
+                            {backdropUrl ? (
+                              <>
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                {t('independentPage.addItem.backdropSet', {
+                                  ns: 'nav.maintenance',
+                                })}
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                                {t('independentPage.addItem.backdropNotSet', {
+                                  ns: 'nav.maintenance',
+                                })}
+                              </>
+                            )}
+                          </div>
+                          {backdropUrl && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={handleResetBackdrop}
+                            >
+                              {t('independentPage.addItem.reset', { ns: 'nav.maintenance' })}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 底部按钮 */}
+                    <div className="flex justify-center gap-4 pt-6 relative">
+                      {/* 渐变分割效果 */}
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent"></div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        className="h-10 px-8 font-medium"
+                      >
+                        {t('independentPage.addItem.cancel', { ns: 'nav.maintenance' })}
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={detailLoading || loading}
+                        className="h-10 px-8 font-medium"
+                      >
+                        {detailLoading || loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {detailLoading
+                              ? t('independentPage.addItem.loading', { ns: 'nav.maintenance' })
+                              : t('independentPage.addItem.adding', { ns: 'nav.maintenance' })}
+                          </>
+                        ) : (
+                          t('independentPage.addItem.addItem', { ns: 'nav.maintenance' })
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
