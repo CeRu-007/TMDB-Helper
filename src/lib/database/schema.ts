@@ -7,7 +7,7 @@ import { getDatabaseAsync, getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 18;
+export const SCHEMA_VERSION = 19;
 
 // 防止重复初始化的标志
 let schemaInitStarted = false;
@@ -127,6 +127,9 @@ export async function initializeSchema(): Promise<void> {
     if (currentVersion < 18) {
       migrateToV18(db);
     }
+    if (currentVersion < 19) {
+      migrateToV19(db);
+    }
 
     setUserVersion(db, SCHEMA_VERSION);
     logger.info('[Database] Schema 升级完成');
@@ -175,6 +178,7 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       category TEXT,
       tmdbUrl TEXT,
       notes TEXT,
+      tags TEXT,
       isDailyUpdate INTEGER DEFAULT 0,
       blurIntensity TEXT,
       rating INTEGER,
@@ -668,6 +672,19 @@ function migrateToV18(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V18 迁移完成');
   } catch (error) {
     logger.error('[Database] V18 迁移失败:', error);
+  }
+}
+
+function migrateToV19(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V19 迁移: 为 items 表添加 tags 列');
+
+  try {
+    db.exec(`
+      ALTER TABLE items ADD COLUMN tags TEXT
+    `);
+    logger.info('[Database] V19 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V19 迁移失败:', error);
   }
 }
 

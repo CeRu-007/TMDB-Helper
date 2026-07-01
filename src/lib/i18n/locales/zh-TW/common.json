@@ -99,5 +99,6 @@
   "apply": "套用",
   "reload": "重新載入",
   "loadSuccess": "載入成功",
-  "loadFailed": "載入失敗"
+  "loadFailed": "載入失敗",
+  "add": "添加"
 }

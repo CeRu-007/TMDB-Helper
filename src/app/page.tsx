@@ -293,6 +293,7 @@ export default function HomePage() {
   const { currentDay } = useCurrentDay();
   const searchQuery = useUIStore((s) => s.searchQuery);
   const selectedPlatform = useUIStore((s) => s.selectedPlatform);
+  const showTaggedOnly = useUIStore((s) => s.showTaggedOnly);
   const viewMode = useUIStore((s) => s.viewMode);
   const [selectedRegion, setSelectedRegion] = useState<string>(() =>
     mapLanguageToRegion(getInitialLanguage())
@@ -394,7 +395,11 @@ export default function HomePage() {
         homeState.selectedCategory
       );
       const searchFiltered = filterItemsBySearchQuery(weekdayFiltered, searchQuery);
-      return filterItemsByPlatform(searchFiltered, selectedPlatform);
+      const platformFiltered = filterItemsByPlatform(searchFiltered, selectedPlatform);
+      if (showTaggedOnly) {
+        return platformFiltered.filter((item) => item.tags && item.tags.length > 0);
+      }
+      return platformFiltered;
     },
     [
       filterItemsByCategory,
@@ -405,6 +410,7 @@ export default function HomePage() {
       homeState.selectedDayFilter,
       searchQuery,
       selectedPlatform,
+      showTaggedOnly,
     ]
   );
 

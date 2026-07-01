@@ -506,5 +506,13 @@
       "rightClickMenu": "右键显示上下文菜单"
     },
     "holdCtrlToViewImage": "按住Ctrl点击查看图片"
-  }
+  },
+  "tags": "备注",
+  "tagHelp": "记录待处理的 TMDB 维护事项。进入编辑模式后可添加、删除备注。保存编辑时备注随词条一起保存。",
+  "tagPlaceholder": "输入新备注...",
+  "hasTags": "有备注",
+  "noTags": "暂无备注",
+  "suggestionMissingLogo": "缺失Logo",
+  "suggestionCastCrew": "演职人员待维护",
+  "suggestionFeedbackPending": "该词条反馈的帖子等待版主处理"
 }

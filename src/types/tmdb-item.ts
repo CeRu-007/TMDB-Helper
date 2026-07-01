@@ -35,6 +35,7 @@ export interface TMDBItem extends BaseMediaInfo {
   category?: string;
   tmdbUrl?: string;
   notes?: string;
+  tags?: string[];
   isDailyUpdate?: boolean;
 
   // 显示设置

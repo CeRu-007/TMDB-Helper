@@ -506,5 +506,12 @@
       "rightClickMenu": "우클릭으로 컨텍스트 메뉴"
     },
     "holdCtrlToViewImage": "Ctrl+클릭하여 이미지 보기"
-  }
+  },
+  "tags": "메모",
+  "tagPlaceholder": "새 메모 입력...",
+  "hasTags": "메모 있음",
+  "noTags": "메모 없음",
+  "suggestionMissingLogo": "로고 누락",
+  "suggestionCastCrew": "출연진 및 제작진 유지보수 필요",
+  "suggestionFeedbackPending": "해당 항목 피드백 게시물 관리자 처리 대기 중"
 }

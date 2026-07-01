@@ -58,6 +58,11 @@ export function EpisodeBatchActions({
         'transition-all duration-500 ease-in-out overflow-hidden',
         editing ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 !mt-0'
       )}
+      style={{
+        willChange: 'max-height, opacity',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+      }}
     >
       <Card variant="frosted">
         <CardHeader className="pb-2">

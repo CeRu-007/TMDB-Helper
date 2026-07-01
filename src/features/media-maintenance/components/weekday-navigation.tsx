@@ -25,7 +25,8 @@ interface WeekdayNavigationProps {
 }
 
 function getDayButtonClasses(isSelected: boolean, isToday: boolean): string {
-  const baseClasses = 'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
+  const baseClasses =
+    'flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border-2';
 
   if (isSelected) {
     return `${baseClasses} bg-blue-100 text-blue-700 ${
@@ -146,7 +147,11 @@ export function WeekdayNavigation({
               )}
               title={viewMode === 'grid' ? t('backdropView') : t('posterView')}
             >
-              {viewMode === 'grid' ? <LayoutGrid className="h-5 w-5" /> : <Columns2 className="h-5 w-5" />}
+              {viewMode === 'grid' ? (
+                <LayoutGrid className="h-5 w-5" />
+              ) : (
+                <Columns2 className="h-5 w-5" />
+              )}
             </button>
 
             <Separator orientation="vertical" className="h-6 bg-muted max-sm:hidden" />

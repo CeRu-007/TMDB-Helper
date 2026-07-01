@@ -506,5 +506,13 @@
       "rightClickMenu": "Right click for context menu"
     },
     "holdCtrlToViewImage": "Ctrl+click to view image"
-  }
+  },
+  "tags": "Notes",
+  "tagHelp": "Track TMDB maintenance tasks with notes. Enter edit mode to add or delete notes. Notes are saved when you save edits.",
+  "tagPlaceholder": "Enter new note...",
+  "hasTags": "Has Notes",
+  "noTags": "No notes",
+  "suggestionMissingLogo": "Missing Logo",
+  "suggestionCastCrew": "Cast & Crew",
+  "suggestionFeedbackPending": "Feedback post pending moderator review"
 }

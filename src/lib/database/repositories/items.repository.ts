@@ -90,14 +90,14 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           backdropPath, backdropUrl, logoPath, logoUrl, networkId, networkName,
           networkLogoUrl, status, completed, platformUrl, platformUrls, defaultPlatformUrl, networks, totalEpisodes,
           manuallySetEpisodes, weekday, secondWeekday, airTime, category,
-          tmdbUrl, notes, isDailyUpdate, blurIntensity, rating, createdAt, updatedAt, deletedAt
+          tmdbUrl, notes, tags, isDailyUpdate, blurIntensity, rating, createdAt, updatedAt, deletedAt
         ) VALUES (
           @id, @tmdbId, @imdbId, @title, @originalTitle, @overview, @year, @releaseDate,
           @genres, @runtime, @voteAverage, @mediaType, @posterPath, @posterUrl,
           @backdropPath, @backdropUrl, @logoPath, @logoUrl, @networkId, @networkName,
           @networkLogoUrl, @status, @completed, @platformUrl, @platformUrls, @defaultPlatformUrl, @networks, @totalEpisodes,
           @manuallySetEpisodes, @weekday, @secondWeekday, @airTime, @category,
-          @tmdbUrl, @notes, @isDailyUpdate, @blurIntensity, @rating, @createdAt, @updatedAt, @deletedAt
+          @tmdbUrl, @notes, @tags, @isDailyUpdate, @blurIntensity, @rating, @createdAt, @updatedAt, @deletedAt
         )
       `);
 
@@ -226,6 +226,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
           category = @category,
           tmdbUrl = @tmdbUrl,
           notes = @notes,
+          tags = @tags,
           isDailyUpdate = @isDailyUpdate,
           blurIntensity = @blurIntensity,
           rating = @rating,
@@ -270,6 +271,7 @@ export class ItemsRepository extends BaseRepository<TMDBItem, ItemRow> {
         category: row.category,
         tmdbUrl: row.tmdbUrl,
         notes: row.notes,
+        tags: row.tags,
         isDailyUpdate: row.isDailyUpdate,
         blurIntensity: row.blurIntensity,
         rating: row.rating,

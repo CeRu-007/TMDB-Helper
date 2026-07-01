@@ -34,6 +34,7 @@ interface FilterState {
   selectedCategory: string;
   searchQuery: string;
   selectedPlatform: string;
+  showTaggedOnly: boolean;
   viewMode: 'grid' | 'list';
 }
 
@@ -63,6 +64,7 @@ interface UIState extends DialogState, FilterState, SelectionState {
   setSelectedCategory: (category: string) => void;
   setSearchQuery: (query: string) => void;
   setSelectedPlatform: (platform: string) => void;
+  setShowTaggedOnly: (show: boolean) => void;
   setViewMode: (mode: 'grid' | 'list') => void;
   resetFilters: () => void;
 
@@ -93,6 +95,7 @@ const initialFilterState: FilterState = {
   selectedCategory: 'all',
   searchQuery: '',
   selectedPlatform: 'all',
+  showTaggedOnly: false,
   viewMode: 'grid',
 };
 
@@ -155,6 +158,7 @@ export const useUIStore = create<UIState>()(
         setSearchQuery: (searchQuery) => set({ searchQuery }, false, 'setSearchQuery'),
         setSelectedPlatform: (selectedPlatform) =>
           set({ selectedPlatform }, false, 'setSelectedPlatform'),
+        setShowTaggedOnly: (showTaggedOnly) => set({ showTaggedOnly }, false, 'setShowTaggedOnly'),
         setViewMode: (viewMode) => set({ viewMode }, false, 'setViewMode'),
         resetFilters: () => set(initialFilterState, false, 'resetFilters'),
 

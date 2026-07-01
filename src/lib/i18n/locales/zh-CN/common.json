@@ -100,5 +100,6 @@
   "apply": "应用",
   "reload": "重新加载",
   "loadSuccess": "加载成功",
-  "loadFailed": "加载失败"
+  "loadFailed": "加载失败",
+  "add": "添加"
 }

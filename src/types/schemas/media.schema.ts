@@ -84,6 +84,7 @@ export const TMDBItemSchema = z.object({
   category: z.string().optional(),
   tmdbUrl: z.string().url().optional(),
   notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   isDailyUpdate: z.boolean().optional(),
 
   // 显示设置

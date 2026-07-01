@@ -42,6 +42,7 @@ export interface ItemRow {
   category: string | null;
   tmdbUrl: string | null;
   notes: string | null;
+  tags: string | null;
   isDailyUpdate: number;
   blurIntensity: string | null;
   rating: number | null;
@@ -219,6 +220,7 @@ export function tmdbItemToRow(
     category: item.category ?? null,
     tmdbUrl: item.tmdbUrl ?? null,
     notes: item.notes ?? null,
+    tags: item.tags ? JSON.stringify(item.tags) : null,
     isDailyUpdate: item.isDailyUpdate ? 1 : 0,
     blurIntensity: item.blurIntensity ?? null,
     rating: item.rating ?? null,
@@ -276,6 +278,7 @@ export function rowToTMDBItem(
     category: row.category ?? undefined,
     tmdbUrl: row.tmdbUrl ?? undefined,
     notes: row.notes ?? undefined,
+    tags: row.tags ? JSON.parse(row.tags) : undefined,
     isDailyUpdate: row.isDailyUpdate === 1,
     blurIntensity: row.blurIntensity as 'light' | 'medium' | 'heavy' | undefined,
     rating: row.rating ?? undefined,

@@ -93,9 +93,10 @@ function MediaListItemComponent({ item, onItemClick }: MediaListItemProps) {
       window.removeEventListener('general-settings-updated', handleSettingsUpdate as EventListener);
   }, []);
 
-  const backdropUrl = item.backdropUrl || item.backdropPath
-    ? `${TMDB_IMAGE_BASE_URL}/w780${item.backdropPath}`
-    : null;
+  const backdropUrl =
+    item.backdropUrl || item.backdropPath
+      ? `${TMDB_IMAGE_BASE_URL}/w780${item.backdropPath}`
+      : null;
   const posterUrl = item.posterUrl || `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}/placeholder.jpg`;
   const displayImage = backdropUrl || posterUrl;
 
@@ -112,7 +113,8 @@ function MediaListItemComponent({ item, onItemClick }: MediaListItemProps) {
 
   const hasSecondWeekday = typeof item.secondWeekday === 'number' && item.secondWeekday >= 0;
 
-  const isAiringToday = item.weekday === new Date().getDay() ||
+  const isAiringToday =
+    item.weekday === new Date().getDay() ||
     (hasSecondWeekday && item.secondWeekday! === new Date().getDay());
 
   const getProgressPercent = (): number => {
@@ -215,7 +217,8 @@ function MediaListItemComponent({ item, onItemClick }: MediaListItemProps) {
         <div
           className="px-3.5 pt-12 pb-2"
           style={{
-            background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+            background:
+              'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
           }}
         >
           <h3 className="font-medium text-[13px] text-white leading-snug line-clamp-1 drop-shadow-sm">
@@ -223,13 +226,10 @@ function MediaListItemComponent({ item, onItemClick }: MediaListItemProps) {
           </h3>
 
           <div className="flex items-center justify-between text-[11px] mt-1">
-            <span className={cn(
-              isAiringToday ? 'text-red-400' : 'text-white/60'
-            )}>
+            <span className={cn(isAiringToday ? 'text-red-400' : 'text-white/60')}>
               {item.status === 'completed'
-                ? (getCompletionDate() || t('completed', { ns: 'media' }))
-                : (getScheduleText() || '\u00A0')
-              }
+                ? getCompletionDate() || t('completed', { ns: 'media' })
+                : getScheduleText() || '\u00A0'}
             </span>
 
             {item.status !== 'completed' && totalEpisodes > 0 && (

@@ -99,5 +99,6 @@
   "apply": "Apply",
   "reload": "Reload",
   "loadSuccess": "Load successful",
-  "loadFailed": "Load failed"
+  "loadFailed": "Load failed",
+  "add": "Add"
 }

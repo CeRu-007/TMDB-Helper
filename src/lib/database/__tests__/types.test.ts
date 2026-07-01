@@ -52,6 +52,7 @@ function makeRow(overrides: Partial<ItemRow> = {}): ItemRow {
     category: null,
     tmdbUrl: null,
     notes: null,
+    tags: null,
     isDailyUpdate: 0,
     blurIntensity: null,
     rating: null,
@@ -144,6 +145,54 @@ describe('rowToTMDBItem - networks deserialization', () => {
   });
 });
 
+describe('rowToTMDBItem - tags deserialization', () => {
+  it('deserializes tags from JSON string', () => {
+    const tags = ['缺失Logo', '演职人员待维护'];
+    const row = makeRow({ tags: JSON.stringify(tags) });
+    const item = rowToTMDBItem(row);
+
+    expect(item.tags).toEqual(tags);
+  });
+
+  it('sets tags to undefined when row has null', () => {
+    const row = makeRow({ tags: null });
+    const item = rowToTMDBItem(row);
+
+    expect(item.tags).toBeUndefined();
+  });
+
+  it('deserializes empty tags array', () => {
+    const row = makeRow({ tags: '[]' });
+    const item = rowToTMDBItem(row);
+
+    expect(item.tags).toEqual([]);
+  });
+});
+
+describe('tmdbItemToRow - tags serialization', () => {
+  it('serializes tags to JSON string', () => {
+    const tags = ['缺失Logo', '演职人员待维护'];
+    const item = makeItem({ tags });
+    const row = tmdbItemToRow(item);
+
+    expect(row.tags).toBe(JSON.stringify(tags));
+  });
+
+  it('sets tags to null when item has no tags', () => {
+    const item = makeItem({ tags: undefined });
+    const row = tmdbItemToRow(item);
+
+    expect(row.tags).toBeNull();
+  });
+
+  it('serializes empty tags array', () => {
+    const item = makeItem({ tags: [] });
+    const row = tmdbItemToRow(item);
+
+    expect(row.tags).toBe('[]');
+  });
+});
+
 describe('round-trip: tmdbItemToRow -> rowToTMDBItem', () => {
   it('preserves networks through full round-trip', () => {
     const networks: TMDBNetwork[] = [
@@ -181,5 +230,30 @@ describe('round-trip: tmdbItemToRow -> rowToTMDBItem', () => {
       'https://netflix.com/title/123',
       'https://hbo.com/title/456',
     ]);
+  });
+
+  it('preserves tags through full round-trip', () => {
+    const tags = ['缺失Logo', '演职人员待维护'];
+    const original = makeItem({ tags });
+    const row = tmdbItemToRow(original);
+    const restored = rowToTMDBItem(row);
+
+    expect(restored.tags).toEqual(original.tags);
+  });
+
+  it('preserves undefined tags through round-trip', () => {
+    const original = makeItem({ tags: undefined });
+    const row = tmdbItemToRow(original);
+    const restored = rowToTMDBItem(row);
+
+    expect(restored.tags).toBeUndefined();
+  });
+
+  it('preserves empty tags array through round-trip', () => {
+    const original = makeItem({ tags: [] });
+    const row = tmdbItemToRow(original);
+    const restored = rowToTMDBItem(row);
+
+    expect(restored.tags).toEqual([]);
   });
 });

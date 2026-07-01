@@ -19,6 +19,7 @@ import {
   Radio,
   Clock,
   CheckCircle2,
+  Tag,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { CachedImage } from '@/shared/components/ui/cached-image';
@@ -99,7 +100,12 @@ function extractPlatforms(items: TMDBItem[]): PlatformOption[] {
   return Array.from(platformMap.values()).sort((a, b) => b.count - a.count);
 }
 
-export function FilterDropdown({ items, categories, activeTab, onActiveTabChange }: FilterDropdownProps) {
+export function FilterDropdown({
+  items,
+  categories,
+  activeTab,
+  onActiveTabChange,
+}: FilterDropdownProps) {
   const { t } = useTranslation('media');
   const searchQuery = useUIStore((s) => s.searchQuery);
   const setSearchQuery = useUIStore((s) => s.setSearchQuery);
@@ -107,16 +113,23 @@ export function FilterDropdown({ items, categories, activeTab, onActiveTabChange
   const setSelectedCategory = useUIStore((s) => s.setSelectedCategory);
   const selectedPlatform = useUIStore((s) => s.selectedPlatform);
   const setSelectedPlatform = useUIStore((s) => s.setSelectedPlatform);
+  const showTaggedOnly = useUIStore((s) => s.showTaggedOnly);
+  const setShowTaggedOnly = useUIStore((s) => s.setShowTaggedOnly);
 
   const platforms = useMemo(() => extractPlatforms(items), [items]);
 
   const hasActiveFilter =
-    selectedCategory !== 'all' || selectedPlatform !== 'all' || searchQuery.trim() !== '' || (activeTab && activeTab !== 'ongoing');
+    selectedCategory !== 'all' ||
+    selectedPlatform !== 'all' ||
+    searchQuery.trim() !== '' ||
+    showTaggedOnly ||
+    (activeTab && activeTab !== 'ongoing');
 
   const activeFilterCount = [
     selectedCategory !== 'all' ? 1 : 0,
     selectedPlatform !== 'all' ? 1 : 0,
     searchQuery.trim() ? 1 : 0,
+    showTaggedOnly ? 1 : 0,
     activeTab && activeTab !== 'ongoing' ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
@@ -124,6 +137,7 @@ export function FilterDropdown({ items, categories, activeTab, onActiveTabChange
     setSearchQuery('');
     setSelectedCategory('all');
     setSelectedPlatform('all');
+    setShowTaggedOnly(false);
     onActiveTabChange?.('ongoing');
   };
 
@@ -248,6 +262,36 @@ export function FilterDropdown({ items, categories, activeTab, onActiveTabChange
             </div>
           </div>
         )}
+
+        <div className="p-3 border-b">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {t('tags', { ns: 'media' })}
+            </span>
+            {showTaggedOnly && (
+              <button
+                onClick={() => setShowTaggedOnly(false)}
+                className="text-xs text-blue-500 hover:text-blue-600"
+              >
+                {t('all', { ns: 'common' })}
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setShowTaggedOnly(!showTaggedOnly)}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                showTaggedOnly
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Tag className="h-3.5 w-3.5" />
+              <span>{t('hasTags', { ns: 'media' })}</span>
+            </button>
+          </div>
+        </div>
 
         {platforms.length > 0 && (
           <div className="p-3">

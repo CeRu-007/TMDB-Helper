@@ -46,6 +46,31 @@ describe('itemsRepository.create', () => {
     mockGet.mockReturnValue(undefined); // findById returns nothing
   });
 
+  it('includes tags in INSERT params when present', () => {
+    const tags = ['缺失Logo', '演职人员待维护'];
+    const result = itemsRepository.create(makeItem({ tags }));
+
+    expect(result.success).toBe(true);
+    const runCall = mockRun.mock.calls[0] as any;
+    expect(runCall[0].tags).toBe(JSON.stringify(tags));
+  });
+
+  it('sets tags to null in INSERT params when undefined', () => {
+    const result = itemsRepository.create(makeItem({ tags: undefined }));
+
+    expect(result.success).toBe(true);
+    const runCall = mockRun.mock.calls[0] as any;
+    expect(runCall[0].tags).toBeNull();
+  });
+
+  it('sets tags to empty array JSON when empty array', () => {
+    const result = itemsRepository.create(makeItem({ tags: [] }));
+
+    expect(result.success).toBe(true);
+    const runCall = mockRun.mock.calls[0] as any;
+    expect(runCall[0].tags).toBe('[]');
+  });
+
   it('includes networks in INSERT params when present', () => {
     const networks = [{ id: 1, name: 'Netflix', logoPath: '/n.png' }];
     const result = itemsRepository.create(makeItem({ networks }));
@@ -103,6 +128,23 @@ describe('itemsRepository.update', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGet.mockReturnValue({ id: 'test-1' }); // findById returns existing item
+  });
+
+  it('includes tags in UPDATE params when present', () => {
+    const tags = ['缺失Logo', '该词条反馈的帖子等待版主处理'];
+    const result = itemsRepository.update(makeItem({ tags }));
+
+    expect(result.success).toBe(true);
+    const runCall = mockRun.mock.calls[0] as any;
+    expect(runCall[0].tags).toBe(JSON.stringify(tags));
+  });
+
+  it('sets tags to null in UPDATE params when undefined', () => {
+    const result = itemsRepository.update(makeItem({ tags: undefined }));
+
+    expect(result.success).toBe(true);
+    const runCall = mockRun.mock.calls[0] as any;
+    expect(runCall[0].tags).toBeNull();
   });
 
   it('includes networks in UPDATE params when present', () => {

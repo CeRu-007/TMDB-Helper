@@ -511,5 +511,12 @@
       "rightClickMenu": "右鍵顯示上下文選單"
     },
     "holdCtrlToViewImage": "按住Ctrl點擊查看圖片"
-  }
+  },
+  "tags": "備註",
+  "tagPlaceholder": "輸入新備註...",
+  "hasTags": "有備註",
+  "noTags": "暫無備註",
+  "suggestionMissingLogo": "缺失Logo",
+  "suggestionCastCrew": "演職人員待維護",
+  "suggestionFeedbackPending": "該詞條反饋的帖子等待版主處理"
 }

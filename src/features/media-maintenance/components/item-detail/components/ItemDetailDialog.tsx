@@ -900,6 +900,12 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
     }
   }
 
+  function handleTagsChange(newTags: string[]): void {
+    const tags = newTags.length > 0 ? newTags : undefined;
+    setEditData((prev) => ({ ...prev, tags }));
+    setLocalItem((prev) => ({ ...prev, tags }));
+  }
+
   const getAirTime = (weekday?: number): string => {
     if (weekday === undefined) {
       return '';
@@ -1154,8 +1160,8 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
 
                   {/* 条目信息区域 */}
                   {editing ? (
-                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 p-2 flex-1 overflow-hidden transition-all duration-300 hover:shadow-lg">
-                      <ScrollArea className="h-full">
+                    <div className="w-full rounded-lg backdrop-blur-md bg-background/30 relative min-h-0 transition-all duration-300 hover:shadow-lg" style={{ minHeight: 0, flex: '1 1 0%' }}>
+                      <div className="absolute inset-0 overflow-y-auto p-2">
                         <div className="space-y-1.5 pr-2">
                           <div className="pb-0.5 mb-0.5 flex items-center justify-between border-b border-border/20">
                             <h3 className="text-sm font-medium flex items-center">
@@ -1424,7 +1430,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
                             />
                           </div>
                         </div>
-                      </ScrollArea>
+                      </div>
                     </div>
                   ) : (
                     <div className="w-full rounded-lg backdrop-blur-md bg-background/30 overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col min-h-0">
@@ -1519,6 +1525,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
                       onCustomSeasonNumberChange={setCustomSeasonNumber}
                       onClearRefreshError={onClearRefreshError}
                       onSetCustomSeasonNumber={setCustomSeasonNumber}
+                      onTagsChange={handleTagsChange}
                     />
                   </TabsContent>
 
