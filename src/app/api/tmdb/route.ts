@@ -10,22 +10,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const query = searchParams.get('query');
     const page = parseInt(searchParams.get('page') || '1');
     const forceRefresh = searchParams.get('forceRefresh') === 'true';
+    const language = searchParams.get('language') || 'zh-CN';
 
-    logger.info('TMDB API Request', { action, url, query, page, forceRefresh });
+    logger.info('TMDB API Request', { action, url, query, page, forceRefresh, language });
 
     switch (action) {
       case 'search':
         if (!query) {
           return NextResponse.json({ success: false, error: '缺少搜索关键词' }, { status: 400 });
         }
-        const searchResult = await TMDBService.search(query, page);
+        const searchResult = await TMDBService.search(query, page, language);
         return NextResponse.json({ success: true, data: searchResult });
 
       case 'getItemFromUrl':
         if (!url) {
           return NextResponse.json({ success: false, error: '缺少URL参数' }, { status: 400 });
         }
-        const itemResult = await TMDBService.getItemFromUrl(url, forceRefresh);
+        const itemResult = await TMDBService.getItemFromUrl(url, forceRefresh, language);
         if (!itemResult) {
           return NextResponse.json(
             { success: false, error: '未能从TMDB获取到有效数据' },

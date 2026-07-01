@@ -254,10 +254,10 @@ export class TMDBService {
   /**
    * 搜索电视剧
    */
-  static async search(query: string, page: number = 1): Promise<any> {
+  static async search(query: string, page: number = 1, language: string = 'zh-CN'): Promise<any> {
     try {
       const response = await this.fetchWithFallback(
-        `/search/multi?language=zh-CN&query=${encodeURIComponent(query)}&page=${page}&include_adult=true`
+        `/search/multi?language=${language}&query=${encodeURIComponent(query)}&page=${page}&include_adult=true`
       );
 
       if (!response.ok) {
@@ -273,9 +273,9 @@ export class TMDBService {
   /**
    * 获取 TMDB 列表内容（支持分页）
    */
-  static async getListItems(listId: string): Promise<TMDBListData | null> {
+  static async getListItems(listId: string, language: string = 'zh-CN'): Promise<TMDBListData | null> {
     try {
-      const firstResponse = await this.fetchWithFallback(`/list/${listId}?language=zh-CN&page=1`);
+      const firstResponse = await this.fetchWithFallback(`/list/${listId}?language=${language}&page=1`);
 
       if (!firstResponse.ok) {
         return null;
@@ -289,7 +289,7 @@ export class TMDBService {
         const pagePromises: Promise<TMDBListResponse | null>[] = [];
         for (let p = 2; p <= firstData.total_pages; p++) {
           pagePromises.push(
-            this.fetchWithFallback(`/list/${listId}?language=zh-CN&page=${p}`).then((res) =>
+            this.fetchWithFallback(`/list/${listId}?language=${language}&page=${p}`).then((res) =>
               res.ok ? (res.json() as Promise<TMDBListResponse>) : null
             )
           );
@@ -329,7 +329,8 @@ export class TMDBService {
 
   static async getItemFromUrl(
     url: string,
-    forceRefresh: boolean = false
+    forceRefresh: boolean = false,
+    language: string = 'zh-CN'
   ): Promise<TMDBItemData | null> {
     const startTime = performance.now();
 
@@ -348,7 +349,7 @@ export class TMDBService {
       }, 30000); // 30秒超时
 
       // 使用带备用域名的fetch
-      const response = await this.fetchWithFallback(`/${endpoint}/${id}?language=zh-CN`, {
+      const response = await this.fetchWithFallback(`/${endpoint}/${id}?language=${language}`, {
         signal: controller.signal,
       });
 

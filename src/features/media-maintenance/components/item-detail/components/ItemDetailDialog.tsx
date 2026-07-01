@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { logger } from '@/lib/utils/logger';
+import { getCurrentLanguage } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { DELAY_1S, DELAY_2S } from '@/lib/constants/constants';
 import { realtimeSyncManager } from '@/lib/data/realtime-sync-manager';
@@ -541,7 +542,7 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
       const tmdbUrl = `https://www.themoviedb.org/${editData.mediaType}/${editData.tmdbId}`;
 
       const response = await fetch(
-        `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`
+        `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true&language=${getCurrentLanguage()}`
       );
 
       if (!response.ok) {

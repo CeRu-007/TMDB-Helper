@@ -6,12 +6,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const listId = searchParams.get('listId');
+    const language = searchParams.get('language') || 'zh-CN';
 
     if (!listId) {
       return NextResponse.json({ success: false, error: '缺少 listId 参数' }, { status: 400 });
     }
 
-    const data = await TMDBService.getListItems(listId);
+    const data = await TMDBService.getListItems(listId, language);
 
     if (!data) {
       return NextResponse.json(

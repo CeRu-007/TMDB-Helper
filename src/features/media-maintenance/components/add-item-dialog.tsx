@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/utils/logger';
+import { getCurrentLanguage } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -208,7 +209,7 @@ export default function AddItemDialog({
 
         // 获取详细信息
         const response = await fetch(
-          `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`
+          `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&language=${getCurrentLanguage()}`
         );
         const data = await response.json();
         const tmdbData = data.success ? data.data : null;
@@ -304,7 +305,7 @@ export default function AddItemDialog({
     setListLoading(true);
     setListData(null);
     try {
-      const response = await fetch(`/api/tmdb/list?listId=${encodeURIComponent(listId)}`);
+      const response = await fetch(`/api/tmdb/list?listId=${encodeURIComponent(listId)}&language=${getCurrentLanguage()}`);
       const result = await response.json();
 
       if (!result.success) {
@@ -355,7 +356,7 @@ export default function AddItemDialog({
       const response = await fetch('/api/storage/batch-import-from-tmdb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: payload }),
+        body: JSON.stringify({ items: payload, language: getCurrentLanguage() }),
       });
       const result = await response.json();
 
@@ -680,7 +681,7 @@ export default function AddItemDialog({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/tmdb?action=search&query=${encodeURIComponent(query)}&page=1`
+        `/api/tmdb?action=search&query=${encodeURIComponent(query)}&page=1&language=${getCurrentLanguage()}`
       );
 
       if (!response.ok) {
@@ -822,8 +823,9 @@ export default function AddItemDialog({
 
     try {
       const tmdbUrl = `https://www.themoviedb.org/${selectedResult.media_type}/${selectedResult.id}`;
+      const currentLang = getCurrentLanguage();
       const response = await fetch(
-        `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}`
+        `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&language=${currentLang}`
       );
       const result = await response.json();
       const tmdbData = result.success ? result.data : null;
@@ -850,7 +852,7 @@ export default function AddItemDialog({
         logger.info(`🔄 [添加词条] 缺少图片信息: ${missingImages.join(', ')}，尝试强制刷新获取...`);
         try {
           const refreshResponse = await fetch(
-            `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true`
+            `/api/tmdb?action=getItemFromUrl&url=${encodeURIComponent(tmdbUrl)}&forceRefresh=true&language=${currentLang}`
           );
           const refreshResult = await refreshResponse.json();
           const refreshedData = refreshResult.success ? refreshResult.data : null;
@@ -1171,6 +1173,9 @@ export default function AddItemDialog({
                                   src={`https://image.tmdb.org/t/p/w92${result.poster_path}`}
                                   alt={getDisplayTitle(result)}
                                   className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">

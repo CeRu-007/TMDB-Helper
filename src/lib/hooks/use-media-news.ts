@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logger } from '@/lib/utils/logger';
 import { handleError, retryOperation } from '@/lib/utils/error-handler';
+import { getCurrentLanguage } from '@/lib/i18n';
 import { useMediaNewsStore } from '@/stores/media-news-store';
 
 export interface MediaNewsItem {
@@ -86,7 +87,7 @@ export function useMediaNews(selectedRegion: string = 'CN'): UseMediaNewsReturn 
       try {
         const response = await retryOperation(
           () =>
-            fetch(`/api/tmdb/${type}?region=${region}`, {
+            fetch(`/api/tmdb/${type}?region=${region}&language=${getCurrentLanguage()}`, {
               cache: 'no-store',
               headers: {
                 'Cache-Control': 'no-cache',

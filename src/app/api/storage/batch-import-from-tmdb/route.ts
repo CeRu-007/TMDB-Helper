@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const items = body.items as BatchImportItem[];
+    const batchLanguage = body.language || 'zh-CN';
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     for (const item of items) {
       try {
-        const tmdbData = await TMDBService.getItemFromUrl(item.tmdbUrl);
+        const tmdbData = await TMDBService.getItemFromUrl(item.tmdbUrl, false, batchLanguage);
         if (!tmdbData) {
           skipped.push({
             tmdbId: item.tmdbId,
