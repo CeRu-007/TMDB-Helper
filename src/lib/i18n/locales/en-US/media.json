@@ -512,6 +512,7 @@
   "tagPlaceholder": "Enter new note...",
   "hasTags": "Has Notes",
   "noTags": "No notes",
+  "suggestions": "Suggestions",
   "suggestionMissingLogo": "Missing Logo",
   "suggestionCastCrew": "Cast & Crew",
   "suggestionFeedbackPending": "Feedback post pending moderator review"

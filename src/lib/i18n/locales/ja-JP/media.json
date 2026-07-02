@@ -511,6 +511,7 @@
   "tagPlaceholder": "新しいメモを入力...",
   "hasTags": "メモあり",
   "noTags": "メモなし",
+  "suggestions": "おすすめ",
   "suggestionMissingLogo": "ロゴ欠落",
   "suggestionCastCrew": "キャスト・スタッフ未整備",
   "suggestionFeedbackPending": "フィードバック投稿はモデレーターの対応待ち"

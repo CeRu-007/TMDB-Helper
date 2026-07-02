@@ -202,7 +202,7 @@ export function DetailsTab({
               <div className="mb-2">
                 <div className="flex items-center gap-1 mb-1.5">
                   <Sparkles className="h-3 w-3 text-blue-500" />
-                  <span className="text-xs text-muted-foreground">推荐</span>
+                  <span className="text-xs text-muted-foreground">{t('suggestions', { ns: 'media' })}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {suggestions.map((s) => (
