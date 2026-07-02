@@ -116,6 +116,7 @@
   "defaultPlatformUrl": "預設播出平台",
   "setAsDefault": "設為預設",
   "backdropUrl": "背景圖URL",
+  "posterUrl": "海報URL",
   "airTimePlaceholder": "例如：週一 22:00",
   "dailyUpdate": "每日更新",
   "refreshTmdbDataFailed": "刷新TMDB資料失敗，請稍後再試",

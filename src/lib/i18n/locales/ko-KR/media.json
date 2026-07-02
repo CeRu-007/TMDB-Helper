@@ -111,6 +111,7 @@
   "defaultPlatformUrl": "기본 플랫폼",
   "setAsDefault": "기본값으로 설정",
   "backdropUrl": "배경 이미지 URL",
+  "posterUrl": "포스터 URL",
   "airTimePlaceholder": "예: 월요일 22:00",
   "dailyUpdate": "매일 업데이트",
   "refreshTmdbDataFailed": "TMDB 데이터 새로고침에 실패했습니다. 나중에 다시 시도하세요",

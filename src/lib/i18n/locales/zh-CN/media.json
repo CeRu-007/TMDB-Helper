@@ -111,6 +111,7 @@
   "defaultPlatformUrl": "默认播出平台",
   "setAsDefault": "设为默认",
   "backdropUrl": "背景图URL",
+  "posterUrl": "海报URL",
   "airTimePlaceholder": "例如：周一 22:00",
   "dailyUpdate": "每日更新",
   "refreshTmdbDataFailed": "刷新TMDB数据失败，请稍后再试",

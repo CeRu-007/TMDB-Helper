@@ -111,6 +111,7 @@
   "defaultPlatformUrl": "デフォルトのプラットフォーム",
   "setAsDefault": "デフォルトに設定",
   "backdropUrl": "背景画像URL",
+  "posterUrl": "ポスターURL",
   "airTimePlaceholder": "例：月曜日 22:00",
   "dailyUpdate": "毎日更新",
   "refreshTmdbDataFailed": "TMDBデータの更新に失敗しました。しばらくしてからもう一度お試しください",

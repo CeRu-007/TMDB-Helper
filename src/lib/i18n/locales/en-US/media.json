@@ -111,6 +111,7 @@
   "defaultPlatformUrl": "Default Platform URL",
   "setAsDefault": "Set as Default",
   "backdropUrl": "Backdrop URL",
+  "posterUrl": "Poster URL",
   "airTimePlaceholder": "e.g. Monday 22:00",
   "dailyUpdate": "Daily Update",
   "refreshTmdbDataFailed": "Refresh failed, try again later",

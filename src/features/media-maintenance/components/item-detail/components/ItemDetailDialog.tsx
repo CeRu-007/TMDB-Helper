@@ -1430,6 +1430,24 @@ const ItemDetailDialogComponent = memo(function ItemDetailDialog({
                               className="h-8"
                             />
                           </div>
+
+                          <div className="space-y-0.5">
+                            <Label
+                              htmlFor="edit-poster-url"
+                              className="text-xs text-muted-foreground"
+                            >
+                              {t('posterUrl')}
+                            </Label>
+                            <Input
+                              id="edit-poster-url"
+                              value={editData.posterUrl || ''}
+                              onChange={function handlePosterUrlChange(e) {
+                                setEditData({ ...editData, posterUrl: e.target.value });
+                              }}
+                              placeholder="https://example.com/poster.jpg"
+                              className="h-8"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
