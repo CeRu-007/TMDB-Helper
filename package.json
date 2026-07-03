@@ -35,11 +35,15 @@
     "docker:shell": "docker exec -it tmdb-helper bash",
     "electron": "cross-env NODE_ENV=development electron .",
     "electron:dev": "node scripts/electron-dev.js",
+    "electron:browser": "cross-env NODE_ENV=development electron --main-process-only electron/tray-browser.js",
     "electron:build": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win",
     "electron:build:mac": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --mac",
     "electron:build:linux": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --linux",
     "electron:build:all": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --win --mac --linux",
     "electron:pack": "cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && electron-builder --dir",
+    "electron:build:browser": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && cross-env ELECTRON_BROWSER_MODE=true electron-builder --win --config electron-builder.config.js",
+    "electron:build:browser:mac": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && cross-env ELECTRON_BROWSER_MODE=true electron-builder --mac --config electron-builder.config.js",
+    "electron:build:browser:linux": "node scripts/optimize-build.js && cross-env ELECTRON_BUILD=true ELECTRON_MIRROR=https://github.com/electron/electron/releases/download/ pnpm run build && cross-env ELECTRON_BROWSER_MODE=true electron-builder --linux --config electron-builder.config.js",
     "analyze-size": "node scripts/analyze-size.js"
   },
   "dependencies": {
@@ -84,7 +88,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/file-saver": "^2.0.7",
     "@types/jsonwebtoken": "^9.0.10",
-
     "@types/semver": "^7.7.1",
     "@types/uuid": "^10.0.0",
     "@uiw/react-markdown-preview": "^5.1.5",
