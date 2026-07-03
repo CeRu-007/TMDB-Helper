@@ -60,9 +60,12 @@ docker run -d \
 
 ### 桌面端
 
-从 [GitHub Releases](https://github.com/CeRu-007/TMDB-Helper/releases) 下载安装包。
+从 [GitHub Releases](https://github.com/CeRu-007/TMDB-Helper/releases) 下载安装包，提供两种使用方式：
 
-### Web
+- **桌面窗口版**：打开独立应用窗口使用（文件名不含 `-web`）
+- **桌面浏览器版**：点击图标后在系统默认浏览器中打开使用，后台通过系统托盘管理（文件名含 `-web`）
+
+### Web（开发）
 
 ```bash
 git clone https://github.com/CeRu-007/TMDB-Helper.git

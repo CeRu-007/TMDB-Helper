@@ -60,9 +60,12 @@ docker run -d \
 
 ### Desktop
 
-Download from [GitHub Releases](https://github.com/CeRu-007/TMDB-Helper/releases).
+Download from [GitHub Releases](https://github.com/CeRu-007/TMDB-Helper/releases). Two variants are available:
 
-### Web
+- **Desktop Window**: Runs in a standalone application window (filename without `-web`)
+- **Desktop Browser**: Opens in your default system browser after launching, with the backend managed via the system tray (filename with `-web`)
+
+### Web (Development)
 
 ```bash
 git clone https://github.com/CeRu-007/TMDB-Helper.git
