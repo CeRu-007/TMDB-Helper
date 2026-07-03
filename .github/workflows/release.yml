@@ -313,6 +313,46 @@ jobs:
             dist/*.exe
           retention-days: 2
 
+  electron-windows-browser:
+    needs: prepare
+    runs-on: windows-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App (Windows Browser)
+        run: pnpm run electron:build:browser
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Browser artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe-browser
+          path: |
+            dist/win-unpacked/*.exe
+            dist/*.exe
+          retention-days: 2
+
   electron-mac:
     needs: prepare
     runs-on: macos-latest
@@ -348,6 +388,44 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mac-dmg
+          path: dist/*.dmg
+          retention-days: 2
+
+  electron-mac-browser:
+    needs: prepare
+    runs-on: macos-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App (macOS Browser)
+        run: pnpm run electron:build:browser:mac
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS Browser artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-dmg-browser
           path: dist/*.dmg
           retention-days: 2
 
@@ -391,8 +469,48 @@ jobs:
             dist/*.deb
           retention-days: 2
 
+  electron-linux-browser:
+    needs: prepare
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+    environment: electron-build
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron App (Linux Browser)
+        run: pnpm run electron:build:browser:linux
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Browser artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages-browser
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          retention-days: 2
+
   create-release:
-    needs: [prepare, docker, electron-windows, electron-mac, electron-linux]
+    needs: [prepare, docker, electron-windows, electron-windows-browser, electron-mac, electron-mac-browser, electron-linux, electron-linux-browser]
     runs-on: ubuntu-latest
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.prepare.result == 'success' }}
 
@@ -410,6 +528,14 @@ jobs:
           path: dist/
         continue-on-error: true
 
+      - name: Download Windows Browser artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe-browser
+          path: dist/
+        continue-on-error: true
+
       - name: Download macOS artifact
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
@@ -418,11 +544,27 @@ jobs:
           path: dist/
         continue-on-error: true
 
+      - name: Download macOS Browser artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-dmg-browser
+          path: dist/
+        continue-on-error: true
+
       - name: Download Linux artifact
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
         uses: actions/download-artifact@v4
         with:
           name: linux-packages
+          path: dist/
+        continue-on-error: true
+
+      - name: Download Linux Browser artifact
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_electron != true }}
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-packages-browser
           path: dist/
         continue-on-error: true
 
