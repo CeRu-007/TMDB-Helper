@@ -69,6 +69,7 @@ class Scheduler {
       },
       {
         timezone: 'Asia/Shanghai',
+        missedExecutionTolerance: 60000,
       }
     );
 
