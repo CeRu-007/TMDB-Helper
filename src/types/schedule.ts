@@ -29,6 +29,7 @@ export interface ScheduleTask {
   tmdbAutoResponse: string;
   fieldCleanup: FieldCleanup;
   checkMetadataCompleteness: boolean;
+  cleanFakeTitles: boolean;
   platformUrl?: string | undefined;
   platformConfigs?: PlatformSourceConfig[] | undefined;
   lastRunAt: string | null;
@@ -50,6 +51,7 @@ export interface ScheduleTaskRow {
   tmdbAutoResponse: string;
   fieldCleanup: string;
   checkMetadataCompleteness: number;
+  cleanFakeTitles: number;
   platformUrl: string | null;
   platformConfigs: string | null;
   lastRunAt: string | null;
@@ -92,6 +94,7 @@ export function scheduleTaskRowToScheduleTask(row: ScheduleTaskRow): ScheduleTas
     tmdbAutoResponse: row.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.parse(row.fieldCleanup || '{}'),
     checkMetadataCompleteness: row.checkMetadataCompleteness === 1,
+    cleanFakeTitles: row.cleanFakeTitles === 1,
     platformUrl: row.platformUrl ?? undefined,
     platformConfigs: row.platformConfigs ? JSON.parse(row.platformConfigs) : undefined,
     lastRunAt: row.lastRunAt,
@@ -115,6 +118,7 @@ export function scheduleTaskToRow(task: ScheduleTask): ScheduleTaskRow {
     tmdbAutoResponse: task.tmdbAutoResponse || 'w',
     fieldCleanup: JSON.stringify(task.fieldCleanup),
     checkMetadataCompleteness: task.checkMetadataCompleteness ? 1 : 0,
+    cleanFakeTitles: task.cleanFakeTitles ? 1 : 0,
     platformUrl: task.platformUrl ?? null,
     platformConfigs: task.platformConfigs ? JSON.stringify(task.platformConfigs) : null,
     lastRunAt: task.lastRunAt,
@@ -148,6 +152,7 @@ export interface CreateScheduleTaskInput {
   tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
+  cleanFakeTitles?: boolean;
   platformUrl?: string;
   platformConfigs?: PlatformSourceConfig[];
 }
@@ -164,6 +169,7 @@ export interface UpdateScheduleTaskInput {
   tmdbAutoResponse?: string;
   fieldCleanup?: FieldCleanup;
   checkMetadataCompleteness?: boolean;
+  cleanFakeTitles?: boolean;
   platformUrl?: string;
   platformConfigs?: PlatformSourceConfig[];
 }

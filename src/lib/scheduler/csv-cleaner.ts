@@ -389,6 +389,127 @@ export function analyzeCSVMetadata(csvContent: string): MetadataAnalysisResult {
   return { rawEpisodeCount, effectiveEpisodeCount, incompleteEpisodes };
 }
 
+export interface FakeTitleCleanResult {
+  csvContent: string;
+  clearedEpisodes: number[];
+}
+
+const EPISODE_MARKER_REGEXES: RegExp[] = [
+  /第\s*[0-9零一二三四五六七八九十百千两兩]+\s*[集话話期]/g,
+  /\bEP\s*[0-9]+\b/gi,
+  /\bEPISODE\s*[0-9]+\b/gi,
+  /#\s*[0-9]+/g,
+];
+
+const CHINESE_NUMERAL_ONLY = /^\s*[零一二三四五六七八九十百千两兩]+\s*$/;
+
+function stripDramaName(title: string, dramaName: string): string {
+  const t = title.trim();
+  const d = (dramaName || '').trim();
+  if (!d) {
+    return t;
+  }
+  if (t.toLowerCase() === d.toLowerCase()) {
+    return '';
+  }
+  const lower = t.toLowerCase();
+  const lowerD = d.toLowerCase();
+  if (lower.startsWith(lowerD)) {
+    const rest = t.slice(d.length);
+    // 仅在剧名后紧跟空白、序号标记（第/EP/#）或剧名独占时剥离，
+    // 避免误伤同名续作（如「庆余年2 第3集」中的「庆余年」）。
+    if (
+      rest === '' ||
+      /^\s/.test(rest) ||
+      /^第/.test(rest) ||
+      /^[Ee][Pp]/.test(rest) ||
+      /^#/.test(rest)
+    ) {
+      return rest.trim();
+    }
+  }
+  return t;
+}
+
+function stripEpisodeMarkers(value: string): string {
+  let r = value;
+  for (const re of EPISODE_MARKER_REGEXES) {
+    r = r.replace(re, '');
+  }
+  return r;
+}
+
+export function isFakeTitle(title: string, dramaName: string): boolean {
+  if (!title || !title.trim()) {
+    return false;
+  }
+  let s = stripDramaName(title, dramaName);
+  s = stripEpisodeMarkers(s);
+  s = s.replace(/^\s*0*([0-9]+)\s*$/, '');
+  s = s.replace(CHINESE_NUMERAL_ONLY, '');
+  return s.trim() === '';
+}
+
+export function clearFakeTitleRows(
+  csvContent: string,
+  enabled: boolean,
+  dramaName: string
+): FakeTitleCleanResult {
+  if (!enabled || !csvContent || csvContent.trim() === '') {
+    return { csvContent, clearedEpisodes: [] };
+  }
+
+  let content = csvContent;
+  if (content.charCodeAt(0) === 0xfeff) {
+    content = content.slice(1);
+  }
+
+  const lines = splitCSVLines(content);
+  if (lines.length < 2) {
+    return { csvContent, clearedEpisodes: [] };
+  }
+
+  const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase().replace(/^"|"$/g, ''));
+  const nameIdx = headers.indexOf('name');
+  const episodeIdx = headers.indexOf('episode_number');
+
+  if (nameIdx === -1) {
+    return { csvContent, clearedEpisodes: [] };
+  }
+
+  const clearedEpisodes: number[] = [];
+  const cleanedRows: string[][] = [headers];
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      continue;
+    }
+
+    const values = parseCSVLine(line).map((v) => v.replace(/^"|"$/g, ''));
+    const row: CSVRow = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] || '';
+    });
+
+    const title = row[headers[nameIdx]] || '';
+    if (title.trim() && isFakeTitle(title, dramaName)) {
+      row[headers[nameIdx]] = '';
+      if (episodeIdx !== -1) {
+        const epNum = parseInt(row[headers[episodeIdx]], 10);
+        if (!isNaN(epNum)) {
+          clearedEpisodes.push(epNum);
+        }
+      }
+    }
+
+    cleanedRows.push(headers.map((h) => row[h]));
+  }
+
+  const output = cleanedRows.map((row) => row.map((v) => escapeCSVValue(v)).join(',')).join('\n');
+  return { csvContent: output, clearedEpisodes };
+}
+
 export function extractEpisodeCount(csvContent: string): number {
   const lines = csvContent.trim().split(/\r?\n/);
   if (lines.length < 2) {

@@ -79,6 +79,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
     backdrop: false,
   });
   const [checkMetadataCompleteness, setCheckMetadataCompleteness] = useState(false);
+  const [cleanFakeTitles, setCleanFakeTitles] = useState(false);
   const [platformUrl, setPlatformUrl] = useState(
     item.defaultPlatformUrl || item.platformUrls?.[0] || ''
   );
@@ -115,6 +116,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
         setTmdbAutoResponse(data.data.tmdbAutoResponse || 'w');
         setFieldCleanup(data.data.fieldCleanup);
         setCheckMetadataCompleteness(data.data.checkMetadataCompleteness ?? false);
+        setCleanFakeTitles(data.data.cleanFakeTitles ?? false);
         setPlatformUrl(
           data.data.platformUrl || item.defaultPlatformUrl || item.platformUrls?.[0] || ''
         );
@@ -251,6 +253,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
             tmdbAutoResponse,
             fieldCleanup,
             checkMetadataCompleteness,
+            cleanFakeTitles: checkMetadataCompleteness ? cleanFakeTitles : false,
             platformUrl: multiPlatformMode ? platformConfigs[0]?.url : platformUrl,
             platformConfigs: multiPlatformMode ? platformConfigs : [],
           }
@@ -266,6 +269,7 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
             tmdbAutoResponse,
             fieldCleanup,
             checkMetadataCompleteness,
+            cleanFakeTitles: checkMetadataCompleteness ? cleanFakeTitles : false,
             platformUrl: multiPlatformMode ? platformConfigs[0]?.url : platformUrl,
             platformConfigs: multiPlatformMode ? platformConfigs : [],
           };
@@ -741,6 +745,31 @@ export function ScheduleTab({ item }: ScheduleTabProps) {
                   <p className="text-xs text-muted-foreground">
                     {t('checkMetadataCompletenessTip')}
                   </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="cleanFakeTitles">{t('cleanFakeTitles')}</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <HelpCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={5} className="max-w-xs z-[9999]">
+                            <p className="text-xs leading-relaxed">{t('cleanFakeTitlesTip')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <Switch
+                      id="cleanFakeTitles"
+                      checked={cleanFakeTitles}
+                      disabled={!checkMetadataCompleteness}
+                      onCheckedChange={setCleanFakeTitles}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('cleanFakeTitlesBrief')}</p>
 
                   <div className="space-y-2">
                     <Label>{t('fieldCleanup')}</Label>

@@ -77,6 +77,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       tmdbAutoResponse: input.tmdbAutoResponse ?? 'w',
       fieldCleanup: input.fieldCleanup ?? defaultFieldCleanup,
       checkMetadataCompleteness: input.checkMetadataCompleteness ?? false,
+      cleanFakeTitles: input.cleanFakeTitles ?? false,
       platformUrl: input.platformUrl,
       platformConfigs: input.platformConfigs,
       lastRunAt: null,
@@ -92,12 +93,12 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         `
         INSERT INTO schedule_tasks (
           id, itemId, cron, enabled, headless, incremental, autoImport, tmdbSeason, tmdbLanguage, tmdbAutoResponse, fieldCleanup,
-          checkMetadataCompleteness,
+          checkMetadataCompleteness, cleanFakeTitles,
           platformUrl, platformConfigs,
           lastRunAt, nextRunAt, createdAt, updatedAt
         ) VALUES (
           @id, @itemId, @cron, @enabled, @headless, @incremental, @autoImport, @tmdbSeason, @tmdbLanguage, @tmdbAutoResponse, @fieldCleanup,
-          @checkMetadataCompleteness,
+          @checkMetadataCompleteness, @cleanFakeTitles,
           @platformUrl, @platformConfigs,
           @lastRunAt, @nextRunAt, @createdAt, @updatedAt
         )
@@ -136,6 +137,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
       fieldCleanup: input.fieldCleanup ?? existing.fieldCleanup,
       checkMetadataCompleteness:
         input.checkMetadataCompleteness ?? existing.checkMetadataCompleteness,
+      cleanFakeTitles: input.cleanFakeTitles ?? existing.cleanFakeTitles,
       platformUrl: input.platformUrl ?? existing.platformUrl,
       platformConfigs: input.platformConfigs ?? existing.platformConfigs,
       updatedAt: now,
@@ -157,6 +159,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
           tmdbAutoResponse = @tmdbAutoResponse,
           fieldCleanup = @fieldCleanup,
           checkMetadataCompleteness = @checkMetadataCompleteness,
+          cleanFakeTitles = @cleanFakeTitles,
           platformUrl = @platformUrl,
           platformConfigs = @platformConfigs,
           updatedAt = @updatedAt
@@ -174,6 +177,7 @@ export class ScheduleRepository extends BaseRepository<ScheduleTask, ScheduleTas
         tmdbAutoResponse: row.tmdbAutoResponse,
         fieldCleanup: row.fieldCleanup,
         checkMetadataCompleteness: row.checkMetadataCompleteness,
+        cleanFakeTitles: row.cleanFakeTitles,
         platformUrl: row.platformUrl,
         platformConfigs: row.platformConfigs,
         updatedAt: row.updatedAt,

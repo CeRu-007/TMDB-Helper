@@ -208,13 +208,17 @@ class Scheduler {
         const journalContent = hasIncompleteEpisodes
           ? `第${executeResult.episodeCount || 0}集维护完成（第${executeResult.incompleteEpisodes!.join(',')}集元数据不完整，待补充）`
           : `第${executeResult.episodeCount || 0}集维护完成`;
+        const clearedNote =
+          executeResult.clearedTitleEpisodes && executeResult.clearedTitleEpisodes.length > 0
+            ? `（第${executeResult.clearedTitleEpisodes.join(',')}集标题为假标题已清理）`
+            : '';
 
         taskJournalRepository.create({
           itemId: item.id,
           itemTitle: item.title,
           status: 'success',
           title: item.title,
-          content: journalContent,
+          content: journalContent + clearedNote,
           dataPreview: executeResult.details || null,
           startAt,
           endAt,

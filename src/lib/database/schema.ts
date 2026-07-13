@@ -7,7 +7,7 @@ import { getDatabaseAsync, getDatabase } from './connection';
 import { logger } from '@/lib/utils/logger';
 
 // 当前 Schema 版本
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 // 防止重复初始化的标志
 let schemaInitStarted = false;
@@ -129,6 +129,9 @@ export async function initializeSchema(): Promise<void> {
     }
     if (currentVersion < 19) {
       migrateToV19(db);
+    }
+    if (currentVersion < 20) {
+      migrateToV20(db);
     }
 
     setUserVersion(db, SCHEMA_VERSION);
@@ -322,6 +325,7 @@ function createTables(db: ReturnType<typeof getDatabase>): void {
       tmdbAutoResponse TEXT DEFAULT 'w',
       fieldCleanup TEXT DEFAULT '{}',
       checkMetadataCompleteness INTEGER DEFAULT 0,
+      cleanFakeTitles INTEGER DEFAULT 0,
       platformConfigs TEXT DEFAULT '[]',
       lastRunAt TEXT,
       nextRunAt TEXT,
@@ -685,6 +689,19 @@ function migrateToV19(db: ReturnType<typeof getDatabase>): void {
     logger.info('[Database] V19 迁移完成');
   } catch (error) {
     logger.error('[Database] V19 迁移失败:', error);
+  }
+}
+
+function migrateToV20(db: ReturnType<typeof getDatabase>): void {
+  logger.info('[Database] 执行 V20 迁移: 为 schedule_tasks 添加 cleanFakeTitles 字段');
+
+  try {
+    db.exec(`
+      ALTER TABLE schedule_tasks ADD COLUMN cleanFakeTitles INTEGER DEFAULT 0
+    `);
+    logger.info('[Database] V20 迁移完成');
+  } catch (error) {
+    logger.error('[Database] V20 迁移失败:', error);
   }
 }
 

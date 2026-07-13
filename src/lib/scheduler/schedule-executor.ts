@@ -10,6 +10,7 @@ import {
   extractEpisodeCount,
   analyzeCSVMetadata,
   mergeMultiPlatformCSVs,
+  clearFakeTitleRows,
 } from '@/lib/scheduler/csv-cleaner';
 import { detectTmdbModuleName } from '@/lib/utils/tmdb-module-detector';
 import { notifier } from '@/lib/scheduler/notifier';
@@ -22,6 +23,7 @@ export interface ExecuteResult {
   episodeCount?: number;
   rawEpisodeCount?: number | undefined;
   incompleteEpisodes?: number[] | undefined;
+  clearedTitleEpisodes?: number[] | undefined;
   details?: string;
 }
 
@@ -87,7 +89,7 @@ export async function executeScheduleTask(
       return { success: false, message: '抓取结果文件不存在' };
     }
 
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    let csvContent = fs.readFileSync(csvPath, 'utf-8');
     logger.info(`[Schedule Execute] CSV文件大小: ${csvContent.length}`);
     logger.info(
       `[Schedule Execute] CSV前500字符: ${csvContent.substring(0, 500).replace(/\n/g, '\\n')}`
@@ -107,6 +109,19 @@ export async function executeScheduleTask(
       `[Schedule Execute] ${runMode}模式, ${updateMode}, currentMaxEpisode=${currentMaxEpisode}`
     );
     addLog('info', `${runMode}模式, ${updateMode}, 当前最大集数: ${currentMaxEpisode}`);
+
+    const fakeTitleClean = clearFakeTitleRows(
+      csvContent,
+      task.checkMetadataCompleteness && task.cleanFakeTitles,
+      item.title
+    );
+    if (fakeTitleClean.clearedEpisodes.length > 0) {
+      csvContent = fakeTitleClean.csvContent;
+      logger.info(
+        `[Schedule Execute] 假标题清理: 清空第${fakeTitleClean.clearedEpisodes.join(',')}集标题`
+      );
+      addLog('info', `假标题清理: 第${fakeTitleClean.clearedEpisodes.join(',')}集标题已清空`);
+    }
 
     const metadataAnalysis = analyzeCSVMetadata(csvContent);
     let effectiveEpisodeCount: number | undefined;
@@ -184,10 +199,14 @@ export async function executeScheduleTask(
       task.checkMetadataCompleteness && metadataAnalysis.incompleteEpisodes.length > 0
         ? `有效更新至第${episodeCount}集（第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整）`
         : `成功更新至第${episodeCount}集`;
+    const clearedSuffix =
+      fakeTitleClean.clearedEpisodes.length > 0
+        ? `（第${fakeTitleClean.clearedEpisodes.join(',')}集标题为假标题已清理）`
+        : '';
 
     return {
       success: true,
-      message: finalMessage,
+      message: finalMessage + clearedSuffix,
       episodeCount,
       rawEpisodeCount: task.checkMetadataCompleteness
         ? metadataAnalysis.rawEpisodeCount
@@ -195,6 +214,8 @@ export async function executeScheduleTask(
       incompleteEpisodes: task.checkMetadataCompleteness
         ? metadataAnalysis.incompleteEpisodes
         : undefined,
+      clearedTitleEpisodes:
+        fakeTitleClean.clearedEpisodes.length > 0 ? fakeTitleClean.clearedEpisodes : undefined,
       details: JSON.stringify({
         csvLength: csvContent.length,
         cleanedLength: cleanedCSV.length,
@@ -205,6 +226,8 @@ export async function executeScheduleTask(
         incompleteEpisodes: task.checkMetadataCompleteness
           ? metadataAnalysis.incompleteEpisodes
           : undefined,
+        clearedTitleEpisodes:
+          fakeTitleClean.clearedEpisodes.length > 0 ? fakeTitleClean.clearedEpisodes : undefined,
         autoImport: task.autoImport,
       }),
     };
@@ -298,12 +321,26 @@ async function executeMultiPlatformTask(
   const mergedLines = mergedCSV.split('\n').length - 1;
   addLog('info', `CSV合并完成: ${mergedLines} 行`);
 
+  const fakeTitleClean = clearFakeTitleRows(
+    mergedCSV,
+    task.checkMetadataCompleteness && task.cleanFakeTitles,
+    item.title
+  );
+  let analyzedCSV = mergedCSV;
+  if (fakeTitleClean.clearedEpisodes.length > 0) {
+    analyzedCSV = fakeTitleClean.csvContent;
+    logger.info(
+      `[Schedule Execute] 假标题清理: 清空第${fakeTitleClean.clearedEpisodes.join(',')}集标题`
+    );
+    addLog('info', `假标题清理: 第${fakeTitleClean.clearedEpisodes.join(',')}集标题已清空`);
+  }
+
   const currentMaxEpisode =
     item.seasons?.reduce((max, season) => Math.max(max, season.currentEpisode || 0), 0) || 0;
 
   addLog('info', `增量模式: 当前最大集数 ${currentMaxEpisode}`);
 
-  const metadataAnalysis = analyzeCSVMetadata(mergedCSV);
+  const metadataAnalysis = analyzeCSVMetadata(analyzedCSV);
   let effectiveEpisodeCount: number | undefined;
 
   if (task.checkMetadataCompleteness) {
@@ -323,7 +360,12 @@ async function executeMultiPlatformTask(
       : currentMaxEpisode;
 
   addLog('info', '开始清理CSV...');
-  const cleanedCSV = cleanCSV(mergedCSV, task.fieldCleanup, incrementalThreshold, task.incremental);
+  const cleanedCSV = cleanCSV(
+    analyzedCSV,
+    task.fieldCleanup,
+    incrementalThreshold,
+    task.incremental
+  );
   const episodeCount = task.checkMetadataCompleteness
     ? metadataAnalysis.effectiveEpisodeCount
     : extractEpisodeCount(cleanedCSV);
@@ -362,21 +404,29 @@ async function executeMultiPlatformTask(
     task.checkMetadataCompleteness && metadataAnalysis.incompleteEpisodes.length > 0
       ? `有效更新至第${episodeCount}集（${platformResults.length}个平台合并，第${metadataAnalysis.incompleteEpisodes.join(',')}集元数据不完整）`
       : `成功更新至第${episodeCount}集（${platformResults.length}个平台合并）`;
+  const clearedSuffix =
+    fakeTitleClean.clearedEpisodes.length > 0
+      ? `（第${fakeTitleClean.clearedEpisodes.join(',')}集标题为假标题已清理）`
+      : '';
 
   return {
     success: true,
-    message: finalMessage,
+    message: finalMessage + clearedSuffix,
     episodeCount,
     rawEpisodeCount: task.checkMetadataCompleteness ? metadataAnalysis.rawEpisodeCount : undefined,
     incompleteEpisodes: task.checkMetadataCompleteness
       ? metadataAnalysis.incompleteEpisodes
       : undefined,
+    clearedTitleEpisodes:
+      fakeTitleClean.clearedEpisodes.length > 0 ? fakeTitleClean.clearedEpisodes : undefined,
     details: JSON.stringify({
       platformCount: platformResults.length,
       platforms: platformResults.map((p) => p.url),
       mergedLength: mergedCSV.length,
       cleanedLength: cleanedCSV.length,
       episodeCount,
+      clearedTitleEpisodes:
+        fakeTitleClean.clearedEpisodes.length > 0 ? fakeTitleClean.clearedEpisodes : undefined,
       autoImport: task.autoImport,
     }),
   };

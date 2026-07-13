@@ -51,6 +51,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformUrl: 'https://www.mgtv.com/123.html',
         platformConfigs: userConfig,
         lastRunAt: null,
@@ -127,6 +128,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformConfigs: userConfig,
         lastRunAt: null,
         nextRunAt: null,
@@ -365,6 +367,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformUrl: 'https://www.mgtv.com/123.html',
         // platformConfigs 未设置
         lastRunAt: null,
@@ -404,6 +407,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformConfigs: [],
         lastRunAt: null,
         nextRunAt: null,
@@ -440,6 +444,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformConfigs: [
           {
             url: 'https://a.com',
@@ -497,6 +502,7 @@ describe('多平台模式端到端测试', () => {
           backdrop: false,
         },
         checkMetadataCompleteness: false,
+        cleanFakeTitles: false,
         platformConfigs: [
           {
             url: 'https://a.com',

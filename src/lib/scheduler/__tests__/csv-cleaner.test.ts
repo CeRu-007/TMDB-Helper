@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeCSVMetadata, cleanCSV, extractEpisodeCount } from '@/lib/scheduler/csv-cleaner';
+import {
+  analyzeCSVMetadata,
+  cleanCSV,
+  extractEpisodeCount,
+  isFakeTitle,
+  clearFakeTitleRows,
+} from '@/lib/scheduler/csv-cleaner';
 import type { FieldCleanup } from '@/types/schedule';
 
 const defaultFieldCleanup: FieldCleanup = {
@@ -1347,5 +1353,247 @@ describe('extractEpisodeCount', () => {
 
   it('空 CSV 返回0', () => {
     expect(extractEpisodeCount('')).toBe(0);
+  });
+});
+
+describe('isFakeTitle', () => {
+  const drama = '庆余年';
+
+  it('剧名+第N集 判定为假', () => {
+    expect(isFakeTitle('庆余年 第3集', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 第3话', drama)).toBe(true);
+    expect(isFakeTitle('庆余年第3集', drama)).toBe(true);
+  });
+
+  it('纯集序号标记 判定为假', () => {
+    expect(isFakeTitle('第3集', drama)).toBe(true);
+    expect(isFakeTitle('第 3 集', drama)).toBe(true);
+    expect(isFakeTitle('EP03', drama)).toBe(true);
+    expect(isFakeTitle('episode 3', drama)).toBe(true);
+    expect(isFakeTitle('#3', drama)).toBe(true);
+  });
+
+  it('零填充与纯数字序号 判定为假', () => {
+    expect(isFakeTitle('庆余年 01', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 3', drama)).toBe(true);
+    expect(isFakeTitle('01', drama)).toBe(true);
+    expect(isFakeTitle('3', drama)).toBe(true);
+  });
+
+  it('带真实副标题的保留', () => {
+    expect(isFakeTitle('庆余年 第3集 神秘开篇', drama)).toBe(false);
+    expect(isFakeTitle('庆余年 经典台词', drama)).toBe(false);
+    expect(isFakeTitle('庆余年 第三集的阴谋', drama)).toBe(false);
+  });
+
+  it('剧名+序号但带其它文字 保留', () => {
+    expect(isFakeTitle('庆余年 第3集特别篇', drama)).toBe(false);
+  });
+
+  it('空标题不是假标题', () => {
+    expect(isFakeTitle('', drama)).toBe(false);
+    expect(isFakeTitle('   ', drama)).toBe(false);
+  });
+
+  it('无剧名时仅按序号标记判定', () => {
+    expect(isFakeTitle('第3集', '')).toBe(true);
+    expect(isFakeTitle('神秘开篇', '')).toBe(false);
+  });
+
+  it('只有剧名（无序号）判定为假', () => {
+    expect(isFakeTitle('庆余年', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 ', drama)).toBe(true);
+  });
+
+  it('只有序号（无剧名）判定为假', () => {
+    expect(isFakeTitle('3', drama)).toBe(true);
+    expect(isFakeTitle('03', drama)).toBe(true);
+    expect(isFakeTitle('第3集', drama)).toBe(true);
+    expect(isFakeTitle('#3', drama)).toBe(true);
+    expect(isFakeTitle('EP03', drama)).toBe(true);
+  });
+
+  it('中文数字序号 判定为假', () => {
+    expect(isFakeTitle('第一集', drama)).toBe(true);
+    expect(isFakeTitle('第二十一集', drama)).toBe(true);
+    expect(isFakeTitle('第二百二十一集', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 第一集', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 第二十一集', drama)).toBe(true);
+    expect(isFakeTitle('庆余年 第二百二十一集', drama)).toBe(true);
+  });
+
+  it('中文数字序号的 两/兩 变体 判定为假', () => {
+    expect(isFakeTitle('第一百零二集', drama)).toBe(true);
+    expect(isFakeTitle('第二百二十一集', drama)).toBe(true);
+    expect(isFakeTitle('慶餘年 第二十一集', '慶餘年')).toBe(true);
+  });
+
+  it('纯中文数字（无第字）也判定为假', () => {
+    expect(isFakeTitle('二十一', drama)).toBe(true);
+    expect(isFakeTitle('二百二十一', drama)).toBe(true);
+  });
+
+  it('中文数字序号带真实副标题 保留', () => {
+    expect(isFakeTitle('第一集 神秘开篇', drama)).toBe(false);
+    expect(isFakeTitle('第二十一集的阴谋', drama)).toBe(false);
+  });
+
+  it('续作同名/分部标题 保留（避免误伤）', () => {
+    expect(isFakeTitle('庆余年 第一部', drama)).toBe(false);
+    expect(isFakeTitle('庆余年 第一章', drama)).toBe(false);
+    expect(isFakeTitle('庆余年2 第3集', drama)).toBe(false);
+    expect(isFakeTitle('庆余年 第3集', drama)).toBe(true);
+  });
+});
+
+describe('clearFakeTitleRows', () => {
+  it('enabled=false 原样返回', () => {
+    const csv = makeCSV([
+      {
+        episode_number: 1,
+        name: '庆余年 第1集',
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: '简介1',
+        backdrop: '',
+      },
+    ]);
+    const result = clearFakeTitleRows(csv, false, '庆余年');
+    expect(result.clearedEpisodes).toEqual([]);
+    expect(result.csvContent).toBe(csv);
+  });
+
+  it('清空剧名+序号的标题，保留其它字段', () => {
+    const csv = makeCSV([
+      {
+        episode_number: 1,
+        name: '庆余年 第1集',
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: '简介1',
+        backdrop: '',
+      },
+      {
+        episode_number: 2,
+        name: '真实标题',
+        air_date: '2024-01-02',
+        runtime: '45',
+        overview: '简介2',
+        backdrop: '',
+      },
+      {
+        episode_number: 3,
+        name: 'EP03',
+        air_date: '2024-01-03',
+        runtime: '45',
+        overview: '简介3',
+        backdrop: '',
+      },
+    ]);
+    const result = clearFakeTitleRows(csv, true, '庆余年');
+    expect(result.clearedEpisodes).toEqual([1, 3]);
+
+    const lines = result.csvContent.split('\n');
+    const row1 = lines[1].split(',');
+    const row3 = lines[3].split(',');
+    expect(row1[1]).toBe('');
+    expect(row3[1]).toBe('');
+    const row2 = lines[2].split(',');
+    expect(row2[1]).toBe('真实标题');
+    // 其它字段保留
+    expect(row1[4]).toContain('简介1');
+    expect(row3[4]).toContain('简介3');
+  });
+
+  it('多行简介不被破坏', () => {
+    const csv = makeCSV([
+      {
+        episode_number: 1,
+        name: '庆余年 第1集',
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: '第一行\n第二行',
+        backdrop: '',
+      },
+    ]);
+    const result = clearFakeTitleRows(csv, true, '庆余年');
+    expect(result.clearedEpisodes).toEqual([1]);
+    const reparsed = analyzeCSVMetadata(result.csvContent);
+    expect(reparsed.rawEpisodeCount).toBe(1);
+    expect(result.csvContent).toContain('第一行');
+    expect(result.csvContent).toContain('第二行');
+  });
+
+  it('缺乏 name 列时原样返回', () => {
+    const csv = 'episode_number,overview\n1,简介1';
+    const result = clearFakeTitleRows(csv, true, '庆余年');
+    expect(result.clearedEpisodes).toEqual([]);
+    expect(result.csvContent).toBe(csv);
+  });
+
+  it('引号内换行（多行 overview）作为单行处理，假标题正确清空且简介完整', () => {
+    const csv =
+      'episode_number,name,air_date,runtime,overview,backdrop\n' +
+      '1,"庆余年 第1集",2024-01-01,45,"第一行\n第二行",';
+    const result = clearFakeTitleRows(csv, true, '庆余年');
+    expect(result.clearedEpisodes).toEqual([1]);
+    expect(result.csvContent).toContain('第一行\n第二行');
+    const reparsed = analyzeCSVMetadata(result.csvContent);
+    expect(reparsed.rawEpisodeCount).toBe(1);
+  });
+});
+
+describe('clearFakeTitleRows 与完整性检查配合', () => {
+  it('假标题被清空后，按 name 为空计入不完整集，有效集数截至其前', () => {
+    const csv = makeCSV([
+      {
+        episode_number: 1,
+        name: '真实标题1',
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: '简介1',
+        backdrop: '',
+      },
+      {
+        episode_number: 2,
+        name: '庆余年 第2集',
+        air_date: '2024-01-02',
+        runtime: '45',
+        overview: '简介2',
+        backdrop: '',
+      },
+      {
+        episode_number: 3,
+        name: '真实标题3',
+        air_date: '2024-01-03',
+        runtime: '45',
+        overview: '简介3',
+        backdrop: '',
+      },
+    ]);
+
+    const cleaned = clearFakeTitleRows(csv, true, '庆余年');
+    const analysis = analyzeCSVMetadata(cleaned.csvContent);
+
+    expect(cleaned.clearedEpisodes).toEqual([2]);
+    expect(analysis.incompleteEpisodes).toContain(2);
+    expect(analysis.effectiveEpisodeCount).toBe(1);
+  });
+
+  it('完整性检查关闭时，清空与否不改变原始集数', () => {
+    const csv = makeCSV([
+      {
+        episode_number: 1,
+        name: '庆余年 第1集',
+        air_date: '2024-01-01',
+        runtime: '45',
+        overview: '简介1',
+        backdrop: '',
+      },
+    ]);
+    const cleaned = clearFakeTitleRows(csv, false, '庆余年');
+    const analysis = analyzeCSVMetadata(cleaned.csvContent);
+    expect(cleaned.clearedEpisodes).toEqual([]);
+    expect(analysis.rawEpisodeCount).toBe(1);
   });
 });

@@ -66,6 +66,7 @@ function makeTask(overrides: Partial<ScheduleTask> = {}): ScheduleTask {
       backdrop: false,
     },
     checkMetadataCompleteness: false,
+    cleanFakeTitles: false,
     lastRunAt: null,
     nextRunAt: null,
     createdAt: new Date().toISOString(),
