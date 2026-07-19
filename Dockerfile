@@ -3,8 +3,6 @@
 FROM node:22-slim AS base
 
 # 安装系统依赖、Python 支持和 pnpm
-# 注意：Python 包和 Playwright 浏览器由用户在运行时通过设置页面手动安装
-# 但 Chromium 运行需要的系统依赖必须预装
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
@@ -32,6 +30,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && npm install -g pnpm@10 \
     && rm -rf /var/lib/apt/lists/*
+
+# 预装 TMDB-Import 所需的 Python 依赖，实现开箱即用
+# 浏览器二进制固定存放在镜像内的 /opt/playwright，运行时由 docker-startup.js 软链到数据卷默认路径
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+        playwright \
+        python-dateutil \
+        Pillow \
+        bordercrop \
+        opencc-python-reimplemented \
+        requests \
+    && playwright install --with-deps chromium
 
 # 设置工作目录
 WORKDIR /app

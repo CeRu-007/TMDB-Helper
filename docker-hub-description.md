@@ -88,6 +88,16 @@ volumes:
   tmdb_data:
 ```
 
+## 📦 内置依赖（开箱即用）
+
+镜像已预装 TMDB-Import 所需的全部 Python 依赖，**无需在设置页手动安装**：
+
+- `playwright` 及 Chromium 浏览器二进制
+- `python-dateutil`、`Pillow`、`bordercrop`
+- `opencc-python-reimplemented`、`requests`
+
+浏览器二进制内置在镜像层（`/opt/playwright`），容器启动时由 `docker-startup.js` 自动软链到数据卷默认路径，因此即使升级 `data` 卷也不会丢失。设置页的「安装依赖」按钮仍保留，可作为升级/排错的兜底手段。
+
 ## 🔧 环境变量配置
 
 | 变量名                | 必填   | 说明                                                               |

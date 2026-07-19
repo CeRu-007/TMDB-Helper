@@ -62,11 +62,21 @@ function ensureDirectories() {
     process.env.PLAYWRIGHT_BROWSERS_PATH || '/app/data/.cache/ms-playwright';
   try {
     if (!fs.existsSync(playwrightCacheDir)) {
-      fs.mkdirSync(playwrightCacheDir, { recursive: true });
-      log(`创建 Playwright 缓存目录: ${playwrightCacheDir}`);
+      // 镜像已内置浏览器到 /opt/playwright（构建期写入），此处软链过去，避免运行时重复下载
+      const bakedBrowsersPath = '/opt/playwright';
+      if (
+        fs.existsSync(bakedBrowsersPath) &&
+        fs.statSync(bakedBrowsersPath).isDirectory()
+      ) {
+        fs.symlinkSync(bakedBrowsersPath, playwrightCacheDir, 'dir');
+        log(`已链接内置 Playwright 浏览器: ${bakedBrowsersPath} -> ${playwrightCacheDir}`);
+      } else {
+        fs.mkdirSync(playwrightCacheDir, { recursive: true });
+        log(`创建 Playwright 缓存目录: ${playwrightCacheDir}`);
+      }
     }
   } catch (error) {
-    logError(`创建 Playwright 缓存目录失败: ${playwrightCacheDir}`, error);
+    logError(`初始化 Playwright 缓存目录失败: ${playwrightCacheDir}`, error);
   }
 }
 
